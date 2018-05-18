@@ -1,0 +1,93 @@
+<!--
+	TODO: Move out to demo page @JSBin or something
+-->
+<html>
+<head>
+ 
+  <!-- jQuery pre-requisite for jQuery UI -->
+  <script src="../../lib/jquery-3.1.1.js"></script>
+
+  <!-- jQuery uniform -->
+  <link rel="stylesheet" href="../../lib/uniform/css/uniform.default.css">
+  <script src="../../lib/uniform/jquery.uniform.js"></script> 
+  
+  <!-- AutoSaveJS -->
+  <script src="../../src/AutoSaveJS.js"></script> 
+</head>
+
+<body>
+    
+	<div id="checkboxradio_group">
+	  <h1>Checkbox and radio button widgets</h1>
+	 
+	  <h2>Radio Group</h2>
+	  <fieldset>
+		<legend>Select a Location: </legend>
+		<label for="location-ny">New York</label>
+		<input type="radio" name="location" value="ny" id="location-ny">
+		<label for="location-paris">Paris</label>
+		<input type="radio" name="location" value="paris" id="location-paris">
+		<label for="location-london">London</label>
+		<input type="radio" name="location" value="london" id="location-london">
+	  </fieldset>
+	 
+	  <h2>Checkbox</h2>
+	  <fieldset>
+		<legend>Hotel Ratings: </legend>
+		<label for="checkbox-1">2 Star</label>
+		<input type="checkbox" name="checkbox-1" id="checkbox-1">
+		<label for="checkbox-2">3 Star</label>
+		<input type="checkbox" name="checkbox-2" id="checkbox-2">
+		<label for="checkbox-3">4 Star</label>
+		<input type="checkbox" name="checkbox-3" id="checkbox-3">
+		<label for="checkbox-4">5 Star</label>
+		<input type="checkbox" name="checkbox-4" id="checkbox-4">
+	  </fieldset>
+	 
+	  <h2>Checkbox nested in label</h2>
+	  <fieldset>
+		<legend>Bed Type: </legend>
+		<label for="checkbox-nested-1">2 Double
+		  <input type="checkbox" name="checkbox-nested-1" id="checkbox-nested-1">
+		</label>
+		<label for="checkbox-nested-2">2 Queen
+		  <input type="checkbox" name="checkbox-nested-2" id="checkbox-nested-2">
+		</label>
+		<label for="checkbox-nested-3">1 Queen
+		  <input type="checkbox" name="checkbox-nested-3" id="checkbox-nested-3">
+		</label>
+		<label for="checkbox-nested-4">1 King
+		  <input type="checkbox" name="checkbox-nested-4" id="checkbox-nested-4">
+		</label>
+	  </fieldset>
+	</div>
+
+	
+	<div>
+		<span>Enter A Language:</span>
+	</div>	
+	<input id="language" name="language"></div>
+		 
+		 
+	//TODO: How asynchronously initially load then use data-store locally? Common scenario...
+		 
+	 
+  <script>
+			
+		var szString;
+		var aSave = new AutoSave(null,{
+			onPostLoad: function( data, loadCompleted ){
+				return "language=English+and+French&location=london"
+			},
+
+			//Even if there was no data to load, this hook by default always 
+			//gets invoked to signal the end of the deserialisation process so style after load.
+			onPostDeserialize: function(){
+				
+				$(":input").uniform();
+			}
+		});
+		
+   </script>
+	 
+</body>
