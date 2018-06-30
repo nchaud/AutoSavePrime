@@ -5,7 +5,7 @@ describe("AutoSaveJS", function() {
 	_noOpSave = function( key, data, saveCompleted){};
 	
 	/* Helper functions */
-	function testSerialize(parentParameter, customOpts = null){
+	function testSerialize(parentParameter){
 	
 		if (parentParameter === undefined) //Nulls are ok and can go straight through to AutoSave() and does all elements !
 			parentParameter = document.body;
@@ -35,7 +35,7 @@ describe("AutoSaveJS", function() {
 	}
 	
 
-	function getBrowserCookie(key){
+	function getBrowserCookie( key ){
 
 		if ( !key )
 			key = "AutoSaveJS_";
@@ -49,18 +49,35 @@ describe("AutoSaveJS", function() {
 		
 		return cookieValue;
 	}
-		
-	function testDeserialize(szString){
 	
-		var aSave = createAutoSave($("body"),{
-			
-			dataStore: {
-				save: function(_, __, cb){cb()}, //No-op save
-				load: function( key, loadCompleteCallback ){
-					loadCompleteCallback( szString )
-				}
+	function createMockDataStore( szString, opts ){
+		
+		var defaultOpt = 
+		{
+			save: function(_, __, cb){ cb() }, //No-op save
+			load: function( key, loadCompleteCallback ){
+				loadCompleteCallback( szString )
 			}
-		});
+		};
+		
+		var mergedOpts = $.extend({}, defaultOpt, opts);
+		
+		return mergedOpts;
+	}
+	
+	//Any custom opts will overwrite top-level options, not do a deep merge
+	function testDeserialize(szString, opts){
+
+		var defaultOpt = {
+			dataStore: createMockDataStore(szString)
+		};
+		
+		if (opts ===  null)
+			var mergedOpts = null; //Explicit clear requested
+		else
+			var mergedOpts = $.extend({}, defaultOpt, opts);
+		
+		var aSave = createAutoSave($("body"), mergedOpts);
 		
 		aSave.load();
 	}
@@ -78,22 +95,22 @@ describe("AutoSaveJS", function() {
 	
 	function setSelected(elem, isChecked){
 		
-		$(elem).prop("selected",true);
+		var $elem = $(elem);
+		$elem.prop("selected",true);
 
 		//Fire native change event
-		var elem = $(elem).get(0);
-		
-		sendEvent(elem, "change");
+		for(var i=0;i<$elem.length;i++)
+			sendEvent($elem[i], "change");
 	}
 	
 	function setChecked(elem, isChecked){
 		
-		$(elem).prop("checked",true);
+		var $elem = $(elem);
+		$elem.prop("checked",true);
 
 		//Fire native change event
-		var elem = $(elem).get(0);
-		
-		sendEvent(elem, "change");
+		for(var i=0;i<$elem.length;i++)
+			sendEvent($elem[i], "change");
 	}
 	
 	//Fires just the input event
@@ -224,43 +241,29 @@ describe("AutoSaveJS", function() {
 	}
 	 
 	it('input_text_entry_is_restored_with_text_value', function(){
+		
 		internal_run_input_serialise_and_deserialise_test('text');
     });
 	
 	it('input_hidden_entry_is_restored_with_text_value', function(){
+		
 		internal_run_input_serialise_and_deserialise_test('hidden');
     });
 	 
 	it('input_password_entry_is_restored_with_text_value', function(){
+		
 		internal_run_input_serialise_and_deserialise_test('password');
     });
-	
-	//TODO: This test for radios, checkboxes etc?
-	it('input text entry is cleared when loading an empty value for an element', function(){
-		 
-		//Arrange - Create and set a value on the input text box
-		var testFragment = "<input name='frmNameEntry'>";
-		addToSandbox( testFragment );
-		var $elem = $( "[name='frmNameEntry']" );
-		setValue($elem, "Oscar" );
-
-		//Act - Deserialising should clear the 'Oscar' entry
-		testDeserialize( "frmNameEntry=" );
-
-		//Assert
-		expect( $elem.val() ).toBeFalsy();
-	});
-	 
 	 
 	it('select_entry_is_restored_with_selected_option',function(){
 		 
 		//Arrange - Create and set a value on the input text box
-		var testFragment = "<select name='frmNameEntry'>"+
-								"<option value=''>(None)</option>"+
-								"<option value='B'>Blue</option>"+
-								"<option value='G'>Green</option>"+
-								"<option value='R'>Red</option>"+
-						   "</select>";
+		var testFragment = "<select name='frmNameEntry'>\
+								<option value=''>(None)</option>\
+								<option value='B'>Blue</option>\
+								<option value='G'>Green</option>\
+								<option value='R'>Red</option>\
+						   </select>";
 		addToSandbox(testFragment);
 		setValue("[name='frmNameEntry']", "G");
 
@@ -284,13 +287,13 @@ describe("AutoSaveJS", function() {
 	
 	it('select_entry_with_multiple_selections_is_restored',function(){
 		 
-		//Arrange - Create and set a value on the input text box
-		var testFragment = "<select multiple name='frmNameEntry'>"+
-								"<option value='B'>Blue</option>"+
-								"<option value='G'>Green</option>"+
-								"<option value='R'>Red</option>"+
-								"<option>(None)</option>"+	//Put at bottom to ensure it's not working coincidentally !
-						   "</select>";
+		//Arrange - Create and set a value on the input text box - put None at bottom to ensure it's not working coincidentally !
+		var testFragment = "<select multiple name='frmNameEntry'>\
+								<option value='B'>Blue</option>\
+								<option value='G'>Green</option>\
+								<option value='R'>Red</option>\
+								<option>(None)</option>\
+						   </select>";
 		addToSandbox(testFragment);
 		
 		//Select 2 options
@@ -314,12 +317,12 @@ describe("AutoSaveJS", function() {
 	
 	it('select_single_options_with_no_name_attribute_should_still_select_correct_option',function(){ //As per spec #...
 		
-		//Arrange - Create and set a value on the input text box
-		var testFragment = "<select name='frmNameEntry'>"+
-								"<option>Blue</option>"+
-								"<option id='toChoose'>Green & Black+Pistachio</option>"+ //Check special characters preserved
-								"<option>Red</option>"+
-						   "</select>";
+		//Arrange - Create and set a value on the input text box - check special characters preserved
+		var testFragment = "<select name='frmNameEntry'>\
+								<option>Blue</option>\
+								<option id='toChoose'>Green & Black+Pistachio</option>\
+								<option>Red</option>\
+						   </select>";
 		addToSandbox(testFragment);
 		setSelected("#toChoose", true);
 		
@@ -471,10 +474,62 @@ describe("AutoSaveJS", function() {
 			expect(getOne("[name='frmMusician']").val()).toEqual("Mozart");
 		}
 	});
-	
   });
   
   describe('dataStore: ', function(){
+  	
+	var clearDzString = "frmNameEntry=&frmColorEntry=&description=&frmMusician=";
+
+	//Helper method
+	var internalTestClearEmptyValues = function(dzString, dataStoreOpts, shouldPreserve){
+		 
+		//Arrange - Create and set a value on the input text box
+		var testFragment = "<input name='frmNameEntry'>\
+							<select name='frmColorEntry'>\
+								<option value=''>(None)</option>\
+								<option value='B'>Blue</option>\
+								<option value='G'>Green</option>\
+								<option value='R'>Red</option>\
+						   </select>\
+						   <textarea name='description'></textarea>\
+						   <h3>Please choose your preferred musicians:</h3>\
+							<input type='checkbox' name='frmMusician' value='Mozart'>Mozart Van...\
+							<input type='checkbox' name='frmMusician' value='JayZ'>JayZ\
+							<input type='checkbox' name='frmMusician' value='Sipa'>Sipa"
+		
+		resetSandbox();
+		addToSandbox( testFragment );
+		var $textElem 	= $( "[name='frmNameEntry']" );
+		var $textArea 	= $( "textarea" );
+		
+		var elem1 = document.querySelector( "[value='Mozart']" );
+		var elem2 = document.querySelector( "[value='Sipa']" );
+		
+		setValue( $textElem, "Oscar" );
+		setValue( $textArea, "Because they make me feel good" );
+		setChecked( $( "[value='Mozart'], [value='Sipa']" ), true );
+		setSelected( $( "[value='B']" ), true );
+
+		//Ensure deserialising with empty values does nothing
+		var mockDataStore = createMockDataStore( dzString, dataStoreOpts );
+		testDeserialize( null, {dataStore: mockDataStore} );
+		
+		//Assert
+		if (shouldPreserve){
+			expect( $textElem.val() ).toBe("Oscar");
+			expect( $textArea.val() ).toBe("Because they make me feel good");
+			expect(Array.from(document.querySelectorAll("input[type='checkbox']:checked")))
+				.toEqual([elem1,elem2]);		
+			expect( $("[name='frmColorEntry']").val()).toBe("B");
+		}
+		else{
+			expect( $textElem.val() ).toBeFalsy();
+			expect( $textArea.val() ).toBeFalsy();
+			expect($(document.querySelectorAll("input[type='checkbox']:checked")).length)
+					.toEqual(0);
+			expect( $("[name='frmColorEntry']").val() ).toBeFalsy();
+		}
+	};
 
 	it('will throw an error if option is unrecognised', function(){
 		
@@ -486,9 +541,56 @@ describe("AutoSaveJS", function() {
 				}
 			});
 		}).toThrowError("Unexpected parameter 'Load' in dataStore options object");
+	});	
+	
+	it('clearEmptyValuesOnLoad option - when true, clears blank values', function(){
+
+		internalTestClearEmptyValues(
+			clearDzString,
+			{clearEmptyValuesOnLoad:true},
+			false
+		);
 	});
-  	
-  
+	
+	it('clearEmptyValuesOnLoad option - when unset, clears blank values', function(){
+
+		internalTestClearEmptyValues(
+			clearDzString,
+			{clearEmptyValuesOnLoad:undefined}, //Explicitly set to undefined so not defaulted by test helper code in future
+			false
+		);
+	});
+	
+	it('clearEmptyValuesOnLoad option - when false, preserves blank values', function(){
+
+		internalTestClearEmptyValues(
+			clearDzString,
+			{clearEmptyValuesOnLoad:false},
+			true
+		);
+	});
+	
+	it('clearEmptyValuesOnLoad option - has no effect when values are missing from data set', function(){
+		
+		internalTestClearEmptyValues(
+			"",
+			{clearEmptyValuesOnLoad:true},
+			true
+		);
+		
+		internalTestClearEmptyValues(
+			"",
+			{clearEmptyValuesOnLoad:false},
+			true
+		);
+		
+		internalTestClearEmptyValues(
+			"",
+			null,
+			true
+		);
+	});
+		
 	it('custom load function must have arity 2', function(){
 				
 		expect(function(){
@@ -954,11 +1056,11 @@ describe("AutoSaveJS", function() {
 	it('select controls with a name & key of 0 are serialized correctly', function(){ //And not skipped, like blanks and nulls
 		
 		//Arrange - Create and set a value on the input text box
-		var testFragment = "<select multiple name='0'>"+
-								"<option id='zero' value='0'>Zero</option>"+
-								"<option id='one' value='1'>One</option>"+ 
-								"<option>Red</option>"+
-						   "</select>";
+		var testFragment = "<select multiple name='0'>\
+								<option id='zero' value='0'>Zero</option>\
+								<option id='one' value='1'>One</option> \
+								<option>Red</option>\
+						   </select>";
 		addToSandbox(testFragment);
 		setSelected("#zero,#one", true);
 		
@@ -987,12 +1089,12 @@ describe("AutoSaveJS", function() {
 	
 	it('select_multiple_options_with_no_name_attribute_should_use_inner_text_for_serialising',function(){ //TODO: As per spec #...
 
-		//Arrange - Create and set a value on the input text box
-		var testFragment = "<select multiple name='frmNameEntry'>"+
-								"<option id='toChoose2'>0</option>"+
-								"<option id='toChoose'>Green & Black+Pistachio</option>"+ //Check special characters preserved
-								"<option>Red</option>"+
-						   "</select>";
+		//Arrange - Create and set a value on the input text box - check special characters preserved
+		var testFragment = "<select multiple name='frmNameEntry'>\
+								<option id='toChoose2'>0</option>\
+								<option id='toChoose'>Green & Black+Pistachio</option>\
+								<option>Red</option>\
+						   </select>";
 		addToSandbox(testFragment);
 		setSelected("#toChoose,#toChoose2", true);
 		
@@ -1894,7 +1996,7 @@ describe("AutoSaveJS", function() {
 					return false; //Should cancel the save altogther
 				else if (ctr == 3) {
 					cookieData = cookieData.replace("Nash", "Oscar");
-					return cookieData += "domain="+location.host; //Append a parameter
+					return cookieData;// We can append parameters too - e.g. cookieData+= "domain="+location.host;
 				}
 				else
 					throw "Unexpected number of loads";
@@ -1921,17 +2023,10 @@ describe("AutoSaveJS", function() {
 		expect( cookieValue ).toEqual("RESET"); //i.e. unchanged
 		
 		//On fourth invocation, should get changed altogether
-		try {
-			document.cookie = "AutoSaveJS_ = RESET; expires=Sat, 23 Mar 2050 00:00:00;";
-			aSave.save();
-			var cookieValue = getBrowserCookie();
-			expect( cookieValue ).toEqual("frmNameEntry=Jonathan+%2F+Oscar&frmGenderEntry=&frmAddressEntry=&frmAgeEntry=10");
-		}
-		finally {
-			
-			//As it's a domain specific cookie that won't be cleared normally, ensure it's cleared up after this test
-			document.cookie = "AutoSaveJS_=; expires=Sat, 23 Mar 1889 00:00:00; domain="+location.host;
-		}
+		document.cookie = "AutoSaveJS_ = RESET; expires=Sat, 23 Mar 2050 00:00:00;";
+		aSave.save();
+		var cookieValue = getBrowserCookie();
+		expect( cookieValue ).toEqual("frmNameEntry=Jonathan+%2F+Oscar&frmGenderEntry=&frmAddressEntry=&frmAgeEntry=10");
 	});
 
 	it('onPreStore hook with local storage can customise the behaviour by its return value', function(){

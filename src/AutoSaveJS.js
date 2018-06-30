@@ -14,6 +14,14 @@ var AutoSave = function( rootControls, opts ){
 	this.__debounceTimeoutHandle;
 	this.__dataStoreKeyFunc; 	//Never null after init
 	
+	this.__clearEmptyValuesOnLoad; //When keys dont have a value in the data store (e.g....&name=&...), clear out those elements on load
+			//TODO: On reconnect with internet, it'll kick off a reload? Could trash all the users changes !!
+			//		If new fields are added in the meantime, should be handled fine as ignored
+			//		If value cleared out server-side though, should clear out client-side? Or with other users' machines?
+			//		Plus provides for useful "reset" ability
+			//		TODO: Demo with above reset 
+			//		Workaround if this is a problem : Just remove all empty values coming from server-side. TODO: Sample.
+			
 	
 	
 	this.__logSink;	//TODO: How do other libraries do this? allow obj or a single method ? if none, console it?
@@ -156,7 +164,7 @@ var AutoSave = function( rootControls, opts ){
 			}
 		}
 		
-		this.deserialize( szData );
+		this.deserialize( szData, this.__clearEmptyValuesOnLoad );
 
 		cb = this.__callbacks.onPostDeserialize;
 		if ( cb )
@@ -367,10 +375,12 @@ var AutoSave = function( rootControls, opts ){
 			
 			//TODO: cookieOptions here? OR check if user specified an expiry time - if not, then make it infinite.
 			
-			var allowedOpts = [ "save", "load", "key", "preferCookies" ];
+			var allowedOpts = [ "save", "load", "key", "preferCookies", "clearEmptyValuesOnLoad" ];
 			
 			this._ensureOptIn( dataStore, allowedOpts, "dataStore" );
 
+			this.__clearEmptyValuesOnLoad = dataStore.clearEmptyValuesOnLoad;
+			
 			var storeToCookies = dataStore.preferCookies === true || !hasLocalStorage;
 			
 			//TODO: Raise error if cookies not supported (DEMO: How to ask user to enable cookies)
@@ -564,13 +574,7 @@ var AutoSave = function( rootControls, opts ){
 		
 	this.handleEvent = function(ev){
 		
-		//Pseudocode
-		//	- If a timer exists, ignore (OR calc delta based on inputs rather than going through all to find deltas?)
-		//	- Else kick off a timer
-		//		- If another event is triggered before timer elapses, reset timer
-		//		- We keep resetting the timer until MAX interval has elapsed, in which case we stop resetting it
-		//		- On timer elapse, reset the event
-		
+		//todo; add proper debug level logging 
 		//console.log(">>Handling event", ev, this);
 		
 		//If already have a timer running, return
@@ -655,7 +659,7 @@ var AutoSave = function( rootControls, opts ){
 		this.__theStore.resetStore( clearCallback );
 	}
 	
-	this._deserializeSingleControl = function( child, fieldData ){
+	this._deserializeSingleControl = function( child, fieldData, clearEmpty ){
 
 		var fieldValue = null;
 		
@@ -665,17 +669,41 @@ var AutoSave = function( rootControls, opts ){
 		
 		   if (child.type == "radio" || child.type == "checkbox") {
 
-				//For these, we need to check not only that the names exists but the value corresponds to this element
+				//For these, we need to check not only that the names exists but the value corresponds to this element.
+				//If it corresponds, we need to 
+				//	- If clearEmpty = true, also uncheck all those items with the same name that aren't in the field data.
+				//	- Else leave the element's value intact
+				//If theres no kvp that corresponds t othis name, always leave the elements intact.
+				
+				var foundField = null;
+				
 				for (var fieldIdx = 0 ; fieldIdx < fieldData.length ; ++fieldIdx) {
 				
 					var fieldValue = fieldData[fieldIdx][child.name];
 					
-					if (fieldValue == child.value) {
+					var isFieldForThisElement = fieldValue !== undefined;
 					
-						child.checked = true;
-						break;
+					if (isFieldForThisElement){
+						
+						if (fieldValue == child.value) {
+						
+							foundField = true;
+							break;
+						}
+						else{
+							
+							foundField = false;
+							
+							//Continue searching
+						}
 					}
 				}
+					
+				if ( foundField === true )
+					child.checked = true;
+				else if ( foundField === false && clearEmpty) //Was of the form ...&fieldName=&...
+					child.checked = false;
+				//else missing altogether in the field data so leave untouched
 			}
 			else {
 				runStd = true;
@@ -722,7 +750,7 @@ var AutoSave = function( rootControls, opts ){
 			var sChildren = child.children;
 			for( var sIdx = 0 ; sIdx < sChildren.length ; sIdx++ ){
 				
-				this._deserializeSingleControl( sChildren[ sIdx ], fieldData );
+				this._deserializeSingleControl( sChildren[ sIdx ], fieldData, clearEmpty );
 			}
 		}
 		
@@ -730,19 +758,29 @@ var AutoSave = function( rootControls, opts ){
 			
 			for (var fieldIdx = 0 ; fieldIdx < fieldData.length ; ++fieldIdx ) {
 			
-				var fieldValue = fieldData[fieldIdx][child.name];
+				var fieldValue = fieldData[ fieldIdx ][ child.name ];
 		
-				if (fieldValue)
-					child.value = fieldValue;
+				if ( fieldValue !== undefined ) {
+					
+					if ( fieldValue !== "" || clearEmpty )
+						child.value = fieldValue;
+				}
+				//else was missing altogether from field data
 			}
 		}	
 	}
 	
 	//TODO: Make this static?
-	this.deserialize = function( fieldDataStr ){
+	this.deserialize = function( fieldDataStr, clearEmpty ){
 		
 		if ( !fieldDataStr )
 			return; //Nothing to do
+
+		//By default, we clear elements with empty values in the dataset. This is so
+		//	- Reset behaviour can be mimic'd so all fields are cleared
+		//	- Concurrent screen editing behaviour is as expected - i.e. incase another user clears a field
+		if ( clearEmpty === undefined )
+			clearEmpty = true;
 			
 		//Find all children
 		//controlsArr is never null by post-condition of _updateRootControls
@@ -759,7 +797,7 @@ var AutoSave = function( rootControls, opts ){
 
 			var child = controlsArr[ idx ];
 			
-			this._deserializeSingleControl( child, fieldData );
+			this._deserializeSingleControl( child, fieldData, clearEmpty );
 		}
 	}
 	
