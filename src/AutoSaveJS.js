@@ -33,6 +33,7 @@ var AutoSave = function( rootControls, opts ){
 		opts = opts || {};
 
 		var allowedOpts = [ "dataStore", "autoSaveTrigger", "autoLoadTrigger",	
+							"onInitialised",
 							"onPreLoad", "onPostLoad", "onPostDeserialize",
 							"onPreSerialize", "onPreStore", "onPostStore" ];
 		
@@ -51,9 +52,17 @@ var AutoSave = function( rootControls, opts ){
 			
 			//Do this after updating root controls as we hook need to hook listeners to them
 			this._updateAutoSaveStrategy( opts.autoSaveTrigger );
-			
+						
 			//Load values into controls on start
 			this._updateLoadStrategy( opts.autoLoadTrigger );
+						
+			//Load string value from control
+			var cb = this.__callbacks.onInitialised;
+		
+			if ( cb ) {
+				
+				cb();
+			}
 		}
 		catch (e) {
 			
@@ -67,9 +76,7 @@ var AutoSave = function( rootControls, opts ){
 	}
 	
 	this._updateLoadStrategy = function( autoLoadTrigger ) {
-		
-		var that = this;
-				
+						
 		if ( autoLoadTrigger === null ) {
 			
 			//User does not want to auto-load
@@ -77,22 +84,8 @@ var AutoSave = function( rootControls, opts ){
 		}
 		else if ( autoLoadTrigger === undefined ){
 			
-			if ( document.readyState == "complete" ){ //TODO: Somehow delay loading to test the looping logic below
-				
-				that.load();
-			}
-			else {
-				
-				//Keep looping until it's ready - compromise between code-size, x-browser compatability
-				var loadIntervalHandle = setInterval( function(){
-			
-					if ( document.readyState == "complete" ){
-					
-						clearInterval( loadIntervalHandle );
-						that.load();
-					}
-				}, AutoSave.DEFAULT_LOAD_CHECK_INTERVAL );
-			}
+			//We know document is loaded as initialisation is only run when document is ready
+			this.load();
 		}
 		else {
 			
@@ -103,13 +96,12 @@ var AutoSave = function( rootControls, opts ){
 	//Runs a manual save
 	this.save = function() {
 		
-		//if (log.debug) User requested save() but...
 		this._executeSave();
 	}
 	
 	//Forces a full load of supplied data
 	this.load = function() {
-		
+				
 		var cb = null; //Callback
 
 		//Load string value from control
@@ -172,7 +164,9 @@ var AutoSave = function( rootControls, opts ){
 	}
 	
 	this._executeSave = function() {
-		
+
+		debug("Executing save...");//if (log.debug) User requested save() but...
+	
 		var cb = null; //Callback
 		
 		//Get controls to serialize - guaranteed to be an array
@@ -1163,8 +1157,30 @@ var AutoSave = function( rootControls, opts ){
 		}
 	}
 	
-	this._initialise(rootControls, opts);
+	//Only run initialisation when loaded so parent element can get loaded, auto-load and hookListeners etc. work
+	AutoSave.whenInitialized(this._initialise.bind(this, rootControls, opts));
+
 };
+
+AutoSave.whenInitialized = function whenInitialized( funcToRun ){
+
+	if ( document.readyState == "complete" ){
+		
+		funcToRun();
+	}
+	else {
+		
+		//Keep looping until it's ready - compromise between code-size, x-browser compatability
+		var loadIntervalHandle = setInterval( function(){
+	
+			if ( document.readyState == "complete" ){
+			
+				clearInterval( loadIntervalHandle );
+				funcToRun();
+			}
+		}, AutoSave.DEFAULT_LOAD_CHECK_INTERVAL );
+	}
+}
 
 AutoSave._encodeFieldDataToString = function _encodeFieldDataToString(fieldData){
 		

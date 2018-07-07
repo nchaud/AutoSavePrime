@@ -1,0 +1,72 @@
+<!--
+	TODO: Move out to demo page @JSBin or something
+-->
+<html>
+<head>
+ 
+  <!-- jQuery UI -->
+  <script src="../../lib/ckeditor/ckeditor.js"></script> 
+  
+  <!-- AutoSaveJS -->
+  <script src="../../src/AutoSaveJS.js"></script> 
+</head>
+
+<body>
+    
+<div>
+	<div id="entry_group">
+	
+		<h1>CKEditor entry test</h1>
+		  
+		<label>
+			Full Name:
+			<input name='fullName'>
+		</label>
+
+		<!-- A CK Editor that's already been initialised -->
+		<label>
+			Address:
+			<textarea name='address'></textarea>
+		</label>
+
+		<!-- A Ck Editor that gets initialised via AutoSave load hook -->
+		<label>
+			Hobbies:
+			<textarea name='hobbies'></textarea>
+		</label>
+	 
+	</div>
+</div>
+	 
+	 
+  <script>
+  
+  	function saveCKEditors(){
+		
+		//Update the underlying textarea for all CKEditor instances
+		for( var i in CKEDITOR.instances )
+			CKEDITOR.instances[ i ].updateElement();
+	}
+	
+	function loadCKEditors(szString){
+		
+		//Initialise all CKEditors
+		var elems = document.querySelectorAll( "textarea" );
+		for(var i=0;i<elems.length;i++){
+			
+			var ckEditor = CKEDITOR.replace( elems[i],{
+				uiColor: '#d9edf7'
+			});
+		}
+	}
+
+	var aSave = new AutoSave( null, {
+		
+		//CKEditor hooks for custom logic
+		onPreSerialize: saveCKEditors,	  //Before serializing controls, ensure underlying textarea is updated from CKEditor UI
+		onPostDeserialize: loadCKEditors //After data is loaded, create CKEditor UI which'll read the data from the textarea's
+	});
+		
+   </script>
+	 
+</body>

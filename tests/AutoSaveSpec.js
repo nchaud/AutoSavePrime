@@ -2545,36 +2545,68 @@ describe("AutoSaveJS", function() {
 		expect(szString).toEqual("fullAddress=1+The+Wilderness%2C+OB6+1PO");
 	});
 	
-	it('autosave_is_triggered_by_inputs_outside_the_watch_range_if_they_belong_to_a_form_being_watched', function(){
+	it('inputs_outside_the_watch_range_trigger_and_get_saved_if_they_belong_to_a_top_level_form_being_watched', function(){
 			
-		expect(1).toEqual(2);
-	});
-	
-	it('works_with_jquery_ui_uniform_js_ck_editor_etc', function(){
+		//TODO: If element is within the current form? Assume nws
+		//opt { seekExternalFormElements : false }
+		//TODO: nested_level_form too - get as we're traversing
 		
-		expect(1).toEqual(2);
-	});
-	
-	it('autosave_gets_triggered_when_pasting', function(){
-	
-		expect(1).toEqual(2);
-	});
+		//Arrange - Create and set a value on the input text box
+		var testFragment = "<form id='internal'>\
+								<input name='fullName'>\
+								<textarea name='description'></textarea>\
+							</form>\
+							<div id='external'>\
+								<div form='internal'>\
+									<input name='age'>\
+									<input name='blood_group'>\
+								</div>\
+								<input name='fullAddress' form='internal'>\
+								<input name='shoeSize'>\
+							</div>";
+		addToSandbox(testFragment);
+		
+		var szString = null;
+		var aSave = createAutoSave("#internal",{
+			dataStore: null,       //Dont want format-specific output in the string 
+			onPreStore: function(str){szString = str;return str;}
+		});
 
-	it('autosave_with_toggling_control_visibility', function(){
-	
-		expect(1).toEqual(2);
-	});
-	
-	
-	it('event/hook notifications during load/save', function(){
-	
-		expect(1).toEqual(2);
+		//Set values inside the form 
+		setValue("[name='fullName']", "Oscar Wilde");
+		setValue("[name='description']", "I like descriptions");
+		
+		//Wait a clear 60 seconds for these triggers to be run
+		jasmine.clock().tick(60*1000);
+		expect(szString).toEqual("fullName=Oscar+Wilde&description=I+like+descriptions");
+		
+		//Now set non-nested external elements
+		setValue("[name='fullAddress']", "1 The Wilderness");
+
+		//Let trigger elapse
+		jasmine.clock().tick(60*1000);
+		expect(szString).toEqual("fullName=Oscar+Wilde&description=I+like+descriptions&fullAddress=1+The+Wilderness");
+
+		//Set nested external elements
+		setValue("[name='age']", "7");
+		setValue("[name='blood_group']", "O");
+		
+		//Let trigger elapse
+		jasmine.clock().tick(60*1000);
+		expect(szString).toEqual("fullName=Oscar+Wilde&description=I+like+descriptions&fullAddress=1+The+Wilderness&age=7&blood_group=O");
+		
+		//Sanity - set external, NON-FORM element
+		setValue("[name='shoeSize']", "5");
+		
+		//Let trigger elapse - should NOT contain the new element's value
+		jasmine.clock().tick(60*1000);
+		expect(szString).toEqual("fullName=Oscar+Wilde&description=I+like+descriptions&fullAddress=1+The+Wilderness&age=7&blood_group=O");
 	});
 	
 	it('all load hooks invoked even if no data to load', function(){
 
 		//Custom load function should be invoked on page load
-		var onPreLoad = false, onPostLoad = true, onPostDeserialize = true;
+		var onPreLoad = false, onPostLoad = false, onPostDeserialize = false, onInitialised = false;
 		var aSave = createAutoSave(null, {
 			
 			dataStore:{
@@ -2587,20 +2619,19 @@ describe("AutoSaveJS", function() {
 			onPreLoad: function(){onPreLoad = true},
 			onPostLoad: function(){onPostLoad = true},
 			onPostDeserialize: function(){onPostDeserialize = true},
+			onInitialised: function(){onInitialised = true}
 		});
 		
 		expect(onPreLoad).toBe(true);
 		expect(onPostLoad).toBe(true);
 		expect(onPostDeserialize).toBe(true);
+		expect(onInitialised).toBe(true);
 	});
 	
-	it('PROGRAMATIC CHANGES HANDLING? DIFF FEATURE? V2?', function(){
-	
-		expect(1).toEqual(2);
-	});
-
+	//'PROGRAMATIC CHANGES HANDLING? DIFF FEATURE? V2?
 	// button serialisation! ALL other inputs covered?
 	 // "Some data was not saved. Are you sure you want to navigate away...?"
+
 	//todo: for each event type, hook different events?
 	//TODO: Many of these in browser for browser-based integration tests OR send native key-press/mouse-moves
 	//todo: allow intercepting autosave ? or just cancel on the pre-serialisation?
@@ -2642,6 +2673,7 @@ describe("AutoSaveJS", function() {
 	 // Never write password fields to debug log
 	 // Documentation for how you would deal with multi-user scenario
 	 // perf test across browsers
+	 // d.ts file
 	 // Works with jQuery UI, CKEditor, etc.
 	 // Retain focus when serialising/deserialising
 	 // How you would add a hook to ensure data only sent when form is validated
@@ -2680,6 +2712,7 @@ describe("AutoSaveJS", function() {
 //TODO: Demo showing multiple identical forms/divs in 1 page
 //TODO: Docs - "Not overly-strict on checking etc., trust your overrides. E.g. uniqueness of key in keyFunc"
 //TODO: Docs - Wrt multiple instances, 1-1 relation between AutoSave and data-store key. Identical items? Need multiple ASJ's.
+	 //demo where some controls loaded on demand
 	//'hook can be used for inspection without modifying' - no return value
 
   	 
