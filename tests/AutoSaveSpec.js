@@ -2545,8 +2545,28 @@ describe("AutoSaveJS", function() {
 		expect(szString).toEqual("fullAddress=1+The+Wilderness%2C+OB6+1PO");
 	});
 	
-	it('inputs_outside_the_watch_range_trigger_and_get_saved_if_they_belong_to_a_top_level_form_being_watched', function(){
-			
+	it('autosave trigger setup on ck editor', function(){
+		
+		throw 10;
+	});
+	
+	it('autosave trigger does not listen to external inputs if option not specified to do so', function(){
+		
+		throw 10;
+	});
+	
+	it('deserialise into external form controls', function(){
+		
+		throw 10;
+	});
+	
+	it('lazy added + external controls', function(){
+		
+		throw 10;
+	});
+	
+	it('inputs outside the watch range trigger and get saved if they belong to a top level form being watched', function(){
+		
 		//TODO: If element is within the current form? Assume nws
 		//opt { seekExternalFormElements : false }
 		//TODO: nested_level_form too - get as we're traversing
@@ -2568,7 +2588,7 @@ describe("AutoSaveJS", function() {
 		
 		var szString = null;
 		var aSave = createAutoSave("#internal",{
-			dataStore: null,       //Dont want format-specific output in the string 
+			dataStore: null,       //Dont want format-specific output in the string
 			onPreStore: function(str){szString = str;return str;}
 		});
 
@@ -2578,14 +2598,14 @@ describe("AutoSaveJS", function() {
 		
 		//Wait a clear 60 seconds for these triggers to be run
 		jasmine.clock().tick(60*1000);
-		expect(szString).toEqual("fullName=Oscar+Wilde&description=I+like+descriptions");
+		expect(szString).toEqual("fullName=Oscar+Wilde&description=I+like+descriptions&age=&blood_group=&fullAddress=");
 		
-		//Now set non-nested external elements
+		//Now set non-nested external elements - should trigger a save
 		setValue("[name='fullAddress']", "1 The Wilderness");
 
 		//Let trigger elapse
 		jasmine.clock().tick(60*1000);
-		expect(szString).toEqual("fullName=Oscar+Wilde&description=I+like+descriptions&fullAddress=1+The+Wilderness");
+		expect(szString).toEqual("fullName=Oscar+Wilde&description=I+like+descriptions&age=&blood_group=&fullAddress=1+The+Wilderness");
 
 		//Set nested external elements
 		setValue("[name='age']", "7");
@@ -2593,14 +2613,15 @@ describe("AutoSaveJS", function() {
 		
 		//Let trigger elapse
 		jasmine.clock().tick(60*1000);
-		expect(szString).toEqual("fullName=Oscar+Wilde&description=I+like+descriptions&fullAddress=1+The+Wilderness&age=7&blood_group=O");
+		expect(szString).toEqual("fullName=Oscar+Wilde&description=I+like+descriptions&age=7&blood_group=O&fullAddress=1+The+Wilderness");
 		
 		//Sanity - set external, NON-FORM element
+		szString = "_RESET_";
 		setValue("[name='shoeSize']", "5");
 		
 		//Let trigger elapse - should NOT contain the new element's value
 		jasmine.clock().tick(60*1000);
-		expect(szString).toEqual("fullName=Oscar+Wilde&description=I+like+descriptions&fullAddress=1+The+Wilderness&age=7&blood_group=O");
+		expect(szString).toEqual("_RESET_"); //i.e. unchanged
 	});
 	
 	it('all load hooks invoked even if no data to load', function(){
@@ -2728,6 +2749,7 @@ describe("AutoSaveJS", function() {
 								 // Behaviour *NOT* supported
 	 // IE7+, It's fast - performance tests... 
 	 
+	 //Document: IF you suply a custom function for root control set - wont be re-hooked wrt listeners, no external form elems will work etc
 		// JSFiddle with various examples
 		//Link to perf test vs jquery Serialize/Deserialize
 		//Demo using hooks to show a 'loading...' and 'saving...' indicator

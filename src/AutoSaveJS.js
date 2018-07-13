@@ -32,7 +32,7 @@ var AutoSave = function( rootControls, opts ){
 	
 		opts = opts || {};
 
-		var allowedOpts = [ "dataStore", "autoSaveTrigger", "autoLoadTrigger",	
+		var allowedOpts = [ "dataStore", "autoSaveTrigger", "autoLoadTrigger", "seekExternalFormElements",
 							"onInitialised",
 							"onPreLoad", "onPostLoad", "onPostDeserialize",
 							"onPreSerialize", "onPreStore", "onPostStore" ];
@@ -44,14 +44,15 @@ var AutoSave = function( rootControls, opts ){
 			this.__callbacks = opts;		//TODO: Means it can be dynamic ?? But should be set explicitly for future compatability!
 			
 			//Sequencing is important here :-
+			var seekExternalFormElements = this._parseExternalElemsArg( opts.seekExternalFormElements );
 			
-			this._updateRootControls( parentElement );
+			this._updateRootControls( parentElement, seekExternalFormElements );
 			
 			//Do this after updating root controls as we require the names of the top-level forms
 			this._updateDataStore( opts.dataStore );
 			
 			//Do this after updating root controls as we hook need to hook listeners to them
-			this._updateAutoSaveStrategy( opts.autoSaveTrigger );
+			this._updateAutoSaveStrategy( opts.autoSaveTrigger, seekExternalFormElements );
 						
 			//Load values into controls on start
 			this._updateLoadStrategy( opts.autoLoadTrigger );
@@ -411,7 +412,7 @@ var AutoSave = function( rootControls, opts ){
 	
 		
 	//This function sets up when to save the state
-	this._updateAutoSaveStrategy = function(saveTrigger){
+	this._updateAutoSaveStrategy = function( saveTrigger, seekExternalFormElements ){
 					
 		//TODO: Dispose existing ones
 		
@@ -455,10 +456,10 @@ var AutoSave = function( rootControls, opts ){
 		}
 			
 		//Default strategy - on control leave, select change etc.
-		this._hookListeners(true);
+		this._hookListeners( true, seekExternalFormElements );
 	}
 
-	this._updateRootControls = function( parentElement ) {
+	this._updateRootControls = function( parentElement, seekExternalFormElements ) {
 	
 		if ( !parentElement ) { //Both undefined (so they neednt specify) and null (so they can skip over to set opts)
 		
@@ -474,13 +475,19 @@ var AutoSave = function( rootControls, opts ){
 			
 				var rawUserInput = parentElement();	//TODO: Context in which this is invoked?
 				
-				if (!rawUserInput){
+				if ( !rawUserInput ){
 					
 					return []; //Always standardise to an array
 				}
 				else{
 					
 					var elemsArr = this._getControlsFromUserInput( rawUserInput );
+					
+					if ( seekExternalFormElements ){
+						
+						throw new Error("TODO")
+					}
+					
 					return elemsArr;
 				}
 			};
@@ -505,6 +512,29 @@ var AutoSave = function( rootControls, opts ){
 				throw new Error("'rootControls' parameter resolved to zero elements - maybe your selector(s) werent right?");
 			}
 			
+		
+			//Find all elements that use a 'form=...' attribute explicitly and assume they're outside the root control set so capture them
+			if ( seekExternalFormElements ) {
+				
+				
+				
+				//TODO: An explicit JS static method which can also take a string of form names
+
+
+				
+				var formNames = this.__getFormNames( elems );
+				
+				if ( formNames.length ){
+					
+					var externalElems = this.__getExternalFormControls( formNames );
+					
+					for( var idx = 0; idx < externalElems.length; idx++ ){
+						
+						elems.push( externalElems[ idx ] );
+					}
+				}
+			}
+		
 			this.__getRootControlsFunc = function() {
 			
 				return elems;
@@ -512,61 +542,91 @@ var AutoSave = function( rootControls, opts ){
 		}
 	}
 
+	this.__getFormNames = function ( elems ){
+
+		var formNames = [];
+		
+		for( var idx = 0; idx < elems.length; idx++ ){
+			
+			var elem = elems[ idx ];
+			
+			if ( elem.nodeName == "FORM" ){
+				
+				var id = elem.getAttribute( "id" );			//TODO: Make get prop here and below ??
+				if ( id ){
+					
+					formNames.push( id );
+				}
+			}
+				
+			var nestedForms = elem.querySelectorAll( "form" );
+			
+			for(var nIdx = 0; nIdx < nestedForms.length; nIdx++){
+				
+				var nElem = nestedForms[ nIdx ];
+				
+				if ( nElem.nodeName == "FORM" ){
+					
+					var id = elem.getAttribute( "id" );
+					if ( id ){
+						
+						formNames.push( id );
+					}
+				}
+			}
+		}
+		
+		return formNames;
+	}
 	
-	this._hookListeners = function(hookOn){ //TODO: If controls have changed since hook on was called - through user func etc.
+	this._hookListeners = function ( hookOn, seekExternalFormElements ){ 
+
+		//TODO: If controls have changed since hook on was called - through user func etc.
 
 		//controlsArr is never null by post-condition of _updateRootControls
 		var controlsArr = this.__getRootControlsFunc();
 
-		//Let browser know we only listen passively
 		//TODO: Test: If control change triggers another? Should be captured by timeout
-		var listenOpts = {passive:true, capture:true};
 		
 		//TODO: Support for options object? - https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
-		for(var ctrlIdx=0; ctrlIdx<controlsArr.length; ctrlIdx++){
+		//var formNames = [];
+		for( var ctrlIdx=0; ctrlIdx<controlsArr.length; ctrlIdx++ ){
 			
-			var child = controlsArr[ctrlIdx];
+			var child = controlsArr[ ctrlIdx ];
 			//TODO: These are only user-initiated changes - what about programmatic/code changes?			
 			
-			// var eventName = null;
-			// if (child.nodeName == "INPUT"){
-			
-				// //Due to browser support / 'historic reasons', we switch to change event here
-			    // if (child.type == "radio" || child.type == "checkbox") {
-
-					// eventName = "change";
-				// }
-				// else {
+			//If it's a form, we need to listen for all external inputs that are associated with this
+			// if ( child.nodeName == "FORM" ){
+				
+				// var formName = child.getAttribute("id");
+				// if ( formName ){
 					
-					// eventName = "input";
+					// formNames.push( formName );
 				// }
 			// }
-			// else {
-				
-				// eventName = "change";
-			// }
-				
-			// console.log(">>hooking into ", child, eventName)
-				
 			
-			if (hookOn) {
-				
-				//'change' event is primarily for checkboxes and radios for browsers - 'historical reasons'
-				//But we can hook both as we'll debounce changes anyway
-				child.addEventListener( "input",  this, listenOpts );
-				child.addEventListener( "change", this, listenOpts );
-			}
-			else {
-				
-				child.removeEventListener( "input",  this, listenOpts );
-				child.removeEventListener( "chnage", this, listenOpts );
-			}
-			//TODO: What about whilst typing? Neither of these will fire...
+			this._hookSingleControl ( child, hookOn );
+		}
+	}
+	
+	this._hookSingleControl = function ( child, hookOn ){
+
+		//TODO: What about whilst typing? Neither of these will fire ?
+		if (hookOn) {
 			
+			//'change' event is primarily for checkboxes and radios for browsers - 'historical reasons'
+			//But we can hook both as we'll debounce changes anyway
+			child.addEventListener( "input",  this, AutoSave.__defaultListenOpts );
+			child.addEventListener( "change", this, AutoSave.__defaultListenOpts );
+		}
+		else {
+			
+			child.removeEventListener( "input",  this, AutoSave.__defaultListenOpts );
+			child.removeEventListener( "chnage", this, AutoSave.__defaultListenOpts );
 		}
 	}
 		
-	this.handleEvent = function(ev){
+	this.handleEvent = function (ev){
 		
 		//todo; add proper debug level logging 
 		//console.log(">>Handling event", ev, this);
@@ -589,12 +649,25 @@ var AutoSave = function( rootControls, opts ){
 		this._executeSave();
 	}
 	
+	this._parseExternalElemsArg = function( seekExternalFormElements ){
+		
+		//Default hook external controls to true
+		if ( seekExternalFormElements === undefined )
+			seekExternalFormElements = true;
+		else if ( seekExternalFormElements === false )
+		{ /* Valid */ }
+		else
+			throw new Error( "Unexpected type for parameter 'seekExternalFormElements'" );
+
+		return seekExternalFormElements;
+	}
+	
 	this.dispose = function( deleteDataStore ) {
 		
 		//Detach listeners
 		try {
 			
-			this._hookListeners( false );
+			this._hookListeners( false, null );
 		}
 		catch(e){
 			
@@ -797,7 +870,7 @@ var AutoSave = function( rootControls, opts ){
 	
 	
 	//Looks at a single control and it's children and returns an array of serialised object strings
-	this._serializeSingleControl = function( child, fieldData ){
+	this._serializeSingleControl = function( child, fieldData){ //}, collectFormNames ){
 	
 		var nameKey = child.name;
 		var value = child.value;
@@ -876,13 +949,23 @@ var AutoSave = function( rootControls, opts ){
 		//TODO: Button,  etc.
 		
 		
-		else{
+		else {
+		
+			// if ( collectFormNames !== null &&		//If its an array, in capture mode
+				 // child.nodeName == "FORM" ) {
+				
+				// var formName = child.getAttribute( "id" );
+				// if ( formName ){
+					
+					// collectFormNames.push( formName );
+				// }
+			// }
 		
 			//May be, e.g., a form or div so go through all children
 			var sChildren = child.children;
 			for( var sIdx = 0 ; sIdx < sChildren.length ; sIdx++ ){
 				
-				this._serializeSingleControl( sChildren[ sIdx ], fieldData );
+				this._serializeSingleControl( sChildren[ sIdx ], fieldData );//, collectFormNames );
 			}
 		}
 	}
@@ -890,17 +973,37 @@ var AutoSave = function( rootControls, opts ){
 	//TODO: Make this static?
 	//	For any forms in this set, find any forms (Phase II)
 	//		Find all controls associated to these forms globally
+	this.__getExternalFormControls = function( formIds ){
+
+		//Distinct form names used
+		formIds = formIds.filter( this._uniq );
+		
+		//Find all elements that use a 'form=...' attribute explicitly and assume they're outside the root control set so capture them
+		var selector = "[form='"+formIds.join("'],[form='")+"']";
+		var externalElems = document.querySelectorAll( selector );
+		
+		return externalElems;
+	}
 	
 	//Returns the serialized string in the standard format(?) - 
 	//Must return a string instance - even if empty - as callback hooks assume it
-	this.serialize = function(rootControlsArr){
+	this.serialize = function( rootControlsArr ){
 		
 		var fieldData = [];	//TODO: Make it a [ [,], [,]] where first element is keys, second is values
+		var formNames = [];
 		
-		for(var idx=0;idx<rootControlsArr.length;++idx) {
+		for( var idx=0 ; idx<rootControlsArr.length ; ++idx ) {
 		
-			this._serializeSingleControl(rootControlsArr[idx], fieldData);
+			this._serializeSingleControl( rootControlsArr[ idx ], fieldData, null );//, formNames );
 		}
+		
+		//Find all elements that use a 'form=...' attribute explicitly and assume they're outside the root control set so capture them
+		// var externalElems = this.__getExternalFormControls( formNames );
+		
+		// for( var idx=0 ; idx<externalElems.length ; ++idx ) {
+		
+			// this._serializeSingleControl( externalElems[ idx ], fieldData, null );
+		// }
 		
 		var fieldDataStr = AutoSave._encodeFieldDataToString( fieldData );
 		
@@ -908,6 +1011,10 @@ var AutoSave = function( rootControls, opts ){
 		return fieldDataStr;
 	}
 	
+	this._uniq = function( value, index, self ) {
+	
+		return self.indexOf(value) === index;
+	}
 	
 	//TODO: setOpt("", "...") for dynamic parameter modification - just pass in a modified options object as before? What if callbacks REMOVED?
 	
@@ -1159,7 +1266,6 @@ var AutoSave = function( rootControls, opts ){
 	
 	//Only run initialisation when loaded so parent element can get loaded, auto-load and hookListeners etc. work
 	AutoSave.whenInitialized(this._initialise.bind(this, rootControls, opts));
-
 };
 
 AutoSave.whenInitialized = function whenInitialized( funcToRun ){
@@ -1435,5 +1541,6 @@ AutoSave.DEFAULT_LOAD_CHECK_INTERVAL = 100;    //Every 100 seconds, check if it'
 AutoSave.DEFAULT_DEBOUNCE_INTERVAL   = 3*1000; //By default, autosave every 3 seconds
 AutoSave.DEFAULT_KEY_PREFIX = "AutoSaveJS_";
 AutoSave.__keysInUse = [];
+AutoSave.__defaultListenOpts = { passive:true, capture:true };		//Let browser know we only listen passively so it can optimise
 AutoSave.__cachedLocalStorageAvailable;
 AutoSave.Version = "1.0.0";
