@@ -53,10 +53,10 @@ var AutoSave = function( rootControls, opts ){
 			
 			//Do this after updating root controls as we hook need to hook listeners to them
 			this._updateAutoSaveStrategy( opts.autoSaveTrigger, seekExternalFormElements );
-						
+			
 			//Load values into controls on start
 			this._updateLoadStrategy( opts.autoLoadTrigger );
-						
+			
 			//Load string value from control
 			var cb = this.__callbacks.onInitialised;
 		
@@ -162,6 +162,8 @@ var AutoSave = function( rootControls, opts ){
 		cb = this.__callbacks.onPostDeserialize;
 		if ( cb )
 			cb();
+		
+		
 	}
 	
 	this._executeSave = function() {
@@ -416,16 +418,16 @@ var AutoSave = function( rootControls, opts ){
 					
 		//TODO: Dispose existing ones
 		
-		if (saveTrigger === null){
+		if ( saveTrigger === null ){
 			
 			//Only when invoked - i.e. do nothing
 			return;
 		}
-		else if (saveTrigger === undefined) {
+		else if ( saveTrigger === undefined ) {
 
-			this.__debounceInterval = AutoSave.DEFAULT_DEBOUNCE_INTERVAL;
+			this.__debounceInterval = AutoSave.DEFAULT_AUTOSAVE_INTERVAL;
 		}
-		else if (typeof(saveTrigger) == "object") {
+		else if ( typeof( saveTrigger ) == "object" ) {
 
 			var allowedOpts = [ "debounceInterval" ];
 			
@@ -434,9 +436,9 @@ var AutoSave = function( rootControls, opts ){
 			//At regular intervals in milliseconds
 			var debounceInterval = saveTrigger.debounceInterval;
 			
-			if (typeof debounceInterval == "number") {
+			if ( typeof debounceInterval == "number" ) {
 			
-				if (debounceInterval < 50){ //Must be a mistake
+				if ( debounceInterval < 50 ){ //Must be a mistake
 				
 					throw new Error( "The 'debounceInterval' must be specified in milliseconds" );
 				}
@@ -558,19 +560,21 @@ var AutoSave = function( rootControls, opts ){
 					formNames.push( id );
 				}
 			}
+			else
+			{
+				var nestedForms = elem.querySelectorAll( "form" );
 				
-			var nestedForms = elem.querySelectorAll( "form" );
-			
-			for(var nIdx = 0; nIdx < nestedForms.length; nIdx++){
-				
-				var nElem = nestedForms[ nIdx ];
-				
-				if ( nElem.nodeName == "FORM" ){
+				for(var nIdx = 0; nIdx < nestedForms.length; nIdx++){
 					
-					var id = elem.getAttribute( "id" );
-					if ( id ){
+					var nElem = nestedForms[ nIdx ];
+					
+					if ( nElem.nodeName == "FORM" ){
 						
-						formNames.push( id );
+						var id = nElem.getAttribute( "id" );
+						if ( id ){
+							
+							formNames.push( id );
+						}
 					}
 				}
 			}
@@ -622,7 +626,7 @@ var AutoSave = function( rootControls, opts ){
 		else {
 			
 			child.removeEventListener( "input",  this, AutoSave.__defaultListenOpts );
-			child.removeEventListener( "chnage", this, AutoSave.__defaultListenOpts );
+			child.removeEventListener( "change", this, AutoSave.__defaultListenOpts );
 		}
 	}
 		
@@ -1538,7 +1542,7 @@ AutoSave.resetAll = function(){
 
 //todo: be consistent wrt usage of null vs constants, sample code shouldnt break on upgrades from null to constant parameters
 AutoSave.DEFAULT_LOAD_CHECK_INTERVAL = 100;    //Every 100 seconds, check if it's loaded
-AutoSave.DEFAULT_DEBOUNCE_INTERVAL   = 3*1000; //By default, autosave every 3 seconds
+AutoSave.DEFAULT_AUTOSAVE_INTERVAL   = 3*1000; //By default, autosave every 3 seconds
 AutoSave.DEFAULT_KEY_PREFIX = "AutoSaveJS_";
 AutoSave.__keysInUse = [];
 AutoSave.__defaultListenOpts = { passive:true, capture:true };		//Let browser know we only listen passively so it can optimise

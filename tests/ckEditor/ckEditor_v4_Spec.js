@@ -126,7 +126,7 @@ describe("AutoSaveJS+CKEditor", function() {
 	
 	function loadCKEditors(){
 		
-		//Create all CKEditors if they havent already been
+		//Create all CKEditors if they havent already been. We're using the whole document but you could selectively change this
 		var elems = document.querySelectorAll( "textarea" );
 		
 		var newlyCreatedIds = [];
@@ -138,23 +138,30 @@ describe("AutoSaveJS+CKEditor", function() {
 			if ( !elemName )
 				throw new Error( "All textarea elements must have a name" );
 			
-			if ( !CKEDITOR.instances[ elemName ]) {
+			if ( !CKEDITOR.instances[ elemName ] ) {
 				
 				newlyCreatedIds.push( elemName );
 				
 				CKEDITOR.replace( elems[ i ],{
-					uiColor: '#d9edf7'
+					uiColor: '#d9edf7', //Light blue
+					on: {
+							change: function( evt ) {
+							
+								evt.editor.updateElement();//This will update the textarea, triggering a (debounced) auto-save
+							}
+						}
 				});
 			}
+			//already created
 		}
 		
-		//Update CKEDITOR instances from <textarea> inputs
+		//Update all existing CKEDITOR instances from <textarea> inputs, incase user has requested a .load() with perhaps updated serialised data
 		for( var i in CKEDITOR.instances ) {	
 			
 			if ( newlyCreatedIds.indexOf( i ) == -1 ){
 			
-				//Update the UI based on the textarea
-				CKEDITOR.instances["address"].setData();	
+				//Update the UI based on the textarea initial value
+				CKEDITOR.instances[ i ].setData();
 			}
 			//else do nothing as we just created this element from the textarea so its up to date
 		}
@@ -165,40 +172,7 @@ describe("AutoSaveJS+CKEditor", function() {
   
   describe('ckEditor v4 hook', function(){
 	
-	it('serialises values from CKEditor widgets', function(){
-	
-		jasmine.getFixtures().load("ckEditor_v4_Fragment.html");
-		
-		var szString;
-		var aSave = createAutoSave( null,{
-			
-			//CKEditor hooks for custom logic
-			onPreSerialize: saveCKEditors,	  //Before serializing controls, ensure underlying textarea is updated from CKEditor UI
-			onPostDeserialize: loadCKEditors, //After data is loaded, create CKEditor UI which'll read the data from the textarea's
-			
-			//Test data-store
-			dataStore: {
-				load: function( key, callback ){ callback( null ) }, //Initially, no data to load => null
-				save: function( key, stringValue, callback ){
-					
-					szString = stringValue;
-					callback();
-				}
-			}
-		});
 
-		//Normal/Control
-		var fullName = document.querySelector("[name='fullName']");
-		$( fullName ).val( "Oscar Wilde" );
-		
-		//Load CKEditors and set the value on the CKEditor itself rather than underlying input
-		CKEDITOR.instances["address"].setData( "10 Downing Street, London, NW1 7FJ" );
-		CKEDITOR.instances["hobbies"].setData( "Football, Cricket and Swimming" );
-
-		aSave.save();
-		expect(szString).toEqual("fullName=Oscar+Wilde&address=10+Downing+Street%2C+London%2C+NW1+7FJ&hobbies=Football%2C+Cricket+and+Swimming");
-	});
-	
 	it('initialises CKEditor instances during load', function(){
 	
 		jasmine.getFixtures().load("ckEditor_v4_Fragment.html");
@@ -283,6 +257,68 @@ describe("AutoSaveJS+CKEditor", function() {
 		expect( CKEDITOR.instances["address"].getData() ).toEqual( "30 Downing Street" );
 	});
 	
+	it('serialises values from CKEditor widgets', function(){
+	
+		jasmine.getFixtures().load("ckEditor_v4_Fragment.html");
+		
+		var szString;
+		var aSave = createAutoSave( null,{
+			
+			//CKEditor hooks for custom logic
+			onPreSerialize: saveCKEditors,	  //Before serializing controls, ensure underlying textarea is updated from CKEditor UI
+			onPostDeserialize: loadCKEditors, //After data is loaded, create CKEditor UI which'll read the data from the textarea's
+			
+			//Test data-store
+			dataStore: {
+				load: function( key, callback ){ callback( null ) }, //Initially, no data to load => null
+				save: function( key, stringValue, callback ){
+					
+					szString = stringValue;
+					callback();
+				}
+			}
+		});
+
+		//Normal/Control
+		var fullName = document.querySelector("[name='fullName']");
+		$( fullName ).val( "Oscar Wilde" );
+		
+		//Load CKEditors and set the value on the CKEditor itself rather than underlying input
+		CKEDITOR.instances["address"].setData( "10 Downing Street, London, NW1 7FJ" );
+		CKEDITOR.instances["hobbies"].setData( "Football, Cricket and Swimming" );
+
+		aSave.save();
+		expect(szString).toEqual("fullName=Oscar+Wilde&address=10+Downing+Street%2C+London%2C+NW1+7FJ&hobbies=Football%2C+Cricket+and+Swimming");
+	});
+
+	//CKEditor doesnt update the underlying textarea normally but we'll do so manually regularly to trigger auto-saves
+	it('autosave is triggered whilst typing in CKEditor', function(){
+	
+		jasmine.getFixtures().load("ckEditor_v4_Fragment.html");
+		
+		var szString;
+		var aSave = createAutoSave( null,{
+			
+			//CKEditor hooks for custom logic
+			onPreSerialize: saveCKEditors,	  //Before serializing controls, ensure underlying textarea is updated from CKEditor UI
+			onPostDeserialize: loadCKEditors, //After data is loaded, create CKEditor UI which'll read the data from the textarea's
+			
+			//Test data-store
+			dataStore: {
+				load: function( key, callback ){ callback( null ) }, //Initially, no data to load => null
+				save: function( key, stringValue, callback ){
+					
+					szString = stringValue;
+					callback();
+				}
+			}
+		});
+		
+		//Set a value
+		CKEDITOR.instances["address"].setData( "10 Downing Street, London, NW1 7FJ" );
+
+		//TODO: We cant test whether the save kicked in as it requires the full blown UI to be running in order to fire change events
+	});
   });
 });
 

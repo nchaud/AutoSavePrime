@@ -124,6 +124,10 @@ describe("AutoSaveJS", function() {
 		
 		sendEvent(elem, "input");
 	}
+	
+	function getValue(elem){
+		return $(elem).val();
+	}
 
 	//Fires the change event by default
 	function setValue(elem, value, eventType){
@@ -1427,7 +1431,7 @@ describe("AutoSaveJS", function() {
 	});
 
 	it('AutoSave.resetAll resets custom-keyed stores', function(){
-		
+				
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<input type='text' name='Reason'><input type='text' name='Cause'>";
 		
@@ -1435,15 +1439,15 @@ describe("AutoSaveJS", function() {
 		
 		/* First set on cookies */
 		
-		//Create with a default key
-		var aSave1 = createAutoSave("[name='Reason']",{
+		//Create with a default key - create all explicitly as helper disposes previous instance
+		var aSave1 = new AutoSave("[name='Reason']",{
 			dataStore:{
 				preferCookies: true
 			}
 		});
 		
 		//Create with a custom key
-		var aSave2 = createAutoSave("[name='Cause']",{
+		var aSave2 = new AutoSave("[name='Cause']",{
 			dataStore:{
 				key: "myCustomKey",
 				preferCookies: true
@@ -1464,20 +1468,23 @@ describe("AutoSaveJS", function() {
 		expect(getBrowserCookie("AutoSaveJS_")).toBeFalsy();
 		expect(getBrowserCookie("AutoSaveJS_myCustomKey")).toBeFalsy();
 		
+		aSave1.dispose( true );
+		aSave2.dispose( true );
+		
 		/* Now do with local storage if available */
 		
 		if ( !AutoSave.isLocalStorageAvailable )
 			return;
 		
 		//Create with a default key - notice how we can create with same key as it's been reset
-		var aSave1 = createAutoSave("[name='Reason']",);
+		var aSave1 = new AutoSave("[name='Reason']");
 		
 		//Create with a custom key
-		var aSave2 = createAutoSave("[name='Cause']",{
+		var aSave2 = new AutoSave("[name='Cause']",{
 			dataStore:{
 				key: "myCustomKey"
 			}
-		});		
+		});
 
 		setValue("[name='Reason']", "So Good");
 		setValue("[name='Cause']", "Just Cause");
@@ -1492,8 +1499,10 @@ describe("AutoSaveJS", function() {
 
 		expect(getLocalStorageElseCookie("AutoSaveJS_")).toBeFalsy();
 		expect(getLocalStorageElseCookie("AutoSaveJS_myCustomKey")).toBeFalsy();
+
+		aSave1.dispose( true );
+		aSave2.dispose( true );
 	});
-	
   });
   
   describe('top level parameters: ', function(){  
@@ -2504,7 +2513,7 @@ describe("AutoSaveJS", function() {
 	});
 
 	
-	it('autosave_is_not_generally_triggered_by_inputs_outside_the_watch_range', function(){
+	it('autosave is not normally triggered by inputs outside the watch range', function(){
 
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<div id='unwatched'>\
@@ -2544,20 +2553,116 @@ describe("AutoSaveJS", function() {
 
 		expect(szString).toEqual("fullAddress=1+The+Wilderness%2C+OB6+1PO");
 	});
-	
-	it('autosave trigger setup on ck editor', function(){
 		
-		throw 10;
-	});
-	
-	it('autosave trigger does not listen to external inputs if option not specified to do so', function(){
+	it('external-form-inputs do not trigger a save if seekExternalFormElements option is turned off', function(){
 		
-		throw 10;
+		//Arrange - Create and set a value on the input text box
+		var testFragment = "<div id='top_level'>\
+								<input name='fullName'>\
+								<form id='internal1'>\
+									<textarea name='description'></textarea>\
+								</form>\
+								<form id='internal2'>\
+									<textarea name='places'></textarea>\
+								</form>\
+							</div>\
+							<div id='external'>\
+								<div form='internal1'>\
+									<input name='age'>\
+									<input name='blood_group'>\
+								</div>\
+								<input name='fullAddress' form='internal2'>\
+								<input name='shoeSize'>\
+							</div>";
+		addToSandbox(testFragment);
+		
+		//Sainty first - do a control test to ensure by default this fragment will cause a save from an external input
+		var szString = null;
+		var aSave = createAutoSave("#top_level",{
+			dataStore: null,       //Dont want format-specific output in the string
+			onPreStore: function(str){szString = str;return str;}
+		});
+
+		//Sanity - set values inside the form 
+		setValue("[name='age']", "17");
+		
+		//Wait a clear 60 seconds for these triggers to be run
+		jasmine.clock().tick(60*1000);
+		expect(szString).toEqual("fullName=&description=&places=&age=17&blood_group=&fullAddress=");
+
+		//Now create an identical one but with the option switched off
+		szString = "_RESET_";
+		aSave = createAutoSave("#top_level",{ //Will cause previous to get disposed
+			dataStore: null,
+			seekExternalFormElements: false, //Option under test
+			onPreStore: function(str){szString = str;return str;}
+		});
+		
+		//Set the external control value
+		setValue("[name='age']", "18");
+		
+		//Wait a clear 60 seconds for these triggers to be run
+		jasmine.clock().tick(60*1000);
+		expect(szString).toEqual("_RESET_"); //No save occurred
+		
+		//Now set a value in the watch range and ensure external control is not in the serialised string either
+		setValue("[name='fullName']", "Oscar Wilde");
+		
+		//Wait a clear 60 seconds for these triggers to be run
+		jasmine.clock().tick(60*1000);
+		expect(szString).toEqual("fullName=Oscar+Wilde&description=&places="); //No age field
 	});
 	
 	it('deserialise into external form controls', function(){
+				
+		//Arrange - Create and set a value on the input text box
+		var testFragment = "<form id='internal'>\
+								<input name='fullName'>\
+								<textarea name='description'></textarea>\
+							</form>\
+							<div id='external'>\
+								<div form='internal'>\
+									<input name='age'>\
+									<input name='blood_group'>\
+								</div>\
+								<input name='fullAddress' form='internal'>\
+								<input name='shoeSize'>\
+							</div>";
+		addToSandbox(testFragment);
 		
-		throw 10;
+		var szString = "fullName=Oscar+Wilde&description=I+like+descriptions&age=7&blood_group=O&fullAddress=1+The+Wilderness&shoeSize=9";
+		var aSave = createAutoSave("#internal",{
+			dataStore: createMockDataStore(szString)
+		});
+
+		//Check internal controls
+		expect(getValue("[name='fullName']")).toEqual("Oscar Wilde");
+		expect(getValue("[name='description']")).toEqual("I like descriptions");
+
+		//External controls
+		expect(getValue("[name='age']")).toEqual("7");
+		expect(getValue("[name='blood_group']")).toEqual("O");
+		expect(getValue("[name='fullAddress']")).toEqual("1 The Wilderness");
+		expect(getValue("[name='shoeSize']")).toEqual(""); //Although set in the serialised string, doesnt belong to this control set
+
+		//Now test with seekExternalFormElements option off
+		resetSandbox();
+		addToSandbox(testFragment);
+
+		var aSave = createAutoSave("#internal",{
+			dataStore: createMockDataStore(szString),
+			seekExternalFormElements: false
+		});
+
+		//Check internal controls
+		expect(getValue("[name='fullName']")).toEqual("Oscar Wilde");
+		expect(getValue("[name='description']")).toEqual("I like descriptions");
+
+		//External controls - all should be blank
+		expect(getValue("[name='age']")).toEqual("");
+		expect(getValue("[name='blood_group']")).toEqual("");
+		expect(getValue("[name='fullAddress']")).toEqual("");
+		expect(getValue("[name='shoeSize']")).toEqual("");
 	});
 	
 	it('lazy added + external controls', function(){
@@ -2565,11 +2670,7 @@ describe("AutoSaveJS", function() {
 		throw 10;
 	});
 	
-	it('inputs outside the watch range trigger and get saved if they belong to a top level form being watched', function(){
-		
-		//TODO: If element is within the current form? Assume nws
-		//opt { seekExternalFormElements : false }
-		//TODO: nested_level_form too - get as we're traversing
+	it('external-form-inputs trigger save and get serialised if they belong to a top-level form being watched', function(){
 		
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<form id='internal'>\
@@ -2624,6 +2725,52 @@ describe("AutoSaveJS", function() {
 		expect(szString).toEqual("_RESET_"); //i.e. unchanged
 	});
 	
+	it('external-form-inputs trigger save and get serialised if they belong to a nested form being watched', function(){
+		
+		//Arrange - Create and set a value on the input text box
+		var testFragment = "<div id='top_level'>\
+								<input name='fullName'>\
+								<form id='internal1'>\
+									<textarea name='description'></textarea>\
+								</form>\
+								<form id='internal2'>\
+									<textarea name='places'></textarea>\
+								</form>\
+							</div>\
+							<div id='external'>\
+								<div form='internal1'>\
+									<input name='age'>\
+									<input name='blood_group'>\
+								</div>\
+								<input name='fullAddress' form='internal2'>\
+								<input name='shoeSize'>\
+							</div>";
+		addToSandbox(testFragment);
+		
+		var szString = null;
+		var aSave = createAutoSave("#top_level",{
+			dataStore: null,       //Dont want format-specific output in the string
+			onPreStore: function(str){szString = str;return str;}
+		});
+
+		//Set values inside the form 
+		setValue("[name='fullName']", "Oscar Wilde");
+		setValue("[name='description']", "I like descriptions");
+		
+		//Wait a clear 60 seconds for these triggers to be run
+		jasmine.clock().tick(60*1000);
+		expect(szString).toEqual("fullName=Oscar+Wilde&description=I+like+descriptions&places=&age=&blood_group=&fullAddress=");
+
+		//Set nested external elements
+		setValue("[name='age']", "17");
+		setValue("[name='fullAddress']", "1 The Wilderness");
+		setValue("[name='shoeSize']", "9"); //Should NOT get saved
+		
+		//Let trigger elapse
+		jasmine.clock().tick(60*1000);
+		expect(szString).toEqual("fullName=Oscar+Wilde&description=I+like+descriptions&places=&age=17&blood_group=&fullAddress=1+The+Wilderness");
+	});
+
 	it('all load hooks invoked even if no data to load', function(){
 
 		//Custom load function should be invoked on page load
@@ -2647,6 +2794,35 @@ describe("AutoSaveJS", function() {
 		expect(onPostLoad).toBe(true);
 		expect(onPostDeserialize).toBe(true);
 		expect(onInitialised).toBe(true);
+	});
+	
+ 
+	it( 'onInitialised hook only invoked when async load is complete', function( done ){
+
+		//Custom load function should be invoked on page load
+		var onInitialised = false;
+		var aSave = createAutoSave( null, {
+			
+			dataStore: {
+				save: function( key, data, saveComplete ){},
+				load: function( key, loadComplete ){
+					
+					//Make it truly async
+					setTimeout(function(){
+						
+						//Simulate load completed
+						loadComplete( null );
+						
+						expect( onInitialised ).toBe( true );
+						done();
+					}, 100);
+				}
+			},
+			
+			onInitialised: function(){ onInitialised = true }
+		});
+		
+		expect ( onInitialised ).toBe ( false );
 	});
 	
 	//'PROGRAMATIC CHANGES HANDLING? DIFF FEATURE? V2?
@@ -2749,6 +2925,7 @@ describe("AutoSaveJS", function() {
 								 // Behaviour *NOT* supported
 	 // IE7+, It's fast - performance tests... 
 	 
+	 //Have version, along with minified file has version at top. see ckEditor top.
 	 //Document: IF you suply a custom function for root control set - wont be re-hooked wrt listeners, no external form elems will work etc
 		// JSFiddle with various examples
 		//Link to perf test vs jquery Serialize/Deserialize

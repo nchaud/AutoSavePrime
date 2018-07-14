@@ -48,15 +48,46 @@
 			CKEDITOR.instances[ i ].updateElement();
 	}
 	
-	function loadCKEditors(szString){
+	function loadCKEditors(){
 		
-		//Initialise all CKEditors
+		//Create all CKEditors if they havent already been. We're using the whole document but you could selectively change this
 		var elems = document.querySelectorAll( "textarea" );
-		for(var i=0;i<elems.length;i++){
+		
+		var newlyCreatedIds = [];
+		for( var i=0 ; i<elems.length ; i++ ){
 			
-			var ckEditor = CKEDITOR.replace( elems[i],{
-				uiColor: '#d9edf7'
-			});
+			var elemName = elems[ i ].name;
+			
+			//In this demo fragment, all areas need a name but can be changed as per your needs
+			if ( !elemName )
+				throw new Error( "All textarea elements must have a name" );
+			
+			if ( !CKEDITOR.instances[ elemName ] ) {
+				
+				newlyCreatedIds.push( elemName );
+				
+				CKEDITOR.replace( elems[ i ],{
+					uiColor: '#d9edf7', //Light blue
+					on: {
+							change: function( evt ) {
+							
+								evt.editor.updateElement();//This will update the textarea, triggering a (debounced) auto-save
+							}
+						}
+				});
+			}
+			//already created
+		}
+		
+		//Update all existing CKEDITOR instances from <textarea> inputs, incase user has requested a .load() with perhaps updated serialised data
+		for( var i in CKEDITOR.instances ) {	
+			
+			if ( newlyCreatedIds.indexOf( i ) == -1 ){
+			
+				//Update the UI based on the textarea initial value
+				CKEDITOR.instances[ i ].setData();
+			}
+			//else do nothing as we just created this element from the textarea so its up to date
 		}
 	}
 
