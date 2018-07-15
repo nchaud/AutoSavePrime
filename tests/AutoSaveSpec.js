@@ -1686,6 +1686,8 @@ describe("AutoSaveJS", function() {
 							"</div>";
 		
 		addToSandbox(testFragment);
+
+		throw "check warning msg instead";
 		
 		var errMsg = "'rootControls' parameter resolved to zero elements - maybe your selector(s) werent right?";
 		
@@ -2665,11 +2667,6 @@ describe("AutoSaveJS", function() {
 		expect(getValue("[name='shoeSize']")).toEqual("");
 	});
 	
-	it('lazy added + external controls', function(){
-		
-		throw 10;
-	});
-	
 	it('external-form-inputs trigger save and get serialised if they belong to a top-level form being watched', function(){
 		
 		//Arrange - Create and set a value on the input text box
@@ -2796,8 +2793,29 @@ describe("AutoSaveJS", function() {
 		expect(onInitialised).toBe(true);
 	});
 	
- 
-	it( 'onInitialised hook only invoked when async load is complete', function( done ){
+	it( 'onInitialised hook invoked even if autoload trigger is off', function(){
+
+		//Custom load function should be invoked on page load
+		var onInitialised = false;
+		var aSave = createAutoSave( null, {
+			
+			autoLoadTrigger: null,	//switch offf
+			dataStore: {
+				save: function( key, data, saveComplete ){},
+				load: function( key, loadComplete ){
+					
+					throw "Sanity check - load should not be attempted";
+				}
+			},
+			
+			onInitialised: function(){ onInitialised = true }
+		});
+		
+		expect ( onInitialised ).toBe ( true );
+	});
+
+	
+	it( 'onInitialised hook only invoked when async load is complete', function(){
 
 		//Custom load function should be invoked on page load
 		var onInitialised = false;
@@ -2807,15 +2825,12 @@ describe("AutoSaveJS", function() {
 				save: function( key, data, saveComplete ){},
 				load: function( key, loadComplete ){
 					
-					//Make it truly async
+					//Make it 'async'
 					setTimeout(function(){
 						
 						//Simulate load completed
 						loadComplete( null );
-						
-						expect( onInitialised ).toBe( true );
-						done();
-					}, 100);
+					}, 1000);
 				}
 			},
 			
@@ -2823,6 +2838,10 @@ describe("AutoSaveJS", function() {
 		});
 		
 		expect ( onInitialised ).toBe ( false );
+
+		//After 1 second, load should complete, init should fire
+		jasmine.clock().tick(1000);
+		expect( onInitialised ).toBe( true );
 	});
 	
 	//'PROGRAMATIC CHANGES HANDLING? DIFF FEATURE? V2?
@@ -2866,7 +2885,7 @@ describe("AutoSaveJS", function() {
 		// Adding support for older browsers via hooks - 
 		// https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
 	 // Never break backwards compatability in future versions : never-break-backwards-compat.com - compatpact.com
-	 // Doesn't require jQuery, doesn't require a form, handles nested forms (illegal?)
+	 // Doesn't require jQuery, doesn't require a form, HTML5 form attribute support for inputs outside the form
 	 // Never write password fields to debug log
 	 // Documentation for how you would deal with multi-user scenario
 	 // perf test across browsers
@@ -2887,6 +2906,7 @@ describe("AutoSaveJS", function() {
 	 // As we're using event handlers, test if us throwing doesn't invoke the remaining handles. If so, try-catch and pipe to errorHandler 
 	 //(by default throws an Error with code)
 	 // Unhook events on elements removed from DOM (?)
+	 // TODO: Dont trigger another save if one already in progress? Queue/throttle it.
 
 
 //TODO: Localisation
@@ -2924,6 +2944,7 @@ describe("AutoSaveJS", function() {
 	 // Undocumented documentation. You can actually change most option parameters at run-time but take no liability for behaviour ! 
 								 // Behaviour *NOT* supported
 	 // IE7+, It's fast - performance tests... 
+	//TODO: All hooks should be proper events and listenable to via 'addEventListener' etc. (?)
 	 
 	 //Have version, along with minified file has version at top. see ckEditor top.
 	 //Document: IF you suply a custom function for root control set - wont be re-hooked wrt listeners, no external form elems will work etc
@@ -2932,6 +2953,9 @@ describe("AutoSaveJS", function() {
 		//Demo using hooks to show a 'loading...' and 'saving...' indicator
 		//Add to NPM/Bower etc.
 	//TODO: Some way of clearing __keysInUse ? AutoSave.disposeAllInstances()? AutoSave.reset({keys:true, localStorage: true, cookies:true})
+			//TODO: What if like $(":input") and input added late?
+
+			//TODO: Example with loading and unloading of HTML content / dynamic content - e.g. flicking through tabs. jQuery UI tabs?
 
 	//TODO: Demo with diffing logic
 	 // As a cheap hosted-service plugin? Over SSL?
