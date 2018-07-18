@@ -1516,6 +1516,104 @@ describe("AutoSaveJS", function() {
 		}).toThrowError("Unexpected parameter 'datastore' in top level options object");
 	});
   
+	it('onLog handler can override default behaviour of logging', function(){
+		
+		//Arrange - Create and set a value on the input text box
+		var testFragment = "<h3>Please enter your preferred musicians:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox(testFragment);
+		
+		//Watch the console for messages
+		var spy = spyOn( console, "info" );
+				
+		var defaultOpt = {
+			onLog:function( level, msg ){
+				
+				if(ctr == 0)
+					return; //Leave as undefined, which shouldn't change anything
+				else if (ctr == 1)
+					return false; //Should cancel the logging altogther
+				else if (ctr == 2)
+					return "Override Test";
+			}
+		};
+		
+		var ctr = 0;
+		var wasCalled = false;
+		var autoSave = createAutoSave(null, defaultOpt);
+		
+		//Setting a value should trigger an auto-save which should log information msg about the same
+		setValue("[name='musician']", "Mozart");
+		jasmine.clock().tick(60*1000);
+		expect(console.info).toHaveBeenCalledWith( 'Executing save: after element changed');
+		
+		spy.calls.reset();
+		
+		ctr = 1;
+		setValue("[name='musician']", "Beethoven");
+		jasmine.clock().tick(60*1000);
+		expect(console.info).not.toHaveBeenCalledWith('Executing save: after element changed');
+		
+		spy.calls.reset();
+		
+		ctr = 2;
+		setValue("[name='musician']", "Debussy");
+		jasmine.clock().tick(60*1000);
+		expect(console.info).not.toHaveBeenCalledWith('Executing save: after element changed');
+		expect(console.info).toHaveBeenCalledWith('Override Test');
+	});
+  
+	it('onLog callback option behaviour is correct - debug level will revert to \'log\' if debug not available', function(){
+
+		var level = console.debug ? "debug" : "info";
+		
+		//Watch the console for messages
+		var spy = spyOn( console, level );
+				
+		var defaultOpt = {
+			onLog:function( level, msg ){
+				
+				if(ctr == 0)
+					return; //Leave as undefined, which shouldn't change anything
+				else if (ctr == 1)
+					return false; //Should cancel the logging altogther
+				else if (ctr == 2)
+					return "Override Test";
+			}
+		};
+		
+		var ctr = 0;
+		var wasCalled = false;
+		var autoSave = createAutoSave(null, {autoLoadTrigger: null}); //Will trigger a debug/info msg
+		
+		//Setting a value should trigger an auto-save which should log information msg about the same
+		expect(console[level]).toHaveBeenCalledWith( 'User requested no auto-load. Skipping...' );
+	});
+  
+	it('onLog callback option behaviour is correct - warn level', function(){
+	
+		//internal_run_onLog_callback( null, 'warn' );
+		expect(1).toEqual(2);
+	});
+  
+	it('onLog callback option behaviour is correct - error level', function(){
+	
+		expect(1).toEqual(2);
+		// try
+		// {
+			// internal_run_onLog_callback( {BAD_ARG:""}, 'error' );
+		// }
+		// catch(e){}
+		
+		// expect( console.error ).toHaveNotBeenCalledWith('Unrecognised top level option \'BAD_ARG\'');
+	});
+	
+	it('how to let user specify streams for logging, enabling/disabling certain level, outputting objects in nice format etc', function(){
+	
+		expect('verify custom payload is output nicely').toEqual(2);
+	});
+	
 	it('parentElement_parameter_need_not_be_a_form', function(){
 	
 		//Arrange - Create and set a value on the input text box

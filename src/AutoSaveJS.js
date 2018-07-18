@@ -14,6 +14,9 @@ var AutoSave = function( rootControls, opts ){
 	this.__debounceTimeoutHandle;
 	this.__dataStoreKeyFunc; 	//Never null after init
 	this.__onInitialiseInvoked;
+	// this.__onLogFunc;
+	// this.__onToggleSaveBarFunc;
+	// this.__onWarnNoStorageFunc;
 	
 	this.__clearEmptyValuesOnLoad; //When keys dont have a value in the data store (e.g....&name=&...), clear out those elements on load
 			//TODO: On reconnect with internet, it'll kick off a reload? Could trash all the users changes !!
@@ -28,7 +31,44 @@ var AutoSave = function( rootControls, opts ){
 	this.__logSink;	//TODO: How do other libraries do this? allow obj or a single method ? if none, console it?
 	//TODO: Also want to use this for notifications in future though ? Events?
 	
+	this.__sendLog = function ( level, msg ){
+
+		 var cb = this.__callbacks.onLog;
+		 if ( cb )
+		 {
+			 var ret = cb( level, msg );
+			 
+			 //See @FUN semantics
+			 if ( ret === false ) {
+				 
+				 //Abort
+				 return
+			 }
+			 else if ( ret === undefined ){
+				 
+				 //continue
+			 }
+			 else {//could be string, object, anything user specifies take as-is
+				 
+				 msg = ret;
+			 }
+		 }
+		 
+ 		 //TODO: Log Levels should correspond to popular logging libraries
+		 AutoSave._logToConsole( level, msg );
+	}
 	
+	// this.__onToggleSaveBar = function (){
+		
+		
+	// }
+	
+	// this.__onWarnNoStorage = function (){
+		
+		// //You can specify css or completely override the JS by specifying a HTML string
+		// //or just return false and do your own thing. Same with above method.
+	// }
+		
 	this._initialise = function( parentElement, opts ) {
 	
 		opts = opts || {};
@@ -46,6 +86,7 @@ var AutoSave = function( rootControls, opts ){
 			this.__callbacks = opts;		//TODO: Means it can be dynamic ?? But should be set explicitly for future compatability!
 						
 			//Sequencing is important here :-
+			
 			var seekExternalFormElements = this._parseExternalElemsArg( opts.seekExternalFormElements );
 			
 			this._updateRootControls( parentElement, seekExternalFormElements );
@@ -63,8 +104,17 @@ var AutoSave = function( rootControls, opts ){
 			
 			//TODO: Investigate what could remain if this instance is set to null? Will timers fire? etc.
 			
+			try {
+				
+				this.__sendLog( AutoSave.LOG_ERROR, "Error during initialisation: " + e.message );
+			}
+			catch (innerE) {
+			
+				//Ignore so we can clean up
+			}
+
 			//Clean up listeners, free up keys allocated etc.
-			this.dispose();
+			this.dispose();				
 			
 			throw e;
 		}
@@ -75,6 +125,7 @@ var AutoSave = function( rootControls, opts ){
 		if ( autoLoadTrigger === null ) {
 			
 			//User does not want to auto-load
+			this.__sendLog( AutoSave.LOG_DEBUG, "User requested no auto-load. Skipping..." );
 			this._handleLoadStepCompleted();
 			return;
 		}
@@ -91,7 +142,8 @@ var AutoSave = function( rootControls, opts ){
 	
 	//Runs a manual save
 	this.save = function() {
-		
+
+		this.__sendLog( AutoSave.LOG_INFO, "Executing save : explicitly triggered" );
 		this._executeSave();
 	}
 	
@@ -105,11 +157,13 @@ var AutoSave = function( rootControls, opts ){
 		
 		if ( cb ) {
 			
+			this.__sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPreLoad" );
 			var rawUserInput = cb();
 		
 			//See @FUN Semantics
 			if (rawUserInput === false) {
 				
+				this.__sendLog( AutoSave.LOG_INFO, "User aborted the load in the onPreLoad handler" );
 				this._handleLoadStepCompleted();
 				return; //Cancel the load
 			}
@@ -120,6 +174,8 @@ var AutoSave = function( rootControls, opts ){
 			else  //Assume it's a custom override
 			{
 				//We already have the data, run callback
+				this.__sendLog( AutoSave.LOG_INFO, "User supplied custom payload for loading in the onPreLoad handler" );
+				this.__sendLog( AutoSave.LOG_DEBUG, "Custom payload", rawUserInput);				
 				this._loadCallbackHandler( rawUserInput );
 				
 				return;
@@ -136,11 +192,14 @@ var AutoSave = function( rootControls, opts ){
 		
 		if ( cb ) {
 			
+			this.__sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPostLoad" );
+			
 			var rawUserInput = cb( szData );
 		
 			//See @FUN Semantics
 			if (rawUserInput === false) {
 				
+				this.__sendLog( AutoSave.LOG_INFO, "User aborted the load in the 'onPostLoad' handler" );
 				this._handleLoadStepCompleted();
 				return; //Cancel the load
 			}
@@ -150,6 +209,8 @@ var AutoSave = function( rootControls, opts ){
 			}
 			else  //Assume it's a custom override - even if null
 			{
+				this.__sendLog( AutoSave.LOG_INFO, "User overwrote loading payload with custom one for loading in the 'onPostLoad' handler" );
+				this.__sendLog( AutoSave.LOG_DEBUG, "Custom payload", rawUserInput );
 				szData = rawUserInput;
 			}
 		}
@@ -157,8 +218,11 @@ var AutoSave = function( rootControls, opts ){
 		this.deserialize( szData, this.__clearEmptyValuesOnLoad );
 
 		cb = this.__callbacks.onPostDeserialize;
-		if ( cb )
+		if ( cb ) {
+			
+			this.__sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPostDeserialize" );
 			cb();
+		}
 		
 		this._handleLoadStepCompleted();
 	}
@@ -174,6 +238,7 @@ var AutoSave = function( rootControls, opts ){
 				var cb = this.__callbacks.onInitialised;
 				if (cb) {
 					
+					this.__sendLog( AutoSave.LOG_DEBUG, "Invoking callback onInitialised" );
 					cb();
 				}
 			}
@@ -185,8 +250,6 @@ var AutoSave = function( rootControls, opts ){
 	}
 	
 	this._executeSave = function() {
-
-		debug("Executing save...");//if (log.debug) User requested save() but...
 	
 		var cb = null; //Callback
 		
@@ -198,6 +261,7 @@ var AutoSave = function( rootControls, opts ){
 		
 		if ( cb ) {
 			
+			this.__sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPreSerialize" );
 			var rawUserInput = cb( controlsArr );
 
 			//See @FUN Semantics
@@ -232,6 +296,7 @@ var AutoSave = function( rootControls, opts ){
 
 		if ( cb ) {
 			
+			this.__sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPreStore" );
 			var rawUserInput = cb( szData );
 			
 			//See @FUN Semantics
@@ -256,11 +321,12 @@ var AutoSave = function( rootControls, opts ){
 	this._onSaveCompleted = function() {
 
 		//Inspection hook for what was sent - should be invoked asychronously after return from store
-		var callback = this.__callbacks.onPostStore;
+		var cb = this.__callbacks.onPostStore;
 		
-		if ( callback ){
+		if ( cb ){
 			
-			callback();
+			this.__sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPostStore" );
+			cb();
 		}		
 	}
 	
@@ -269,6 +335,8 @@ var AutoSave = function( rootControls, opts ){
 	this._updateDataStore = function( dataStore ){
 		
 		var hasLocalStorage = AutoSave.isLocalStorageAvailable();
+		
+		this.__sendLog( AutoSave.LOG_DEBUG, "Has local storage: " +hasLocalStorage );
 		
 		var elems = this.__getRootControlsFunc();
 		
@@ -496,7 +564,8 @@ var AutoSave = function( rootControls, opts ){
 	this._handleDebouncedEvent = function() {
 		
 		this.__debounceTimeoutHandle = null;
-		
+
+		this.__sendLog( AutoSave.LOG_INFO, "Executing save: after element changed" );
 		this._executeSave();
 	}
 	//Parameter should NOT be falsy here - should be handled beforehand by caller based on context
@@ -970,6 +1039,8 @@ var AutoSave = function( rootControls, opts ){
 
 	/* Additional 'classes'  - TODO: Best way whilst encapsulating ?*/
 	var _CookieStore = function( keyFunc ){
+		
+		this.__sendLog( AutoSave.LOG_INFO, "Using cookie storage as local store" );
 		
 		if ( !navigator.cookieEnabled ){
 			
@@ -1471,13 +1542,30 @@ AutoSave.getExternalFormControls = function( elems ){
 }
 
 
-
+AutoSave._logToConsole = function ( logLevel, msg ){
+	
+	if ( logLevel == AutoSave.LOG_DEBUG )
+	{
+		if (console.debug) 
+			console.debug( msg );
+		else
+			console.log( msg ); //Distinguish from info level incase users need it
+	}
+	else if ( logLevel == AutoSave.LOG_INFO )
+		console.info( msg );
+	else if ( logLevel == AutoSave.LOG_WARN )
+		console.warn( msg );
+	else if ( logLevel == AutoSave.LOG_ERROR )
+		console.error( msg );
+	else
+		throw new Error( "Unknown log level: " + logLevel );
+}
 
 //todo: be consistent wrt usage of null vs constants, sample code shouldnt break on upgrades from null to constant parameters
-// AutoSave.MSG_LOG_DEBUG = 100;
-// AutoSave.MSG_LOG_INFO = 101;
-// AutoSave.MSG_LOG_WARN = 102;
-// AutoSave.MSG_LOG_ERROR = 103;
+AutoSave.LOG_DEBUG = 100;
+AutoSave.LOG_INFO = 101;
+AutoSave.LOG_WARN = 102;
+AutoSave.LOG_ERROR = 103;
 // AutoSave.MSG_STORAGE_SUPPORT = 104;
 // AutoSave.MSG_STORAGE_WARNING = 105; /* When about to show user a message that they have no support for autosave */
 // AutoSave.MSG_SAVING_STARTED = 106;
