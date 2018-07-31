@@ -1519,7 +1519,7 @@ describe("AutoSaveJS", function() {
 	it('onLog handler can override default behaviour of logging', function(){
 		
 		//Arrange - Create and set a value on the input text box
-		var testFragment = "<h3>Please enter your preferred musicians:</h3>\
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
 							<input type='text' name='musician'>";
 		
 		addToSandbox(testFragment);
@@ -1529,6 +1529,11 @@ describe("AutoSaveJS", function() {
 				
 		var defaultOpt = {
 			onLog:function( level, msg ){
+				
+				if ( msg != 'Executing save: after element changed' )
+					return; //Some other irrelevant log message
+				
+				expect( level ).toEqual( AutoSave.LOG_INFO );
 				
 				if(ctr == 0)
 					return; //Leave as undefined, which shouldn't change anything
@@ -1546,21 +1551,21 @@ describe("AutoSaveJS", function() {
 		//Setting a value should trigger an auto-save which should log information msg about the same
 		setValue("[name='musician']", "Mozart");
 		jasmine.clock().tick(60*1000);
-		expect(console.info).toHaveBeenCalledWith( 'Executing save: after element changed');
+		expect(console.info).toHaveBeenCalledWith( 'Executing save: after element changed' );
 		
 		spy.calls.reset();
 		
 		ctr = 1;
 		setValue("[name='musician']", "Beethoven");
 		jasmine.clock().tick(60*1000);
-		expect(console.info).not.toHaveBeenCalledWith('Executing save: after element changed');
+		expect(console.info).not.toHaveBeenCalledWith( 'Executing save: after element changed' );
 		
 		spy.calls.reset();
 		
 		ctr = 2;
 		setValue("[name='musician']", "Debussy");
 		jasmine.clock().tick(60*1000);
-		expect(console.info).not.toHaveBeenCalledWith('Executing save: after element changed');
+		expect(console.info).not.toHaveBeenCalledWith( 'Executing save: after element changed' );
 		expect(console.info).toHaveBeenCalledWith('Override Test');
 	});
   
@@ -1570,48 +1575,130 @@ describe("AutoSaveJS", function() {
 		
 		//Watch the console for messages
 		var spy = spyOn( console, level );
+		
+		var autoSave = createAutoSave(null, {autoLoadTrigger: null}); //Will trigger a debug/info msg
+		
+		//Setting a value should trigger an auto-save which should log information msg about the same
+		expect(console[level]).toHaveBeenCalledWith( 'User requested no auto-load. Skipping...' );
+	});
+	
+	it('onLog callback option channels log messages to correct AutoSave instance when multiple are present', function(){
+		
+		//Arrange - Create and set a value on the input text box
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox(testFragment);
+		
+		var num1Called = false, num2Called = false;
+		
+		var autoSave_1 = new AutoSave("#Bad_Selector", 
+			{
+				dataStore:{key:"KEY_1"},
+				
+				onLog:function( level, msg ){
+					
+					//There'll be a lot of log messages so avoid false negatives by checking our expected behaviour wrt particular messages
+					if ( msg == 'Executing save: after element changed' )
+						throw new Exception("Log message appeared in wrong instance");
+					
+					if (msg == "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?"){
+						
+						num1Called = true;
+						expect( level ).toEqual( AutoSave.LOG_WARN );
+					}
+				}
+			});
+			
+		var autoSave_2 = new AutoSave(null, 
+			{
+				dataStore:{key:"KEY_2"},
+				
+				onLog:function( level, msg ){
+					
+					//There'll be a lot of log messages so avoid false negatives by checking our expected behaviour wrt particular messages
+					if ( msg == "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?" )
+						throw new Exception("Log message appeared in wrong instance");
+					
+					if ( msg == 'Executing save: after element changed' ){
+						
+						num2Called = true;
+						expect( level ).toEqual( AutoSave.LOG_INFO );
+					}
+				}
+			});
+
+		setValue("[name='musician']", "Beethoven");
+		jasmine.clock().tick(60*1000);
+		
+		expect( num1Called ).toBe(true);
+		expect( num2Called ).toBe(true);
+		
+		autoSave_1.dispose( true );
+		autoSave_2.dispose( true );
+	});
+  
+	//NB: Error level is hard to test as normally an exception is thrown at the time
+	it('onLog callback option behaviour is correct - warn level', function(){
+	
+		//Watch the console for messages
+		var spy = spyOn( console, "warn" );
 				
 		var defaultOpt = {
 			onLog:function( level, msg ){
+				
+				if ( msg != "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?" )
+					return;
+				
+				expect( level ).toEqual( AutoSave.LOG_WARN );
 				
 				if(ctr == 0)
 					return; //Leave as undefined, which shouldn't change anything
 				else if (ctr == 1)
 					return false; //Should cancel the logging altogther
 				else if (ctr == 2)
-					return "Override Test";
+					return "Warn Override Test";
 			}
 		};
 		
 		var ctr = 0;
 		var wasCalled = false;
-		var autoSave = createAutoSave(null, {autoLoadTrigger: null}); //Will trigger a debug/info msg
 		
 		//Setting a value should trigger an auto-save which should log information msg about the same
-		expect(console[level]).toHaveBeenCalledWith( 'User requested no auto-load. Skipping...' );
-	});
-  
-	it('onLog callback option behaviour is correct - warn level', function(){
-	
-		//internal_run_onLog_callback( null, 'warn' );
-		expect(1).toEqual(2);
-	});
-  
-	it('onLog callback option behaviour is correct - error level', function(){
-	
-		expect(1).toEqual(2);
-		// try
-		// {
-			// internal_run_onLog_callback( {BAD_ARG:""}, 'error' );
-		// }
-		// catch(e){}
+		createAutoSave("#NON_EXISTENT", defaultOpt);
+		expect(console.warn).toHaveBeenCalledWith( "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?" );
 		
-		// expect( console.error ).toHaveNotBeenCalledWith('Unrecognised top level option \'BAD_ARG\'');
+		spy.calls.reset();
+		
+		ctr = 1;
+		createAutoSave("#NON_EXISTENT", defaultOpt);
+		expect(console.warn).not.toHaveBeenCalledWith( "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?" );
+		
+		spy.calls.reset();
+		
+		ctr = 2;
+		createAutoSave("#NON_EXISTENT", defaultOpt);
+		expect(console.warn).not.toHaveBeenCalledWith( "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?" );
+		expect(console.warn).toHaveBeenCalledWith('Warn Override Test');
 	});
+  
 	
-	it('how to let user specify streams for logging, enabling/disabling certain level, outputting objects in nice format etc', function(){
-	
-		expect('verify custom payload is output nicely').toEqual(2);
+	it('a custom object can be specified as the log data', function(){
+		
+		//Watch the console for messages
+		var spy = spyOn( console, "warn" );
+				
+		var defaultOpt = {
+			onLog:function( level, msg ){
+				
+				if ( msg == "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?" )
+					return {nested:{object:100}}
+			}
+		};
+		
+		//Setting a value should trigger an auto-save which should log information msg about the same
+		createAutoSave("#NON_EXISTENT", defaultOpt);
+		expect(console.warn).toHaveBeenCalledWith( {nested:{object:100}} );
 	});
 	
 	it('parentElement_parameter_need_not_be_a_form', function(){
@@ -1767,41 +1854,6 @@ describe("AutoSaveJS", function() {
 		var sentDataValue = testSerialize("#group1");
 		
 		expect(sentDataValue).toEqual("frmMusician=JayZ&Reason=No+Reason");	});
-  });
-		
-	it('autosave parentElement parameter will throw if string, DOM element or jQuery elements not found', function(){
-		
-		//Arrange - Create and set a value on the input text box
-		var testFragment = "<h3>Please choose your preferred musicians:</h3>\
-							<div id='group1'>\
-								<input type='checkbox' name='frmMusician' value='Mozart'>Mozart Van...\
-								<input type='checkbox' name='frmMusician' value='JayZ'>JayZ\
-								<input type='checkbox' name='frmMusician' value='Sipa'>Sipa\
-								<input type='text' name='Reason'>"
-							+
-							"</div><div id='group2'>"+
-								"<input type='text' name='frmAddress'></input>"+
-							"</div>";
-		
-		addToSandbox(testFragment);
-
-		throw "check warning msg instead";
-		
-		var errMsg = "'rootControls' parameter resolved to zero elements - maybe your selector(s) werent right?";
-		
-		expect(function(){
-			testSerialize("group1") //Forgot the #
-		}).toThrowError(errMsg);
-		
-		expect(function(){
-			testSerialize($("group1")) //Forgot the #
-		}).toThrowError(errMsg);
-		
-		expect(function(){
-			testSerialize(document.querySelectorAll("group1")) //Forgot the #
-		}).toThrowError(errMsg);
-		
-		testSerialize([]); //Explicit empty array is fine - assume user's hook will provide at runtime.
   });
   
   describe('autosave hooks', function(){

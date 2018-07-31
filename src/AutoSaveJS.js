@@ -14,6 +14,7 @@ var AutoSave = function( rootControls, opts ){
 	this.__debounceTimeoutHandle;
 	this.__dataStoreKeyFunc; 	//Never null after init
 	this.__onInitialiseInvoked;
+	this.__invokeExtBound;
 	// this.__onLogFunc;
 	// this.__onToggleSaveBarFunc;
 	// this.__onWarnNoStorageFunc;
@@ -31,32 +32,6 @@ var AutoSave = function( rootControls, opts ){
 	this.__logSink;	//TODO: How do other libraries do this? allow obj or a single method ? if none, console it?
 	//TODO: Also want to use this for notifications in future though ? Events?
 	
-	this.__sendLog = function ( level, msg ){
-
-		 var cb = this.__callbacks.onLog;
-		 if ( cb )
-		 {
-			 var ret = cb( level, msg );
-			 
-			 //See @FUN semantics
-			 if ( ret === false ) {
-				 
-				 //Abort
-				 return
-			 }
-			 else if ( ret === undefined ){
-				 
-				 //continue
-			 }
-			 else {//could be string, object, anything user specifies take as-is
-				 
-				 msg = ret;
-			 }
-		 }
-		 
- 		 //TODO: Log Levels should correspond to popular logging libraries
-		 AutoSave._logToConsole( level, msg );
-	}
 	
 	// this.__onToggleSaveBar = function (){
 		
@@ -81,9 +56,10 @@ var AutoSave = function( rootControls, opts ){
 		
 		try {
 			
-			this._ensureOptIn( opts, allowedOpts, "top level" );
-			
+			//Set this very first as if there's an initialisation error, startup routine may dispose and may need to log
 			this.__callbacks = opts;		//TODO: Means it can be dynamic ?? But should be set explicitly for future compatability!
+			
+			this._ensureOptIn( opts, allowedOpts, "top level" );
 						
 			//Sequencing is important here :-
 			
@@ -104,15 +80,6 @@ var AutoSave = function( rootControls, opts ){
 			
 			//TODO: Investigate what could remain if this instance is set to null? Will timers fire? etc.
 			
-			try {
-				
-				this.__sendLog( AutoSave.LOG_ERROR, "Error during initialisation: " + e.message );
-			}
-			catch (innerE) {
-			
-				//Ignore so we can clean up
-			}
-
 			//Clean up listeners, free up keys allocated etc.
 			this.dispose();				
 			
@@ -175,7 +142,7 @@ var AutoSave = function( rootControls, opts ){
 			{
 				//We already have the data, run callback
 				this.__sendLog( AutoSave.LOG_INFO, "User supplied custom payload for loading in the onPreLoad handler" );
-				this.__sendLog( AutoSave.LOG_DEBUG, "Custom payload", rawUserInput);				
+				this.__sendLog( AutoSave.LOG_DEBUG, "Custom payload", rawUserInput );
 				this._loadCallbackHandler( rawUserInput );
 				
 				return;
@@ -199,7 +166,7 @@ var AutoSave = function( rootControls, opts ){
 			//See @FUN Semantics
 			if (rawUserInput === false) {
 				
-				this.__sendLog( AutoSave.LOG_INFO, "User aborted the load in the 'onPostLoad' handler" );
+				this.__sendLog( AutoSave.LOG_INFO, "User aborted the load in the onPostLoad handler" );
 				this._handleLoadStepCompleted();
 				return; //Cancel the load
 			}
@@ -209,8 +176,8 @@ var AutoSave = function( rootControls, opts ){
 			}
 			else  //Assume it's a custom override - even if null
 			{
-				this.__sendLog( AutoSave.LOG_INFO, "User overwrote loading payload with custom one for loading in the 'onPostLoad' handler" );
-				this.__sendLog( AutoSave.LOG_DEBUG, "Custom payload", rawUserInput );
+				this.__sendLog( AutoSave.LOG_INFO, "User overwrote loading payload with custom one for loading in the onPostLoad handler" );
+				this.__sendLog( AutoSave.LOG_DEBUG, "Custom load payload", rawUserInput );
 				szData = rawUserInput;
 			}
 		}
@@ -266,7 +233,8 @@ var AutoSave = function( rootControls, opts ){
 
 			//See @FUN Semantics
 			if (rawUserInput === false) {
-				
+
+				this.__sendLog( AutoSave.LOG_INFO, "User aborted the save in the onPreSerialize handler" );
 				return; //Cancel the save
 			}
 			else if (rawUserInput === undefined) { 
@@ -276,11 +244,14 @@ var AutoSave = function( rootControls, opts ){
 			else if (rawUserInput === null) { //User override
 			
 				//Treat as empty - blank out user controls
+				this.__sendLog( AutoSave.LOG_WARN, "User specified an empty override payload for save in the onPreSerialize handler" );
 				controlsArr = [];
 			}
 			else {
 			
 				//Expect a valid definition of controls
+				this.__sendLog( AutoSave.LOG_INFO, "User overwrote saving payload with custom one in the onPreSerialize handler" );
+				this.__sendLog( AutoSave.LOG_DEBUG, "Custom save payload in onPreSerialize handler", rawUserInput );
 				controlsArr = this._getControlsFromUserInput( rawUserInput );
 			}
 		}
@@ -302,6 +273,7 @@ var AutoSave = function( rootControls, opts ){
 			//See @FUN Semantics
 			if (rawUserInput === false) {
 				
+				this.__sendLog( AutoSave.LOG_INFO, "User aborted the save in the onPreStore handler" );
 				return; //Cancel the save
 			}
 			else if (rawUserInput === undefined) { 
@@ -311,6 +283,8 @@ var AutoSave = function( rootControls, opts ){
 			else { 
 			
 				//User input is a valid override string - null implies clearing out local storage
+				this.__sendLog( AutoSave.LOG_INFO, "User overwrote saving payload with custom one in the onPreStore handler" );
+				this.__sendLog( AutoSave.LOG_DEBUG, "Custom save payload in onPreStore handler", rawUserInput );
 				szData = rawUserInput;
 			}
 		}
@@ -336,7 +310,7 @@ var AutoSave = function( rootControls, opts ){
 		
 		var hasLocalStorage = AutoSave.isLocalStorageAvailable();
 		
-		this.__sendLog( AutoSave.LOG_DEBUG, "Has local storage: " +hasLocalStorage );
+		this.__sendLog( AutoSave.LOG_DEBUG, "Has local storage was calculated", hasLocalStorage );
 		
 		var elems = this.__getRootControlsFunc();
 		
@@ -388,7 +362,7 @@ var AutoSave = function( rootControls, opts ){
 			}
 			else {
 				
-				this.__theStore = new _CustomStore( this.__dataStoreKeyFunc, dataStore.save, dataStore.load );
+				this.__theStore = this.__invokeExt( AutoSave.getCtor ( _CustomStore, this.__dataStoreKeyFunc, dataStore.save, dataStore.load ) );
 			}
 		}
 		else {
@@ -397,18 +371,66 @@ var AutoSave = function( rootControls, opts ){
 		}
 	}
 	
+	this.__invokeExt = function( funcToRun ){
+	
+		var prevLogger = AutoSave.log;
 		
+		try{
+			
+			if ( !this.__invokeExtBound )
+				this.__invokeExtBound = this.__sendLog.bind(this);
+			
+			AutoSave.log = this.__invokeExtBound;
+			
+			return funcToRun();
+		}
+		finally{
+			
+			AutoSave.log = prevLogger;
+		}
+	}
+	
+	this.__sendLog = function ( level, msg ){
+
+		 var cb = this.__callbacks.onLog;
+		 if ( cb )
+		 {
+			 var ret = cb( level, msg );
+			 
+			 //See @FUN semantics
+			 if ( ret === false ) {
+				 
+				 //Abort
+				 return
+			 }
+			 else if ( ret === undefined ){
+				 
+				 //continue
+			 }
+			 else {//could be string, object, anything user specifies take as-is
+				 
+				 msg = ret;
+			 }
+		 }
+		 
+ 		 //TODO: Log Levels should correspond to popular logging libraries
+		 AutoSave._logToConsole( level, msg );
+	}
+	
 	//This function sets up when to save the state
 	this._updateAutoSaveStrategy = function( saveTrigger, seekExternalFormElements ){
 		
 		if ( saveTrigger === null ){
 			
 			//Only when invoked - i.e. do nothing
+
+			this.__sendLog( AutoSave.LOG_INFO, "Save trigger was disabled");
 			return;
 		}
 		else if ( saveTrigger === undefined ) {
 
 			this.__debounceInterval = AutoSave.DEFAULT_AUTOSAVE_INTERVAL;
+			this.__sendLog( AutoSave.LOG_INFO, "Save trigger was initialised at default interval", this.__debounceInterval);
 		}
 		else if ( typeof( saveTrigger ) == "object" ) {
 
@@ -428,6 +450,7 @@ var AutoSave = function( rootControls, opts ){
 				else {
 					
 					this.__debounceInterval = debounceInterval;
+					this.__sendLog( AutoSave.LOG_INFO, "Save trigger was initialised at custom interval", this.__debounceInterval);
 				}
 			}
 			else{
@@ -448,7 +471,8 @@ var AutoSave = function( rootControls, opts ){
 	
 		if ( !parentElement ) { //Both undefined (so they neednt specify) and null (so they can skip over to set opts)
 		
-			debug("No parentElement parameter specified - will check whole document for changes")
+		 	this.__sendLog( AutoSave.LOG_DEBUG, "No parent element specified - will use whole document" );
+			
 			parentElement = document.body;	//TODO: Will this capture all? In Node too?
 		}
 		
@@ -462,15 +486,19 @@ var AutoSave = function( rootControls, opts ){
 				
 				if ( !rawUserInput ){
 					
+					this.__sendLog( AutoSave.LOG_INFO, "User specified custom function returned empty set of elements");
 					return []; //Always standardise to an array
 				}
 				else{
 					
 					var elems = this._getControlsFromUserInput( rawUserInput );
 					
+					this.__sendLog( AutoSave.LOG_INFO, "Extracted "+elems.length+" root level controls from user specified input");
+					
 					if ( seekExternalFormElements ){
 						
 						var externalElems = AutoSave.getExternalFormControls( elems );
+						this.__sendLog( AutoSave.LOG_INFO, "Found "+externalElems.length+" external form-linked controls");
 						
 						for( var idx = 0; idx < externalElems.length; idx++ ){
 							
@@ -493,13 +521,18 @@ var AutoSave = function( rootControls, opts ){
 			//Except if explicitly specified an empty [] so continue 
 			if ( !Array.isArray(parentElement) && elems.length == 0){
 				
-				warn("'rootControls' parameter resolved to zero elements - maybe your selector(s) werent right?");
+				this.__sendLog( AutoSave.LOG_WARN, "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?");
+			}
+			else{
+				
+				this.__sendLog( AutoSave.LOG_INFO, "Extracted "+elems.length+" root level controls");
 			}
 		
 			//Find all elements that use a 'form=...' attribute explicitly and assume they're outside the root control set so capture them
 			if ( seekExternalFormElements ) {
 				
 				var externalElems = AutoSave.getExternalFormControls( elems );
+				this.__sendLog( AutoSave.LOG_INFO, "Found "+externalElems.length+" external form-linked controls");
 				
 				for( var idx = 0; idx < externalElems.length; idx++ ){
 					
@@ -517,6 +550,10 @@ var AutoSave = function( rootControls, opts ){
 	
 	this._hookListeners = function ( hookOn, seekExternalFormElements ){ 
 
+		this.__sendLog( AutoSave.LOG_DEBUG, 
+						(hookOn?"Hooking":"Unhooking")+
+						" listeners. Seeking external controls for hooking: "+seekExternalFormElements);
+				
 		//controlsArr is never null by post-condition of _updateRootControls
 		var controlsArr = this.__getRootControlsFunc();
 
@@ -549,8 +586,7 @@ var AutoSave = function( rootControls, opts ){
 		
 	this.handleEvent = function (ev){
 		
-		//todo; add proper debug level logging 
-		//console.log(">>Handling event", ev, this);
+		this.__sendLog( AutoSave.LOG_DEBUG, "Handling raw control input event", ev );
 		
 		//If already have a timer running, return
 		if (this.__debounceTimeoutHandle){
@@ -562,6 +598,8 @@ var AutoSave = function( rootControls, opts ){
 	}
 	
 	this._handleDebouncedEvent = function() {
+		
+		this.__sendLog( AutoSave.LOG_DEBUG, "Handling debounced control input event" );
 		
 		this.__debounceTimeoutHandle = null;
 
@@ -610,6 +648,8 @@ var AutoSave = function( rootControls, opts ){
 				
 				var fullKey = AutoSave.DEFAULT_KEY_PREFIX + rawUserOption;
 				
+				this.__sendLog( AutoSave.LOG_INFO, "Using static provided value for datastore key", fullKey );
+		
 				return function(){
 					
 					return fullKey;
@@ -617,10 +657,17 @@ var AutoSave = function( rootControls, opts ){
 			}
 			else if ( typeof rawUserOption === "function" ){
 				
+				this.__sendLog( AutoSave.LOG_DEBUG, "Using user-supplied function for generating datastore key when required" );
+				
+				var that = this;
 				return function(){
 					
 					//Dynamically recalc every time
-					return AutoSave.DEFAULT_KEY_PREFIX + rawUserOption();
+					var val = AutoSave.DEFAULT_KEY_PREFIX + rawUserOption();
+
+					that.__sendLog( AutoSave.LOG_DEBUG, "Calculated dynamic datastore key to use", val );
+					
+					return val;
 				}
 			}
 			else{
@@ -653,12 +700,16 @@ var AutoSave = function( rootControls, opts ){
 				keyValue = AutoSave.DEFAULT_KEY_PREFIX;
 			}
 			
+			this.__sendLog( AutoSave.LOG_INFO, "Using calculated value for datastore key", keyValue);
+				
 			if ( AutoSave.__keysInUse.indexOf(keyValue) != -1 ){
 				
 				throw new Error("There is already an AutoSave instance with the storage key of '"+keyValue+"'. See the documentation for solutions.")
 			}
 			
 			AutoSave.__keysInUse.push(keyValue);
+			
+			this.__sendLog( AutoSave.LOG_DEBUG, "Updated set of keys in use", AutoSave.__keysInUse );
 			
 			return function(){
 				
@@ -701,7 +752,7 @@ var AutoSave = function( rootControls, opts ){
 		}
 		catch(e){
 			
-			warn("Error unhooking listeners", e);
+			this.__sendLog( AutoSave.LOG_WARN, "Error unhooking listeners", e);
 		}
 
 		//Free this key to be re-used by another AutoSave instance
@@ -720,7 +771,7 @@ var AutoSave = function( rootControls, opts ){
 		}
 		catch(e){
 			
-			warn("Error freeing key", e);
+			this.__sendLog( AutoSave.LOG_WARN, "Error freeing key", e);
 		}
 
 		
@@ -740,7 +791,7 @@ var AutoSave = function( rootControls, opts ){
 		}
 		catch(e){
 			
-			warn("Error resettting store", e);
+			this.__sendLog( AutoSave.LOG_WARN, "Error resetting store", e);
 		}
 	}
 	
@@ -901,8 +952,8 @@ var AutoSave = function( rootControls, opts ){
 		
 			//We only serialise controls with names (else we'll get, e.g., '=Oscar&=Mozart')
 			if ( !nameKey ) {
-				
-				debug("Ignored INPUT node as no name was present", child);
+
+				this.__sendLog( AutoSave.LOG_DEBUG, "Ignored INPUT node as no name was present", child );
 				return;
 			}
 			
@@ -922,8 +973,8 @@ var AutoSave = function( rootControls, opts ){
 		
 			//We only serialise controls with names (else we'll get, e.g., '=Oscar&=Mozart')
 			if ( !nameKey ) {
-				
-				debug("Ignored SELECT node as no name was present", child);
+
+				this.__sendLog( AutoSave.LOG_DEBUG, "Ignored SELECT node as no name was present", child );
 				return;
 			}
 		
@@ -949,8 +1000,8 @@ var AutoSave = function( rootControls, opts ){
 		
 			//We only serialise controls with names (else we'll get, e.g., '=Oscar&=Mozart')
 			if ( !nameKey ) {
-				
-				debug("Ignored TEXTAREA node as no name was present", child);
+
+				this.__sendLog( AutoSave.LOG_DEBUG,"Ignored TEXTAREA node as no name was present", child );
 				return;
 			}
 		
@@ -1008,24 +1059,6 @@ var AutoSave = function( rootControls, opts ){
 			 }
 		}
 	}
-		
-	function warn_if( shouldWarn, __variadic_hint__ ){
-		
-		if ( shouldWarn )
-			console.warn( arguments ); //TOOD: splice first arg
-	}
-	
-	function warn(__variadic_hint__){
-		console.warn(arguments);
-	}
-	
-	function error(__variadic_hint__){
-		console.error(arguments);
-	}
-	
-	function debug(__variadic_hint__){
-		console.log(arguments);
-	}
 
 	//Helper function incase user forgets to return our data from a callback
 	//If they really want to clear out a value, they can pass null
@@ -1040,11 +1073,11 @@ var AutoSave = function( rootControls, opts ){
 	/* Additional 'classes'  - TODO: Best way whilst encapsulating ?*/
 	var _CookieStore = function( keyFunc ){
 		
-		this.__sendLog( AutoSave.LOG_INFO, "Using cookie storage as local store" );
+		AutoSave.log( AutoSave.LOG_INFO, "Using cookie storage as local store" );
 		
 		if ( !navigator.cookieEnabled ){
 			
-			warn("Cookie Store requested but cookies not enabled.");
+			AutoSave.log( AutoSave.LOG_WARN, "Cookie Store requested but cookies not enabled.");
 		}
 
 		this.__currStoreKeyFunc = keyFunc;
@@ -1091,7 +1124,7 @@ var AutoSave = function( rootControls, opts ){
 
 			var cookieParamsStr = AutoSave._buildFullCookieStr( key, data, { neverExpire: true});
 			
-			debug( "Created cookie params string: " + cookieParamsStr );
+			AutoSave.log( AutoSave.LOG_DEBUG, "Created cookie params string", cookieParamsStr );
 			
 			return cookieParamsStr;
 		}
@@ -1103,6 +1136,8 @@ var AutoSave = function( rootControls, opts ){
 	}
 
 	var _LocalStore = function( keyFunc ){
+		
+		AutoSave.log( AutoSave.LOG_INFO, "Using Browser Local Storage as local store" );
 		
 		this.__currStoreKeyFunc = keyFunc;
 		
@@ -1153,6 +1188,8 @@ var AutoSave = function( rootControls, opts ){
 
 	var _NoStore = function( ){
 		
+		AutoSave.log( AutoSave.LOG_INFO, "Using a no-op data store" );
+		
 		this.load = function ( loadCompleted ){
 			
 			loadCompleted( null );
@@ -1176,6 +1213,8 @@ var AutoSave = function( rootControls, opts ){
 	
 	//Assumes save and load parameters are valid functions
 	var _CustomStore = function( keyFunc, userSaveFunc, userLoadFunc ){
+		
+		AutoSave.log( AutoSave.LOG_INFO, "Using a custom store as the local store" );
 		
 		if ( userLoadFunc.length != 2 ) {
 			
@@ -1218,16 +1257,24 @@ var AutoSave = function( rootControls, opts ){
 	}
 	
 	//Only run initialisation when loaded so parent element can get loaded, auto-load and hookListeners etc. work
-	AutoSave.whenInitialized(this._initialise.bind(this, rootControls, opts));
+	
+	
+	//TODO: run in context
+	
+	
+	AutoSave.whenInitialized( this._initialise.bind(this, rootControls, opts) );
 };
 
 AutoSave.whenInitialized = function whenInitialized( funcToRun ){
 
 	if ( document.readyState == "complete" ){
 		
+		AutoSave.log( AutoSave.LOG_DEBUG, "Document is ready - beginning AutoSave initialisation sequence..." );
 		funcToRun();
 	}
 	else {
+		
+		AutoSave.log( AutoSave.LOG_DEBUG, "Document is not ready - polling until ready" );
 		
 		//Keep looping until it's ready - compromise between code-size, x-browser compatability
 		var loadIntervalHandle = setInterval( function(){
@@ -1235,6 +1282,8 @@ AutoSave.whenInitialized = function whenInitialized( funcToRun ){
 			if ( document.readyState == "complete" ){
 			
 				clearInterval( loadIntervalHandle );
+				
+				AutoSave.log( AutoSave.LOG_DEBUG, "Document now ready - beginning AutoSave initialisation sequence..." );
 				funcToRun();
 			}
 		}, AutoSave.DEFAULT_LOAD_CHECK_INTERVAL );
@@ -1250,8 +1299,9 @@ AutoSave._encodeFieldDataToString = function _encodeFieldDataToString(fieldData)
 		var props = Object.getOwnPropertyNames(obj);
 		
 		if(props.length != 1)
-			console.warn("Expected exactly 1 entry in "+obj); //KILL this after we switch to dual-array based impl. Also, warn()?
-			
+			AutoSave.log( AutoSave.LOG_WARN, "Expected exactly 1 entry in", obj );
+		//KILL this after we switch to dual-array based impl. Also, warn()?
+		
 		fieldDataStr += encodeURIComponent(props[0])+"="+encodeURIComponent(obj[props[0]]);
 		
 		if (fieldIdx != fieldData.length-1)
@@ -1298,7 +1348,7 @@ AutoSave._decodeFieldDataFromString = function _decodeFieldDataFromString( field
 		
 		if (items.length != 2) {
 			
-			console.warn("Expected a pair of items separated by '=' in "+pair+". Got "+items.length+". Ignoring...")
+			AutoSave.log( AutoSave.LOG_WARN, "Expected a pair of items separated by '=' in "+pair+". Got "+items.length+". Ignoring...")
 		}
 		else{
 			
@@ -1488,6 +1538,22 @@ AutoSave.resetAll = function(){
 	}
 }
 
+// AutoSave.calloutInContext = function( funcToRun, logger ){
+	
+	// var prevLogger = AutoSave.__currentLogger;
+	
+	// try{
+		
+		// AutoSave.__currentLogger = logger;
+		
+		// funcToRun();
+	// }
+	// finally{
+		
+		// AutoSave.__currentLogger = prevLogger;
+	// }
+// }
+
 AutoSave.getExternalFormControls = function( elems ){
 
 	var formNames = [];
@@ -1542,6 +1608,18 @@ AutoSave.getExternalFormControls = function( elems ){
 }
 
 
+AutoSave.getCtor = function ( constructor , __variadic_args__ ){
+	
+	var currArgs = Array.from(arguments).slice(1); //Bypass constructor argument -- TODO: CHECK SUPPORT OF NEW ARRAY like this
+	
+	return function(){
+		
+		var args = [null].concat(currArgs);
+		var factoryFunction = constructor.bind.apply(constructor, args);
+		return new factoryFunction();
+	}
+}
+
 AutoSave._logToConsole = function ( logLevel, msg ){
 	
 	if ( logLevel == AutoSave.LOG_DEBUG )
@@ -1574,6 +1652,7 @@ AutoSave.LOG_ERROR = 103;
 AutoSave.DEFAULT_LOAD_CHECK_INTERVAL = 100;    //Every 100 seconds, check if it's loaded
 AutoSave.DEFAULT_AUTOSAVE_INTERVAL   = 3*1000; //By default, autosave every 3 seconds
 AutoSave.DEFAULT_KEY_PREFIX = "AutoSaveJS_";
+AutoSave.log = AutoSave._logToConsole; //By default, log to console.
 AutoSave.__keysInUse = [];
 AutoSave.__defaultListenOpts = { passive:true, capture:true };		//Let browser know we only listen passively so it can optimise
 AutoSave.__cachedLocalStorageAvailable;
