@@ -3001,27 +3001,20 @@ describe("AutoSaveJS", function() {
 	//todo: for each event type, hook different events?
 	//TODO: Many of these in browser for browser-based integration tests OR send native key-press/mouse-moves
 	//todo: allow intercepting autosave ? or just cancel on the pre-serialisation?
-	//	autosaveTrigger: { ..., preChangeTriggered: function(){} }
 	//TODO: Changes due to .Load() should not call .Save() 
 	//TODO: *** 'on' string if no name for checkbox/radio *** (as per spec?)
 	//ensure name is available on NPM - e.g. AutoSavePrime
 	// TODO: Unselected select remains unselected 
 	//check jQuery implementation of :input selector
 	// TODO: Check all options of all controls in MDN - e.g. select.multiselect
-	// loadStrategy should wait for all controls to be loaded and fire event on loading
-	// If 'value' is missing on all options? Use text instead?
 	//Post-* method should always be called, even for failure(?) with finally
-	// Failure reporting/propagation/handling ??
 	// If string selector provided for parent-element, should re-calculate on each invocation (how works on loading then?)
-	// Hook for opt-in to jQuery-UI / CKEditor etc. if they're expensive
 	// ensure tests work across all versions of jQuery old and new - when supplied as the parameter        
-	// if radio has no name?
 	// TOOD: ensure ALL form control types are covered wrt triggering an event
 	// TODO: multiple input radio group
 	// TODO: Test with dynamically added or removed controls after serializing + before deserializing
 	
 	 // Without IDs, server-side or client-side auto-saving, jQuery-UI + CKEditor etc. tests,
-	 // If element has value, deserialize over it?
 	 // Way to revert to local storage if no connectivity with my ajax service?
 	 // AutoSave.Serialize, AutoSave.Deserialize, AutoSave.FindControls all static 
 	 // Integrity - won't restore any state if found dodgy? mode=strict|relaxes

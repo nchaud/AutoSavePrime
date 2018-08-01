@@ -15,7 +15,6 @@ var AutoSave = function( rootControls, opts ){
 	this.__dataStoreKeyFunc; 	//Never null after init
 	this.__onInitialiseInvoked;
 	this.__invokeExtBound;
-	// this.__onLogFunc;
 	// this.__onToggleSaveBarFunc;
 	// this.__onWarnNoStorageFunc;
 	
@@ -26,13 +25,7 @@ var AutoSave = function( rootControls, opts ){
 			//		Plus provides for useful "reset" ability
 			//		TODO: Demo with above reset 
 			//		Workaround if this is a problem : Just remove all empty values coming from server-side. TODO: Sample.
-			
-	
-	
-	this.__logSink;	//TODO: How do other libraries do this? allow obj or a single method ? if none, console it?
-	//TODO: Also want to use this for notifications in future though ? Events?
-	
-	
+
 	// this.__onToggleSaveBar = function (){
 		
 		
@@ -719,15 +712,13 @@ var AutoSave = function( rootControls, opts ){
 	}
 	
 	//Returns the value got from invoking the user's onMessage handler
-	this._sendMsg = function( msgCode, data ){
+	// this._sendMsg = function( msgCode, data ){
 		
-		var cb = this.__callbacks.onMessage;
+		// var cb = this.__callbacks.onMessage;
 		
-		if ( !cb )
-			return; //User doesnt want any messages
-		
-		
-	}
+		// if ( !cb )
+			// return; //User doesnt want any messages
+	// }
 	
 	this._parseExternalElemsArg = function( seekExternalFormElements ){
 		
@@ -820,15 +811,11 @@ var AutoSave = function( rootControls, opts ){
 				
 				var foundField = null;
 				
-				for (var fieldIdx = 0 ; fieldIdx < fieldData.length ; ++fieldIdx) {
+				for (var fieldIdx in fieldData[ 0 ] ) {
 				
-					var fieldValue = fieldData[fieldIdx][child.name];
-					
-					var isFieldForThisElement = fieldValue !== undefined;
-					
-					if (isFieldForThisElement){
+					if ( fieldData[ 0 ][ fieldIdx ] == child.name ) {
 						
-						if (fieldValue == child.value) {
+						if ( fieldData[ 1 ][ fieldIdx ] == child.value ) {
 						
 							foundField = true;
 							break;
@@ -844,7 +831,7 @@ var AutoSave = function( rootControls, opts ){
 					
 				if ( foundField === true )
 					child.checked = true;
-				else if ( foundField === false && clearEmpty) //Was of the form ...&fieldName=&...
+				else if ( foundField === false && clearEmpty ) //Was of the form ...&fieldName=&...
 					child.checked = false;
 				//else missing altogether in the field data so leave untouched
 			}
@@ -852,9 +839,9 @@ var AutoSave = function( rootControls, opts ){
 				runStd = true;
 			}
 		}
-		else if (child.nodeName == "SELECT") {
+		else if ( child.nodeName == "SELECT" ) {
 		
-			if (child.type == "select-one") {
+			if ( child.type == "select-one" ) {
 			
 				runStd = true;
 			}
@@ -862,20 +849,21 @@ var AutoSave = function( rootControls, opts ){
 			
 				var sChildren = child.options;
 				
-				for (var childIdx = 0; childIdx < sChildren.length; ++childIdx){	//TODO: NOT optimal - inner looping 
+				for ( var childIdx = 0 ; childIdx < sChildren.length ; childIdx++ ) {
 					
-					var opt = sChildren[childIdx];
+					var opt = sChildren[ childIdx ];
 					
-					for (var fieldIdx = 0 ; fieldIdx < fieldData.length ; ++fieldIdx) {
+					for ( var fieldIdx in fieldData[ 0 ] ) {
 					
-						var fieldValue = fieldData[fieldIdx][child.name];
-						
-						if (fieldValue == opt.value) {
-						
-							opt.selected = true;
-							break;
+						if ( fieldData[ 0 ][ fieldIdx ] == child.name) {
+							
+							if ( fieldData[ 1 ][ fieldIdx ] == opt.value ) {
+							
+								opt.selected = true;
+								break;
+							}
 						}
-					}						
+					}
 				}
 			}
 		}
@@ -891,7 +879,7 @@ var AutoSave = function( rootControls, opts ){
 									
 			//May be, e.g., a form or div so go through all children
 			var sChildren = child.children;
-			for( var sIdx = 0 ; sIdx < sChildren.length ; sIdx++ ){
+			for( var sIdx = 0; sIdx < sChildren.length; sIdx++ ){
 				
 				this._deserializeSingleControl( sChildren[ sIdx ], fieldData, clearEmpty );
 			}
@@ -899,18 +887,22 @@ var AutoSave = function( rootControls, opts ){
 		
 		if (runStd) {
 			
-			for (var fieldIdx = 0 ; fieldIdx < fieldData.length ; ++fieldIdx ) {
+			for ( var fieldIdx in fieldData[ 0 ] ) {
 			
-				var fieldValue = fieldData[ fieldIdx ][ child.name ];
-		
-				if ( fieldValue !== undefined ) {
-					
+				var fieldName = fieldData[ 0 ][ fieldIdx ];
+				
+				if ( fieldName === child.name ){
+				
+					var fieldValue = fieldData[ 1 ][ fieldIdx ];
+						
 					if ( fieldValue !== "" || clearEmpty )
 						child.value = fieldValue;
+					
+					break;
 				}
 				//else was missing altogether from field data
 			}
-		}	
+		}
 	}
 	
 	this.deserialize = function( fieldDataStr, clearEmpty ){
@@ -930,7 +922,7 @@ var AutoSave = function( rootControls, opts ){
 		
 		var fieldData = AutoSave._decodeFieldDataFromString( fieldDataStr );
 		
-		for(var idx=0;idx<controlsArr.length;++idx) {
+		for( var idx = 0; idx < controlsArr.length ; idx++ ) {
 
 			var child = controlsArr[ idx ];
 			
@@ -938,16 +930,15 @@ var AutoSave = function( rootControls, opts ){
 		}
 	}
 	
-	
 	//Looks at a single control and it's children and returns an array of serialised object strings
-	this._serializeSingleControl = function( child, fieldData){
+	this._serializeSingleControl = function( child, fieldData ){
 	
 		var nameKey = child.name;
 		var value = child.value;
 		
-		var obj = {};
-		obj[ nameKey ] = value;
-			
+		//var obj = {};
+		//obj[ nameKey ] = value;
+		
 		if ( child.nodeName == "INPUT" ) {
 		
 			//We only serialise controls with names (else we'll get, e.g., '=Oscar&=Mozart')
@@ -961,12 +952,14 @@ var AutoSave = function( rootControls, opts ){
 			
 				if ( child.checked ) {
 					
-					fieldData.push( obj );
+					fieldData[0].push( nameKey );
+					fieldData[1].push( value );
 				}
 			}
 			else{ //Implicitly an <input type=text|button|password|hidden...>
 			
-				fieldData.push( obj );
+				fieldData[0].push( nameKey );
+				fieldData[1].push( value );
 			}
 		}
 		else if ( child.nodeName == "SELECT" ){
@@ -980,7 +973,8 @@ var AutoSave = function( rootControls, opts ){
 		
 			if ( child.type == "select-one" ){
 			
-				fieldData.push(obj);
+				fieldData[0].push( nameKey );
+				fieldData[1].push( value );
 			}
 			else { //Must be of type == 'select-multiple'
 			
@@ -989,9 +983,8 @@ var AutoSave = function( rootControls, opts ){
 				
 					if ( sChildren[sIdx].selected ) {
 					
-						var sObj = {};	//TODO: re-use obj from above
-						sObj[ nameKey ] = sChildren[ sIdx ].value;
-						fieldData.push( sObj );
+						fieldData[0].push( nameKey );
+						fieldData[1].push( sChildren[ sIdx ].value );
 					}
 				}
 			}
@@ -1005,7 +998,8 @@ var AutoSave = function( rootControls, opts ){
 				return;
 			}
 		
-			fieldData.push( obj );
+			fieldData[0].push( nameKey );
+			fieldData[1].push( value );
 		}
 		
 		
@@ -1027,12 +1021,12 @@ var AutoSave = function( rootControls, opts ){
 	//Must return a string instance - even if empty - as callback hooks assume it
 	this.serialize = function( rootControlsArr ){
 		
-		var fieldData = [];	//TODO: Make it a [ [,], [,]] where first element is keys, second is values
+		var fieldData = [[],[]];
 		var formNames = [];
 		
 		for( var idx=0 ; idx<rootControlsArr.length ; ++idx ) {
 		
-			this._serializeSingleControl( rootControlsArr[ idx ], fieldData, null );
+			this._serializeSingleControl( rootControlsArr[ idx ], fieldData );
 		}
 		
 		var fieldDataStr = AutoSave._encodeFieldDataToString( fieldData );
@@ -1290,23 +1284,18 @@ AutoSave.whenInitialized = function whenInitialized( funcToRun ){
 	}
 }
 
-AutoSave._encodeFieldDataToString = function _encodeFieldDataToString(fieldData){
+AutoSave._encodeFieldDataToString = function _encodeFieldDataToString( fieldData ){
 		
 	var fieldDataStr = "";
-	for(var fieldIdx=0;fieldIdx<fieldData.length;++fieldIdx){
+	for( var fieldIdx in fieldData[0] ){
 		
-		var obj = fieldData[fieldIdx];
-		var props = Object.getOwnPropertyNames(obj);
+		var name  = fieldData[0][fieldIdx];
+		var value = fieldData[1][fieldIdx];
 		
-		if(props.length != 1)
-			AutoSave.log( AutoSave.LOG_WARN, "Expected exactly 1 entry in", obj );
-		//KILL this after we switch to dual-array based impl. Also, warn()?
+		fieldDataStr += encodeURIComponent(name)+"="+encodeURIComponent(value);
 		
-		fieldDataStr += encodeURIComponent(props[0])+"="+encodeURIComponent(obj[props[0]]);
-		
-		if (fieldIdx != fieldData.length-1)
+		if ( fieldIdx != fieldData[0].length-1 )
 			fieldDataStr += "&";
-
 	}
 
 	//Convert %20 to + as per x-www-form-urlencoded protocol
@@ -1339,24 +1328,23 @@ AutoSave._decodeFieldDataFromString = function _decodeFieldDataFromString( field
 	fieldDataStr = curr;
 	
 	//Reconstruct a field data object from the string
-	var fieldData = [];
+	var fieldData = [[],[]];
 	var pairs = fieldDataStr.split("&");
 	for(var pairIdx in pairs){
 		
-		var pair = pairs[pairIdx];
-		var items = pair.split("=");
+		var pair = pairs[ pairIdx ];
+		var items = pair.split( "=" );
 		
-		if (items.length != 2) {
+		if ( items.length != 2 ) {
 			
 			AutoSave.log( AutoSave.LOG_WARN, "Expected a pair of items separated by '=' in "+pair+". Got "+items.length+". Ignoring...")
 		}
 		else{
 			
-			var obj = {};
-			var key = decodeURIComponent(items[0]);
-			var value = decodeURIComponent(items[1]);
-			obj[key] = value;
-			fieldData.push(obj);
+			var key = decodeURIComponent( items[ 0 ] );
+			var value = decodeURIComponent( items[ 1 ] );
+			fieldData[ 0 ].push( key );
+			fieldData[ 1 ].push( value  );
 		}
 	}
 		
@@ -1367,30 +1355,28 @@ AutoSave._decodeFieldDataFromString = function _decodeFieldDataFromString( field
 //TODO: AutoSaveJS should also use this method
 AutoSave.addSerialisedValue = function addSerialisedValue( szString, key, value ){
 	
-	if (!key) {
+	if ( !key ) {
 		
-		throw new Error("No key specified");
+		throw new Error( "No key specified" );
 	}
 	
-	if (value === null || value === undefined) { //Preserve 0 in output string 
+	if ( value === null || value === undefined ) { //Preserve 0 in output string 
 		
 		value = "";
 	}
 	
-	if (!szString) {
+	if ( !szString ) {
 		
 		szString = ""; //Initialise if required
 	}
 		
-	if (szString.length) {
+	if ( szString.length ) {
 		
 		szString += "&";
 	}
 	
-	var obj = {};
-	obj[key]=value;
-	var encoded = AutoSave._encodeFieldDataToString([obj]);
-	
+	var ret=[ [key],[value] ];
+	var encoded = AutoSave._encodeFieldDataToString(ret);
 	szString += encoded;
 	
 	return szString;
@@ -1398,28 +1384,26 @@ AutoSave.addSerialisedValue = function addSerialisedValue( szString, key, value 
 
 
 //Will ALWAYS return a non-null array
-AutoSave.getSerialisedValues = function getSerialisedValues(szString, key){
+AutoSave.getSerialisedValues = function getSerialisedValues( szString, key ){
 	
-	if (!key) {
+	if ( !key ) {
 		
-		throw new Error("No key specified");
+		throw new Error( "No key specified" );
 	}
 	
-	if (!szString) {
+	if ( !szString ) {
 		
 		return [];
 	}
 
-	var decoded = AutoSave._decodeFieldDataFromString(szString);
+	var decoded = AutoSave._decodeFieldDataFromString( szString );
 	
 	var ret = [];
-	for(var i in decoded) {
-
-		var obj = decoded[i];
+	for( var i in decoded[ 0 ] ) {
 		
-		if ( obj.hasOwnProperty(key) ) { //TODO: INHERITED ONES? Keys?
+		if ( decoded[ 0 ][ i ] == key ) { //TODO: INHERITED ONES? Keys?
 			
-			ret.push( obj[key] );
+			ret.push( decoded[ 1 ][ i ] );
 		}
 	}
 
