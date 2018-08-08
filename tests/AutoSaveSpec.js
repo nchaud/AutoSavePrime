@@ -1701,6 +1701,95 @@ describe("AutoSaveJS", function() {
 		expect(console.warn).toHaveBeenCalledWith( {nested:{object:100}} );
 	});
 	
+	it('saving will not run multiple times if 1 is already in progress', function(){
+	
+		expect(1).toEqual(2);
+	});
+	
+	it('onToggleSaveNotification fires at correct time even if save is async', function(){
+	
+		expect(1).toEqual(2);
+	});
+	
+	it('onToggleSaveNotification by default shows an auto-saving banner', function(){
+
+		expect(1).toEqual(2);
+	});
+	
+	it('onToggleSaveNotification default behaviour can be overriden', function(){
+		
+		//Arrange - Create and set a value on the input text box
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox(testFragment);
+		
+		var _currCallback = null; //This is what the save function is expecting to be called to complete the save operation
+		
+		var defaultOpt = {
+			
+			onToggleSaveNotification:function( toggleOn ){
+				
+				//See @FUN semantics
+				if(ctr == 0)
+					return; //Leave as undefined, which shouldn't change anything
+				else if (ctr == 1)
+					return false; //Should cancel the show altogther
+				else if (ctr == 2)
+					return "Override saving text...";
+				else if (ctr == 3)
+					return "<div class='custom'></div>";
+			},
+			dataStore:{
+				load:null,
+				save:function( data, callback ){
+					
+					_currCallback = callback;
+				}
+			}
+		};
+		
+		var ctr = 0;
+		var wasCalled = false;
+		var autoSave = createAutoSave(null, defaultOpt);
+		
+		//Case #1: Setting a value should trigger an auto-save which should trigger showing the save banner
+		setValue("[name='musician']", "Mozart");
+		jasmine.clock().tick(60*1000);
+		expect($(".autosave-notification").length).toEqual(1);
+		
+		//Continue save to reset showing the banner and sanity check
+		_currCallback();
+		_currCallback = null;
+		expect($(".autosave-notification").length).toEqual(0);
+		
+		//Case #2: Notification display should get cancelled
+		ctr = 1;
+		setValue("[name='musician']", "Beethoven");
+		jasmine.clock().tick(60*1000);
+		expect($(".autosave-notification").length).toEqual(0);
+		
+		//Continue save to reset showing the banner and sanity check
+		_currCallback();
+		_currCallback = null;
+
+		//Case #3: Notification display's inner text should get changed
+		ctr = 2;
+		setValue("[name='musician']", "Debussy");
+		jasmine.clock().tick(60*1000);
+		expect($(".autosave-notification .msg").val()).toEqual("Override saving text...");
+
+		//Continue save to reset showing the banner and sanity check
+		_currCallback();
+		_currCallback = null;
+
+		//Case #4: Notification display's entire container is switched out
+		ctr = 2;
+		setValue("[name='musician']", "Debussy");
+		jasmine.clock().tick(60*1000);
+		expect($(".autosave-notification").html()).toEqual("<div class='custom'></div>");
+	});
+	
 	it('parentElement_parameter_need_not_be_a_form', function(){
 	
 		//Arrange - Create and set a value on the input text box
@@ -3017,33 +3106,32 @@ describe("AutoSaveJS", function() {
 	 // Without IDs, server-side or client-side auto-saving, jQuery-UI + CKEditor etc. tests,
 	 // Way to revert to local storage if no connectivity with my ajax service?
 	 // AutoSave.Serialize, AutoSave.Deserialize, AutoSave.FindControls all static 
-	 // Integrity - won't restore any state if found dodgy? mode=strict|relaxes
 	 // Github-integrated tests
 	 // If [type='radio'] has now value attribute, chrome uses 'on'. Do? X-browser support?
-	 // Serious attempt and will be maintained, no Gung-ho rewrites
+	 // No Gung-ho rewrites ; backwards compatability are a core *feature* of this library
+	 // Never break backwards compatability in future versions : never-break-backwards-compat.com - compatpact.com
 	 // TODO: Google "Reading/writing to cookies with full unicode support" and ensure we cover too
 	 // Have a diagram of the hooks and where functionality belongs (e.g. AutoSave.Load)
-	 // Custom control serialisation/deserialisation
 	 // addEventListener / removeEventListener not supported by pre-IE8 - make it compatible there too!! (?)
 		// Adding support for older browsers via hooks - 
 		// https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
-	 // Never break backwards compatability in future versions : never-break-backwards-compat.com - compatpact.com
 	 // Doesn't require jQuery, doesn't require a form, HTML5 form attribute support for inputs outside the form
 	 // Never write password fields to debug log
 	 // Documentation for how you would deal with multi-user scenario
 	 // perf test across browsers
 	 // d.ts file
-	 // Works with jQuery UI, CKEditor, etc.
 	 // Retain focus when serialising/deserialising
 	 // How you would add a hook to ensure data only sent when form is validated
 	 // Following settings are mutable and can be changed, following are not and will throw on mutation
 	 // Intermittent connectivity
 	 // Saves data if they try navigate away
 	 // jQuery won't do this : $("body").serialize() - see GitHub discussion for why needs a form
+	 //	jQuery also wont respect HTML5 new form attribute
 	 // Dynamically added controls/panels, dynamically expanded etc. - add hooks?
 	 // NodeJS? Using document property :/ ...
 	 // Multi-user scenario? Timestamp each request?
 	// incorporate JSON2.js !!
+	// switch out sz/dsz app-wide using AutoSave.Serialize/Deserialize statics
 	//TODO: Document if custom path, domains etc are set, will not get cleared out
 	//TODO: What to do if cookie storage is running out?	 
 	 // As we're using event handlers, test if us throwing doesn't invoke the remaining handles. If so, try-catch and pipe to errorHandler 
@@ -3076,18 +3164,17 @@ describe("AutoSaveJS", function() {
 	//'hook can be used for inspection without modifying' - no return value
 
   	 
-	 // incognito session? no cookies?
+	 // incognito session? no cookies? (safari?)
 	 // datastorage method of local-storage else cookies
 	 // If panels are lazy-loaded? Basically, bunch of tests for dynamically loaded controls to append/splice on save/load
 	 // TODO: JSLint it.
 	 // When value cleared, should be sent to server - difference from a normal sz() and save() ajax call
-	 // Full fidelity - round tripping
 	 // First class events? multiple can hook? but then becomes highly order dependant ?
 	 // Example/demo - only complete text entries to be sent back
 	 // Undocumented documentation. You can actually change most option parameters at run-time but take no liability for behaviour ! 
 								 // Behaviour *NOT* supported
 	 // IE7+, It's fast - performance tests... 
-	//TODO: All hooks should be proper events and listenable to via 'addEventListener' etc. (?)
+	 //TODO: All hooks should be proper events and listenable to via 'addEventListener' etc. (?)
 	 
 	 //Have version, along with minified file has version at top. see ckEditor top.
 	 //Document: IF you suply a custom function for root control set - wont be re-hooked wrt listeners, no external form elems will work etc
@@ -3095,7 +3182,6 @@ describe("AutoSaveJS", function() {
 		//Link to perf test vs jquery Serialize/Deserialize
 		//Demo using hooks to show a 'loading...' and 'saving...' indicator
 		//Add to NPM/Bower etc.
-	//TODO: Some way of clearing __keysInUse ? AutoSave.disposeAllInstances()? AutoSave.reset({keys:true, localStorage: true, cookies:true})
 			//TODO: What if like $(":input") and input added late?
 
 			//TODO: Example with loading and unloading of HTML content / dynamic content - e.g. flicking through tabs. jQuery UI tabs?

@@ -15,7 +15,7 @@ var AutoSave = function( rootControls, opts ){
 	this.__dataStoreKeyFunc; 	//Never null after init
 	this.__onInitialiseInvoked;
 	this.__invokeExtBound;
-	// this.__onToggleSaveBarFunc;
+	
 	// this.__onWarnNoStorageFunc;
 	
 	this.__clearEmptyValuesOnLoad; //When keys dont have a value in the data store (e.g....&name=&...), clear out those elements on load
@@ -26,10 +26,6 @@ var AutoSave = function( rootControls, opts ){
 			//		TODO: Demo with above reset 
 			//		Workaround if this is a problem : Just remove all empty values coming from server-side. TODO: Sample.
 
-	// this.__onToggleSaveBar = function (){
-		
-		
-	// }
 	
 	// this.__onWarnNoStorage = function (){
 		
@@ -43,7 +39,7 @@ var AutoSave = function( rootControls, opts ){
 
 		var allowedOpts = [ "dataStore", "autoSaveTrigger", "autoLoadTrigger", "seekExternalFormElements",
 							"onInitialised", 
-							"onLog", "onToggleSaveBar", "onWarnNoStorage",
+							"onLog", "onToggleSaveNotification", "onWarnNoStorage",
 							"onPreLoad", "onPostLoad", "onPostDeserialize",
 							"onPreSerialize", "onPreStore", "onPostStore" ];
 		
@@ -86,7 +82,7 @@ var AutoSave = function( rootControls, opts ){
 			
 			//User does not want to auto-load
 			this.__sendLog( AutoSave.LOG_DEBUG, "User requested no auto-load. Skipping..." );
-			this._handleLoadStepCompleted();
+			this._loadStepFinally();
 			return;
 		}
 		else if ( autoLoadTrigger === undefined ){
@@ -124,7 +120,7 @@ var AutoSave = function( rootControls, opts ){
 			if (rawUserInput === false) {
 				
 				this.__sendLog( AutoSave.LOG_INFO, "User aborted the load in the onPreLoad handler" );
-				this._handleLoadStepCompleted();
+				this._loadStepFinally();
 				return; //Cancel the load
 			}
 			else if (rawUserInput === undefined) { 
@@ -160,7 +156,7 @@ var AutoSave = function( rootControls, opts ){
 			if (rawUserInput === false) {
 				
 				this.__sendLog( AutoSave.LOG_INFO, "User aborted the load in the onPostLoad handler" );
-				this._handleLoadStepCompleted();
+				this._loadStepFinally();
 				return; //Cancel the load
 			}
 			else if (rawUserInput === undefined) { 
@@ -184,11 +180,12 @@ var AutoSave = function( rootControls, opts ){
 			cb();
 		}
 		
-		this._handleLoadStepCompleted();
+		this._loadStepFinally();
 	}
 	
-	//Always called when the load STEP is completed, whether cancelled, through callback, through async etc.
-	this._handleLoadStepCompleted = function(){
+	//ALWAYS called at some time after the load step is invoked
+	//Regardless of whether it completed, got cancelled, came through callback, some time later after an async call etc.
+	this._loadStepFinally = function(){
 		
 		//Call the initialisation callback once after the load step
 		if ( !this.__onInitialiseInvoked ) {
@@ -209,7 +206,94 @@ var AutoSave = function( rootControls, opts ){
 		}
 	}
 	
+	//AlWAYS called after a save is invoked
+	this._saveStepFinally = function(){
+		
+		this._toggleSavingNotification( false );
+	}
+	
+	this.__currSaveNotificationElement;
+	this._toggleSavingNotification = function( toggleOn ){
+		
+		var cb = this.__callbacks.onToggleSaveNotification;
+		
+		var currElement = this.__currSaveNotificationElement;
+		
+		if ( cb ){
+			
+			var rawUserInput = cb( toggleOn );
+			
+			//See @FUN Semantics
+			if (rawUserInput === false) {
+
+				this.__sendLog( AutoSave.LOG_INFO, "User aborted toggle save bar" );
+				return; //Cancel toggling it
+			}
+			else if (rawUserInput === undefined) { 
+			
+				//Do nothing - continue with toggling as normal
+			}
+			else if ( typeof( rawUserInput ) === string ){
+				
+				if ( !toggleOn ){
+					
+					throw new Exception( "Unexpected type 'string' in onToggleSaveNotification when toggleOn=false " );
+				}
+				
+				if ( !currElement ){
+					
+					currElement = createElement( AutoSave.DEFAULT_HTML_SAVE_NOTIFICATION );
+				}
+				
+				currElement.querySelector(".msg").value( rawUserInput );
+				//TODO: If first char is a tag, warn to supply element instead
+				//TODO: If just plain string, replace text
+				//TODO: How will we hide something custom user supplied? Keep hold of the HTML fragment?
+			}
+			else if ( rawUserInput === typeof(Element) ) { //TODO: If it's a DOM element
+			
+				currElement = rawUserInput;
+				
+				//TODO: Wrap it in autosave-notification so we can bring it to top
+				//TODO: Where css styles? AutoSave.DEFAULT_NOTIFICATION_CSS_STYLES ? Ensure Overridable
+			}
+			else {
+			
+				throw new Exception( "Unexpected type of parameter onToggleSaveNotification." );
+			}
+		}
+		
+		if ( !toggleOn ){
+			
+			if ( !currElement ){
+				
+				log.warn( "No element was initially shown for autosave notification - can't hide." )
+			}
+			else{
+				
+				currElement.style.display = "none"
+			}
+		}
+		else{
+		
+			//Create default control if not already created
+			if ( !currElement ) {
+				
+				currElement = createElement( AutoSave.DEFAULT_HTML_SAVE_NOTIFICATION );
+			}
+			else
+			{
+				//If it was already created from previously, ensure it's now visible
+				currElement.style.display = "block"; //TODO: 'Reset' this so display is block or whatever it was before
+			}
+				
+			this.__currSaveNotificationElement = currElement;
+		}
+	}
+	
 	this._executeSave = function() {
+	
+		this._toggleSavingNotification( true );
 	
 		var cb = null; //Callback
 		
@@ -228,6 +312,7 @@ var AutoSave = function( rootControls, opts ){
 			if (rawUserInput === false) {
 
 				this.__sendLog( AutoSave.LOG_INFO, "User aborted the save in the onPreSerialize handler" );
+				this._saveStepFinally();
 				return; //Cancel the save
 			}
 			else if (rawUserInput === undefined) { 
@@ -267,6 +352,7 @@ var AutoSave = function( rootControls, opts ){
 			if (rawUserInput === false) {
 				
 				this.__sendLog( AutoSave.LOG_INFO, "User aborted the save in the onPreStore handler" );
+				this._saveStepFinally();
 				return; //Cancel the save
 			}
 			else if (rawUserInput === undefined) { 
@@ -294,7 +380,9 @@ var AutoSave = function( rootControls, opts ){
 			
 			this.__sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPostStore" );
 			cb();
-		}		
+		}
+		
+		this._saveStepFinally();
 	}
 	
 	
@@ -936,9 +1024,6 @@ var AutoSave = function( rootControls, opts ){
 		var nameKey = child.name;
 		var value = child.value;
 		
-		//var obj = {};
-		//obj[ nameKey ] = value;
-		
 		if ( child.nodeName == "INPUT" ) {
 		
 			//We only serialise controls with names (else we'll get, e.g., '=Oscar&=Mozart')
@@ -1249,13 +1334,7 @@ var AutoSave = function( rootControls, opts ){
 			return this.save( null, clearCompleted );
 		}
 	}
-	
-	//Only run initialisation when loaded so parent element can get loaded, auto-load and hookListeners etc. work
-	
-	
-	//TODO: run in context
-	
-	
+
 	AutoSave.whenInitialized( this._initialise.bind(this, rootControls, opts) );
 };
 
@@ -1632,7 +1711,7 @@ AutoSave.LOG_ERROR = 103;
 // AutoSave.MSG_STORAGE_WARNING = 105; /* When about to show user a message that they have no support for autosave */
 // AutoSave.MSG_SAVING_STARTED = 106;
 // AutoSave.MSG_SAVING_COMPLETED = 107;
-
+AutoSave.DEFAULT_HTML_SAVE_NOTIFICATION = "<div class='autosave-notification'><span class='msg'>Saving...</span></div>";
 AutoSave.DEFAULT_LOAD_CHECK_INTERVAL = 100;    //Every 100 seconds, check if it's loaded
 AutoSave.DEFAULT_AUTOSAVE_INTERVAL   = 3*1000; //By default, autosave every 3 seconds
 AutoSave.DEFAULT_KEY_PREFIX = "AutoSaveJS_";

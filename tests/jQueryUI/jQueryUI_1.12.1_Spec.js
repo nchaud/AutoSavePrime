@@ -147,7 +147,7 @@ describe("AutoSaveJS+jQueryUI", function() {
 			}
 			else {
 				
-				throw new Error("Added a custom class but did not add serialization logic for it !")
+				throw new Error("Added a custom class but did not add serialization logic for it !");
 			}
 		});
 		
