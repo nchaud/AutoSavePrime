@@ -186,15 +186,18 @@ describe("AutoSaveJS", function() {
 		$(elem).appendTo('#sandbox');
 	}
 
-    function createAutoSave(parent, opts){
+    function createAutoSave(parent, opts, clearPrev){
 	  
-		if(_currTestAutoSave) {
+		if (clearPrev === undefined || clearPrev === true) {
 			
-			_currTestAutoSave.dispose( true ); //detach all listeners, reset store
-			_currTestAutoSave = null;
-		}
+			if(_currTestAutoSave) {
+				
+				_currTestAutoSave.dispose( true ); //detach all listeners, reset store
+				_currTestAutoSave = null;
+			}
 
-		AutoSave.resetAll(); //Clear from previous instances of test runs
+			AutoSave.resetAll(); //Clear from previous instances of test runs
+		}
 		
 		_currTestAutoSave = new AutoSave(parent, opts);
 		return _currTestAutoSave;
@@ -467,15 +470,17 @@ describe("AutoSaveJS", function() {
 			//Sanity check
 			expect(getOne("[name='frmMusician']").val()).toBeFalsy();
 			
-			//Create it explicitly so storage isn't wiped out
-			var aSave = new AutoSave(null,  {
+			//Create it with no-reset so storage isn't wiped out
+			var aSave = createAutoSave(null, {
 							autoLoadTrigger: null,
 							autoSaveTrigger: null //Control it manually for the purpose of this test
-						});
+						}, false);
 			
 			aSave.load();
 			
 			expect(getOne("[name='frmMusician']").val()).toEqual("Mozart");
+			
+			aSave.dispose();
 		}
 	});
   });
@@ -1225,9 +1230,9 @@ describe("AutoSaveJS", function() {
 		resetSandbox();
 		addToSandbox(testFragment);
 
-		//Multiple non-overlapping instances, create explicitly so no disposal
-		var inst1 = new AutoSave(gParam(parentParam1, pType), opts1);
-		var inst2 = new AutoSave(gParam(parentParam2, pType), opts2);
+		//Multiple non-overlapping instances, create with no-reset arg so no disposal
+		var inst1 = createAutoSave(gParam(parentParam1, pType), opts1, false);
+		var inst2 = createAutoSave(gParam(parentParam2, pType), opts2, false);
 		
 		//inst1
 		setChecked ($("#d1 [value='JayZ']"), true);
@@ -1249,8 +1254,8 @@ describe("AutoSaveJS", function() {
 		addToSandbox(testFragment);
 		
 		//Rehydrate to round-trip the test
-		inst1 = new AutoSave(gParam(parentParam1, pType), opts1);
-		inst2 = new AutoSave(gParam(parentParam2, pType), opts2);
+		inst1 = createAutoSave(gParam(parentParam1, pType), opts1, false);
+		inst2 = createAutoSave(gParam(parentParam2, pType), opts2, false);
 		
 		//inst1
 		expect ($("#d1 [value='JayZ']").prop("checked")).toBeTruthy();
@@ -1367,24 +1372,24 @@ describe("AutoSaveJS", function() {
 		
 		addToSandbox(testFragment);
 		
-		var inst1 = new AutoSave("[name='some']");
-		var inst2 = new AutoSave(".some_other");
+		var inst1 = createAutoSave("[name='some']", null, false);
+		var inst2 = createAutoSave(".some_other",   null, false);
 
 		expect(function(){
-			var inst3 = new AutoSave("[name='some']");
+			var inst3 = createAutoSave("[name='some']", null, false);
 		}).toThrowError("There is already an AutoSave instance with the storage key of 'AutoSaveJS_some'. See the documentation for solutions.");
 		
 		expect(function(){
-			var inst4 = new AutoSave(".some_other");
+			var inst4 = createAutoSave(".some_other", null, false);
 		}).toThrowError("There is already an AutoSave instance with the storage key of 'AutoSaveJS_'. See the documentation for solutions.");
 
 		//Dispose first, should be able to create new
 		inst1.dispose();
-		var inst3 = new AutoSave("[name='some']");
+		var inst3 = createAutoSave("[name='some']", null, false);
 		
 		//Dispose 2nd - ''
 		inst2.dispose();
-		var inst4 = new AutoSave(".some_other");
+		var inst4 = createAutoSave(".some_other", null, false);
 	});
 	
 	it('multiple non-form elements will throw an error', function(){
@@ -1439,20 +1444,20 @@ describe("AutoSaveJS", function() {
 		
 		/* First set on cookies */
 		
-		//Create with a default key - create all explicitly as helper disposes previous instance
-		var aSave1 = new AutoSave("[name='Reason']",{
+		//Create with a default key - create with no-reset arg so no dispose previous instance
+		var aSave1 = createAutoSave("[name='Reason']",{
 			dataStore:{
 				preferCookies: true
 			}
-		});
+		}, false);
 		
 		//Create with a custom key
-		var aSave2 = new AutoSave("[name='Cause']",{
+		var aSave2 = createAutoSave("[name='Cause']",{
 			dataStore:{
 				key: "myCustomKey",
 				preferCookies: true
 			}
-		});
+		}, false);
 		
 		setValue("[name='Reason']", "So Good");
 		setValue("[name='Cause']", "Just Cause");
@@ -1477,14 +1482,14 @@ describe("AutoSaveJS", function() {
 			return;
 		
 		//Create with a default key - notice how we can create with same key as it's been reset
-		var aSave1 = new AutoSave("[name='Reason']");
+		var aSave1 = createAutoSave("[name='Reason']", null, false);
 		
 		//Create with a custom key
-		var aSave2 = new AutoSave("[name='Cause']",{
+		var aSave2 = createAutoSave("[name='Cause']",{
 			dataStore:{
 				key: "myCustomKey"
 			}
-		});
+		}, false);
 
 		setValue("[name='Reason']", "So Good");
 		setValue("[name='Cause']", "Just Cause");
@@ -1592,7 +1597,7 @@ describe("AutoSaveJS", function() {
 		
 		var num1Called = false, num2Called = false;
 		
-		var autoSave_1 = new AutoSave("#Bad_Selector", 
+		var autoSave_1 = createAutoSave("#Bad_Selector", 
 			{
 				dataStore:{key:"KEY_1"},
 				
@@ -1608,9 +1613,9 @@ describe("AutoSaveJS", function() {
 						expect( level ).toEqual( AutoSave.LOG_WARN );
 					}
 				}
-			});
+			}, false);
 			
-		var autoSave_2 = new AutoSave(null, 
+		var autoSave_2 = createAutoSave(null, 
 			{
 				dataStore:{key:"KEY_2"},
 				
@@ -1626,7 +1631,7 @@ describe("AutoSaveJS", function() {
 						expect( level ).toEqual( AutoSave.LOG_INFO );
 					}
 				}
-			});
+			}, false);
 
 		setValue("[name='musician']", "Beethoven");
 		jasmine.clock().tick(60*1000);
@@ -1700,6 +1705,11 @@ describe("AutoSaveJS", function() {
 		createAutoSave("#NON_EXISTENT", defaultOpt);
 		expect(console.warn).toHaveBeenCalledWith( {nested:{object:100}} );
 	});
+
+	it('logging can take any number of parameters', function(){
+
+		expect(1).toEqual(2);
+	});
 	
 	it('saving will not run multiple times if 1 is already in progress', function(){
 	
@@ -1711,12 +1721,151 @@ describe("AutoSaveJS", function() {
 		expect(1).toEqual(2);
 	});
 	
-	it('onToggleSaveNotification by default shows an auto-saving banner', function(){
+	it('Save notification by default shows an auto-saving banner', function(){
 
-		expect(1).toEqual(2);
+		//Arrange - Create and set a value on the input text box
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox(testFragment);
+		
+		var _currCallback = null; //This is what the save function is expecting to be called to complete the save operation
+		
+		var defaultOpt = {
+			
+			dataStore:{
+				load: _noOpLoad,
+				save: function( key, data, callback ){
+					
+					_currCallback = callback;
+				}
+			}
+		};
+		
+		var autoSave = createAutoSave(null, defaultOpt);
+		
+		//Setting a value should trigger an auto-save which should trigger showing the save banner
+		setValue("[name='musician']", "Mozart");
+		jasmine.clock().tick(60*1000);
+		expect($(".autosave-notification").length).toEqual(1);
+		expect($(".autosave-notification").css("display")).not.toEqual("none");
+		expect($(".autosave-notification .autosave-msg").text()).toEqual("Saving..."); //Default text
+		
+		//Complete save operation
+		_currCallback();
+		
+		//Should get hidden
+		expect($(".autosave-notification").css("display")).toEqual("none");
 	});
 	
-	it('onToggleSaveNotification default behaviour can be overriden', function(){
+	it('Save notification can be customised to not show anything by setting null', function(){
+				
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox(testFragment);
+		
+		var _currCallback = null; //This is what the save function is expecting to be called to complete the save operation
+		
+		var defaultOpt = {
+			
+			saveNotification: null,
+			dataStore:{
+				load: _noOpLoad,
+				save: function( key, data, callback ){
+					
+					_currCallback = callback;
+				}
+			}
+		};
+		
+		var autoSave = createAutoSave(null, defaultOpt);
+		
+		//Setting a value should trigger an auto-save which should trigger showing the save banner
+		setValue("[name='musician']", "Mozart");
+		jasmine.clock().tick(60*1000);
+		expect($(".autosave-notification").length).toEqual(0);
+	});
+	
+	it('Save notification can be customised with a specific message', function(){
+
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox(testFragment);
+		
+		var _currCallback = null; //This is what the save function is expecting to be called to complete the save operation
+		
+		var defaultOpt = {
+			
+			saveNotification: {
+				message: "Save override..."
+			},
+			dataStore:{
+				load: _noOpLoad,
+				save: function( key, data, callback ){
+					
+					_currCallback = callback;
+				}
+			}
+		};
+		
+		var autoSave = createAutoSave(null, defaultOpt);
+		
+		//Setting a value should trigger an auto-save which should trigger showing the save banner
+		setValue("[name='musician']", "Mozart");
+		jasmine.clock().tick(60*1000);
+		expect($(".autosave-notification").length).toEqual(1);
+		expect($(".autosave-notification").css("display")).not.toEqual("none");
+		expect($(".autosave-notification .autosave-msg").text()).toEqual("Save override..."); //Default text
+		
+		//Complete save operation
+		_currCallback();
+		
+		//Should get hidden
+		expect($(".autosave-notification").css("display")).toEqual("none");
+	});
+	
+	it('Save notification can be customised with a specific template', function(){
+
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox(testFragment);
+		
+		var _currCallback = null; //This is what the save function is expecting to be called to complete the save operation
+		
+		var defaultOpt = {
+			
+			saveNotification: {
+				template: "<h1 class='my_save_msg'>My template override saving msg...</h1>"
+			},
+			dataStore:{
+				load: _noOpLoad,
+				save: function( key, data, callback ){
+					
+					_currCallback = callback;
+				}
+			}
+		};
+		
+		var autoSave = createAutoSave(null, defaultOpt);
+		
+		//Setting a value should trigger an auto-save which should trigger showing the save banner
+		setValue("[name='musician']", "Mozart");
+		jasmine.clock().tick(60*1000);
+		expect($(".autosave-notification").length).toEqual(0); //Should not exist as customiesd
+		expect($(".my_save_msg").css("display")).not.toEqual("none");
+		expect($(".my_save_msg").text()).toEqual("My template override saving msg..."); //Default text
+		
+		//Complete save operation
+		_currCallback();
+		
+		//Should get hidden
+		expect($(".autosave-my_save_msg").css("display")).toEqual("none");
+	});
+	
+	it('onSaveNotification callback can modify the default behaviour of save notification', function(){
 		
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<h3>Please enter your preferred musician:</h3>\
@@ -1728,7 +1877,7 @@ describe("AutoSaveJS", function() {
 		
 		var defaultOpt = {
 			
-			onToggleSaveNotification:function( toggleOn ){
+			onSaveNotification:function( toggleOn ){
 				
 				//See @FUN semantics
 				if(ctr == 0)
@@ -1736,13 +1885,15 @@ describe("AutoSaveJS", function() {
 				else if (ctr == 1)
 					return false; //Should cancel the show altogther
 				else if (ctr == 2)
-					return "Override saving text...";
-				else if (ctr == 3)
-					return "<div class='custom'></div>";
+					return "Override saving text..."; //Will throw
+				//else if (ctr == 3)
+				//	return "<div class='custom'>Custom container text...</div>";
+				//else if (ctr == 4)
+				//	return $("<div class='second_custom'></div>").get(0)
 			},
 			dataStore:{
-				load:null,
-				save:function( data, callback ){
+				load: _noOpLoad,
+				save: function( key, data, callback ){
 					
 					_currCallback = callback;
 				}
@@ -1756,18 +1907,18 @@ describe("AutoSaveJS", function() {
 		//Case #1: Setting a value should trigger an auto-save which should trigger showing the save banner
 		setValue("[name='musician']", "Mozart");
 		jasmine.clock().tick(60*1000);
-		expect($(".autosave-notification").length).toEqual(1);
+		expect($(".autosave-notification").css("display")).not.toEqual("none");
 		
 		//Continue save to reset showing the banner and sanity check
 		_currCallback();
 		_currCallback = null;
-		expect($(".autosave-notification").length).toEqual(0);
+		expect($(".autosave-notification").css("display")).toEqual("none");
 		
 		//Case #2: Notification display should get cancelled
 		ctr = 1;
 		setValue("[name='musician']", "Beethoven");
 		jasmine.clock().tick(60*1000);
-		expect($(".autosave-notification").length).toEqual(0);
+		expect($(".autosave-notification").css("display")).toEqual("none");
 		
 		//Continue save to reset showing the banner and sanity check
 		_currCallback();
@@ -1776,18 +1927,32 @@ describe("AutoSaveJS", function() {
 		//Case #3: Notification display's inner text should get changed
 		ctr = 2;
 		setValue("[name='musician']", "Debussy");
-		jasmine.clock().tick(60*1000);
-		expect($(".autosave-notification .msg").val()).toEqual("Override saving text...");
+		expect(function(){
+			jasmine.clock().tick(60*1000);
+		}).toThrowError( "Unexpected return type from callback onSaveNotification" );
 
 		//Continue save to reset showing the banner and sanity check
-		_currCallback();
-		_currCallback = null;
+		// _currCallback();
+		// _currCallback = null;
 
-		//Case #4: Notification display's entire container is switched out
-		ctr = 2;
-		setValue("[name='musician']", "Debussy");
-		jasmine.clock().tick(60*1000);
-		expect($(".autosave-notification").html()).toEqual("<div class='custom'></div>");
+		// //Case #4: Notification display's entire container is switched out with a string HTML
+		// ctr = 3;
+		// setValue("[name='musician']", "Debussy");
+		// jasmine.clock().tick(60*1000);
+		// expect($(".autosave-notification").css("display")).not.toEqual("none");
+		// expect($(".autosave-notification").html()).toEqual("<div class='custom'>Custom container text...</div>");
+
+		// //Continue save to reset showing the banner and sanity check
+		// _currCallback();
+		// _currCallback = null;
+
+		// //Case #5: Notification display's entire container is switched out with a custom element
+		// ctr = 4;
+		// setValue("[name='musician']", "Ravioli");
+		// jasmine.clock().tick(60*1000);
+		// expect($(".autosave-notification").css("display")).toEqual("none");
+		// expect($(".second_custom").css("display")).not.toEqual("none");
+		// expect($(".second_cutom").length).toEqual(1);
 	});
 	
 	it('parentElement_parameter_need_not_be_a_form', function(){

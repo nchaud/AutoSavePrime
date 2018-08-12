@@ -15,6 +15,7 @@ var AutoSave = function( rootControls, opts ){
 	this.__dataStoreKeyFunc; 	//Never null after init
 	this.__onInitialiseInvoked;
 	this.__invokeExtBound;
+	this.__currSaveNotificationElement;
 	
 	// this.__onWarnNoStorageFunc;
 	
@@ -38,9 +39,9 @@ var AutoSave = function( rootControls, opts ){
 		opts = opts || {};
 
 		var allowedOpts = [ "dataStore", "autoSaveTrigger", "autoLoadTrigger", "seekExternalFormElements",
-							"onInitialised", 
-							"onLog", "onToggleSaveNotification", "onWarnNoStorage",
-							"onPreLoad", "onPostLoad", "onPostDeserialize",
+							"saveNotification",
+							"onLog", "onWarnNoStorage", "onSaveNotification",
+							"onInitialised", "onPreLoad", "onPostLoad", "onPostDeserialize",
 							"onPreSerialize", "onPreStore", "onPostStore" ];
 		
 		try {
@@ -48,12 +49,12 @@ var AutoSave = function( rootControls, opts ){
 			//Set this very first as if there's an initialisation error, startup routine may dispose and may need to log
 			this.__callbacks = opts;		//TODO: Means it can be dynamic ?? But should be set explicitly for future compatability!
 			
-			this._ensureOptIn( opts, allowedOpts, "top level" );
+			AutoSave._ensureOptIn( opts, allowedOpts, "top level" );
 						
 			//Sequencing is important here :-
 			
-			var seekExternalFormElements = this._parseExternalElemsArg( opts.seekExternalFormElements );
-			
+			var seekExternalFormElements = AutoSave._parseExternalElemsArg( opts.seekExternalFormElements );
+						
 			this._updateRootControls( parentElement, seekExternalFormElements );
 			
 			//Do this after updating root controls as we require the names of the top-level forms
@@ -64,6 +65,8 @@ var AutoSave = function( rootControls, opts ){
 			
 			//Load values into controls on start
 			this._updateLoadStrategy( opts.autoLoadTrigger );
+			
+			this._updateSaveNotification( opts.saveNotification );
 		}
 		catch (e) {
 			
@@ -73,6 +76,48 @@ var AutoSave = function( rootControls, opts ){
 			this.dispose();				
 			
 			throw e;
+		}
+	}
+	
+	this._updateSaveNotification = function ( saveNotificationOpts ){
+		
+		if ( saveNotificationOpts === null ) {
+			
+			//Implies dont show notification
+			this.__sendLog( AutoSave.LOG_DEBUG, "User requested no saving notification bar. Skipping creation..." );
+			this.__currSaveNotificationElement = null;
+		}
+		else if ( saveNotificationOpts === undefined ){
+			
+			//Default behaviour
+			this.__currSaveNotificationElement = AutoSave._showSavingNotification( null, null );
+		}
+		else {
+			
+			var allowedOpts = [ "template", "message" ];
+			AutoSave._ensureOptIn( saveNotificationOpts, allowedOpts, "saveNotification" );
+			
+			var template = saveNotificationOpts.template;
+			var msg = saveNotificationOpts.message;
+			//var cb = saveNotificationOpts.onNotify;
+				
+			if ( template && msg )
+				throw new Error( "Only 1 of saveNotification.template or saveNotification.message can be set - not both" );
+				
+			if ( msg ) {
+				
+				this.__sendLog( AutoSave.LOG_DEBUG, "Notification bar with customised msg created." );
+				this.__currSaveNotificationElement = AutoSave._showSavingNotification( null, msg );
+			}
+			else if ( template ){
+				
+				this.__sendLog( AutoSave.LOG_DEBUG, "Notification bar with customised template created." );
+				this.__currSaveNotificationElement = AutoSave._showSavingNotification( template, null);
+			}
+			else {
+				
+				throw new Error( "'saveNotification' parameter was supplied but no options were specified"); //Usage error
+			}
 		}
 	}
 	
@@ -212,82 +257,45 @@ var AutoSave = function( rootControls, opts ){
 		this._toggleSavingNotification( false );
 	}
 	
-	this.__currSaveNotificationElement;
 	this._toggleSavingNotification = function( toggleOn ){
 		
-		var cb = this.__callbacks.onToggleSaveNotification;
-		
 		var currElement = this.__currSaveNotificationElement;
+		var cb = this.__callbacks.onSaveNotification;
 		
 		if ( cb ){
 			
 			var rawUserInput = cb( toggleOn );
 			
 			//See @FUN Semantics
-			if (rawUserInput === false) {
+			if ( rawUserInput === false ) {
 
 				this.__sendLog( AutoSave.LOG_INFO, "User aborted toggle save bar" );
 				return; //Cancel toggling it
 			}
-			else if (rawUserInput === undefined) { 
+			else if ( rawUserInput === undefined ) { 
 			
 				//Do nothing - continue with toggling as normal
 			}
-			else if ( typeof( rawUserInput ) === string ){
-				
-				if ( !toggleOn ){
-					
-					throw new Exception( "Unexpected type 'string' in onToggleSaveNotification when toggleOn=false " );
-				}
-				
-				if ( !currElement ){
-					
-					currElement = createElement( AutoSave.DEFAULT_HTML_SAVE_NOTIFICATION );
-				}
-				
-				currElement.querySelector(".msg").value( rawUserInput );
-				//TODO: If first char is a tag, warn to supply element instead
-				//TODO: If just plain string, replace text
-				//TODO: How will we hide something custom user supplied? Keep hold of the HTML fragment?
-			}
-			else if ( rawUserInput === typeof(Element) ) { //TODO: If it's a DOM element
-			
-				currElement = rawUserInput;
-				
-				//TODO: Wrap it in autosave-notification so we can bring it to top
-				//TODO: Where css styles? AutoSave.DEFAULT_NOTIFICATION_CSS_STYLES ? Ensure Overridable
-			}
 			else {
 			
-				throw new Exception( "Unexpected type of parameter onToggleSaveNotification." );
+				throw new Error( "Unexpected return type from callback onSaveNotification" );
 			}
+		}
+		
+		if ( !currElement ){
+			
+			//User probably cleared out showing notification through setting opts.saveNotification = null
+			return;
 		}
 		
 		if ( !toggleOn ){
 			
-			if ( !currElement ){
-				
-				log.warn( "No element was initially shown for autosave notification - can't hide." )
-			}
-			else{
-				
-				currElement.style.display = "none"
-			}
+			currElement.style.display = "none"
 		}
 		else{
 		
-			//Create default control if not already created
-			if ( !currElement ) {
-				
-				currElement = createElement( AutoSave.DEFAULT_HTML_SAVE_NOTIFICATION );
-			}
-			else
-			{
-				//If it was already created from previously, ensure it's now visible
-				currElement.style.display = "block"; //TODO: 'Reset' this so display is block or whatever it was before
-			}
-				
-			this.__currSaveNotificationElement = currElement;
+			//If it was already created from previously, ensure it's now visible
+			currElement.style.display = "block"; //TODO: 'Reset' this so display is block or whatever it was before
 		}
 	}
 	
@@ -395,7 +403,7 @@ var AutoSave = function( rootControls, opts ){
 		
 		var elems = this.__getRootControlsFunc();
 		
-		this.__dataStoreKeyFunc = this._getKeyFunc( elems, !dataStore ? undefined : dataStore.key );
+		this.__dataStoreKeyFunc = this.__invokeExt( AutoSave._getKeyFunc, elems, !dataStore ? undefined : dataStore.key );
 			
 		//If not set at all, default it 
 		if ( dataStore === undefined ){
@@ -407,16 +415,16 @@ var AutoSave = function( rootControls, opts ){
 
 		}
 		//If expicitly null, don't load or store anywhere
-		else if (dataStore === null){
+		else if ( dataStore === null ){
 
 			//Do nothing
 			this.__theStore = new _NoStore();
 		}
-		else if (typeof(dataStore) == "object"){ // Url-based / custom
+		else if ( typeof( dataStore ) == "object" ){ // Url-based / custom
 			
 			var allowedOpts = [ "save", "load", "key", "preferCookies", "clearEmptyValuesOnLoad" ];
 			
-			this._ensureOptIn( dataStore, allowedOpts, "dataStore" );
+			AutoSave._ensureOptIn( dataStore, allowedOpts, "dataStore" );
 
 			this.__clearEmptyValuesOnLoad = dataStore.clearEmptyValuesOnLoad;
 			
@@ -437,8 +445,14 @@ var AutoSave = function( rootControls, opts ){
 				//User explicitly does not want to load from anywhere
 				this.__theStore = new _NoStore();
 			}
-			else if (typeof dataStore.load != "function" || typeof dataStore.save != "function") {
+			else if (typeof( dataStore.load ) != "function" || typeof( dataStore.save ) != "function") {
+
+
 				
+				//TODO: Allow either to be null explicitly?
+
+
+			
 				throw new Error("The dataStore.load and dataStore.save parameters must 1) both be set or both be unset and 2) must be functions.");
 			}
 			else {
@@ -452,18 +466,29 @@ var AutoSave = function( rootControls, opts ){
 		}
 	}
 	
-	this.__invokeExt = function( funcToRun ){
+	this.__invokeExt = function( funcToRun, __variadic_args__ ){
 	
 		var prevLogger = AutoSave.log;
 		
 		try{
+			
+			
+			
+			
+			//TODO: Instead of the below, consider just doing funcToRun.apply ( this, args )
+			//		and in AutoSave.serialize = function(){ AutoSave.log(...) }
+			//		and in AutoSave.log = ()=>if (this.__sendLog){this.__sendLog} /* i.e. called in AS context */ else console.log(...)
+			
+			
 			
 			if ( !this.__invokeExtBound )
 				this.__invokeExtBound = this.__sendLog.bind(this);
 			
 			AutoSave.log = this.__invokeExtBound;
 			
-			return funcToRun();
+			var args = Array.from(arguments).slice(1); //Bypass function argument -- TODO: CHECK SUPPORT OF NEW ARRAY like this
+			
+			return funcToRun.apply( null, args );
 		}
 		finally{
 			
@@ -517,12 +542,12 @@ var AutoSave = function( rootControls, opts ){
 
 			var allowedOpts = [ "debounceInterval" ];
 			
-			this._ensureOptIn( saveTrigger, allowedOpts, "autoSaveTrigger" );
+			AutoSave._ensureOptIn( saveTrigger, allowedOpts, "autoSaveTrigger" );
 		
 			//At regular intervals in milliseconds
 			var debounceInterval = saveTrigger.debounceInterval;
 			
-			if ( typeof debounceInterval == "number" ) {
+			if ( typeof( debounceInterval ) == "number" ) {
 			
 				if ( debounceInterval <= 60 ){ //Must be a mistake
 				
@@ -557,7 +582,7 @@ var AutoSave = function( rootControls, opts ){
 			parentElement = document.body;	//TODO: Will this capture all? In Node too?
 		}
 		
-		if ( typeof ( parentElement ) == "function" ){
+		if ( typeof( parentElement ) == "function" ){
 		
 			//Customise the set of controls used - calculated dynamically from user's function
 			//TODO: What about un-hooking/re-hooking listeners when this set changes?
@@ -578,7 +603,7 @@ var AutoSave = function( rootControls, opts ){
 					
 					if ( seekExternalFormElements ){
 						
-						var externalElems = AutoSave.getExternalFormControls( elems );
+						var externalElems = this.__invokeExt( AutoSave.getExternalFormControls, elems );
 						this.__sendLog( AutoSave.LOG_INFO, "Found "+externalElems.length+" external form-linked controls");
 						
 						for( var idx = 0; idx < externalElems.length; idx++ ){
@@ -612,7 +637,7 @@ var AutoSave = function( rootControls, opts ){
 			//Find all elements that use a 'form=...' attribute explicitly and assume they're outside the root control set so capture them
 			if ( seekExternalFormElements ) {
 				
-				var externalElems = AutoSave.getExternalFormControls( elems );
+				var externalElems = this.__invokeExt( AutoSave.getExternalFormControls, elems );
 				this.__sendLog( AutoSave.LOG_INFO, "Found "+externalElems.length+" external form-linked controls");
 				
 				for( var idx = 0; idx < externalElems.length; idx++ ){
@@ -628,7 +653,6 @@ var AutoSave = function( rootControls, opts ){
 		}
 	}
 
-	
 	this._hookListeners = function ( hookOn, seekExternalFormElements ){ 
 
 		this.__sendLog( AutoSave.LOG_DEBUG, 
@@ -687,13 +711,14 @@ var AutoSave = function( rootControls, opts ){
 		this.__sendLog( AutoSave.LOG_INFO, "Executing save: after element changed" );
 		this._executeSave();
 	}
+	
 	//Parameter should NOT be falsy here - should be handled beforehand by caller based on context
 	//Always returns a non-null array
 	this._getControlsFromUserInput = function( rawUserInput ){
 		
 		var elems;
 		
-		if (typeof ( rawUserInput ) == "string") {//selector
+		if ( typeof( rawUserInput ) == "string" ) {//selector
 		
 			var elemsNodeList = document.querySelectorAll( rawUserInput );
 			elems = [];
@@ -718,108 +743,6 @@ var AutoSave = function( rootControls, opts ){
 		}
 
 		return elems;
-	}
-	
-	this._getKeyFunc = function( parentElems, rawUserOption ){
-		
-		//User-supplied option takes precedence - we dont validate uniqueness etc. but trust what they're doing
-		if ( rawUserOption !== undefined ){
-		
-			if ( typeof rawUserOption == "string" ){
-				
-				var fullKey = AutoSave.DEFAULT_KEY_PREFIX + rawUserOption;
-				
-				this.__sendLog( AutoSave.LOG_INFO, "Using static provided value for datastore key", fullKey );
-		
-				return function(){
-					
-					return fullKey;
-				}
-			}
-			else if ( typeof rawUserOption === "function" ){
-				
-				this.__sendLog( AutoSave.LOG_DEBUG, "Using user-supplied function for generating datastore key when required" );
-				
-				var that = this;
-				return function(){
-					
-					//Dynamically recalc every time
-					var val = AutoSave.DEFAULT_KEY_PREFIX + rawUserOption();
-
-					that.__sendLog( AutoSave.LOG_DEBUG, "Calculated dynamic datastore key to use", val );
-					
-					return val;
-				}
-			}
-			else{
-				
-				throw new Error("Unexpected type of parameter 'dataStore.key'");
-			}
-		}
-		else {
-			
-			var keyValue = null;
-			
-			//If form supplied as the parameter
-			if ( parentElems.nodeName == "FORM" ){
-				
-				keyValue = parentElems.name;
-			}
-			else if ( parentElems.length == 1 && //If form supplied as the only parameter in a jQuery or [], use that
-					  parentElems[0].nodeName == "FORM" ){
-				
-				keyValue = parentElems[0].name;
-			}
-			
-			//Non-form element or form without name, default the key
-			if ( keyValue ){
-				
-				keyValue = AutoSave.DEFAULT_KEY_PREFIX + keyValue;
-			}
-			else{
-				
-				keyValue = AutoSave.DEFAULT_KEY_PREFIX;
-			}
-			
-			this.__sendLog( AutoSave.LOG_INFO, "Using calculated value for datastore key", keyValue);
-				
-			if ( AutoSave.__keysInUse.indexOf(keyValue) != -1 ){
-				
-				throw new Error("There is already an AutoSave instance with the storage key of '"+keyValue+"'. See the documentation for solutions.")
-			}
-			
-			AutoSave.__keysInUse.push(keyValue);
-			
-			this.__sendLog( AutoSave.LOG_DEBUG, "Updated set of keys in use", AutoSave.__keysInUse );
-			
-			return function(){
-				
-				return keyValue;
-			}
-		}
-	}
-	
-	//Returns the value got from invoking the user's onMessage handler
-	// this._sendMsg = function( msgCode, data ){
-		
-		// var cb = this.__callbacks.onMessage;
-		
-		// if ( !cb )
-			// return; //User doesnt want any messages
-	// }
-	
-	this._parseExternalElemsArg = function( seekExternalFormElements ){
-		
-		//Default hook external controls to true
-		if ( seekExternalFormElements === undefined )
-			seekExternalFormElements = true;
-		else if ( seekExternalFormElements === false ||
-				  seekExternalFormElements === true)
-		{ /* Valid */ }
-		else
-			throw new Error( "Unexpected type for parameter 'seekExternalFormElements'" );
-
-		return seekExternalFormElements;
 	}
 	
 	this.dispose = function( deleteDataStore ) {
@@ -853,7 +776,7 @@ var AutoSave = function( rootControls, opts ){
 			this.__sendLog( AutoSave.LOG_WARN, "Error freeing key", e);
 		}
 
-		
+		//Clear any pending saves
 		if ( this.__debounceTimeoutHandle ) {
 			
 			clearTimeout( this.__debounceTimeoutHandle );
@@ -872,6 +795,13 @@ var AutoSave = function( rootControls, opts ){
 			
 			this.__sendLog( AutoSave.LOG_WARN, "Error resetting store", e);
 		}
+		
+		//Remove the "Saving..." html element from DOM
+		var notifyElem = this.__currSaveNotificationElement;
+		if ( notifyElem && notifyElem.parentNode ) {
+			
+			notifyElem.parentNode.removeChild ( notifyElem );
+		}
 	}
 	
 	this.resetStore = function() {
@@ -880,119 +810,7 @@ var AutoSave = function( rootControls, opts ){
 		
 		this.__theStore.resetStore( clearCallback );
 	}
-	
-	this._deserializeSingleControl = function( child, fieldData, clearEmpty ){
-
-		var fieldValue = null;
 		
-		var runStd = false;
-		
-		if (child.nodeName == "INPUT"){
-		
-		   if (child.type == "radio" || child.type == "checkbox") {
-
-				//For these, we need to check not only that the names exists but the value corresponds to this element.
-				//If it corresponds, we need to 
-				//	- If clearEmpty = true, also uncheck all those items with the same name that aren't in the field data.
-				//	- Else leave the element's value intact
-				//If theres no kvp that corresponds to this name, always leave the elements intact.
-				
-				var foundField = null;
-				
-				for (var fieldIdx in fieldData[ 0 ] ) {
-				
-					if ( fieldData[ 0 ][ fieldIdx ] == child.name ) {
-						
-						if ( fieldData[ 1 ][ fieldIdx ] == child.value ) {
-						
-							foundField = true;
-							break;
-						}
-						else{
-							
-							foundField = false;
-							
-							//Continue searching
-						}
-					}
-				}
-					
-				if ( foundField === true )
-					child.checked = true;
-				else if ( foundField === false && clearEmpty ) //Was of the form ...&fieldName=&...
-					child.checked = false;
-				//else missing altogether in the field data so leave untouched
-			}
-			else {
-				runStd = true;
-			}
-		}
-		else if ( child.nodeName == "SELECT" ) {
-		
-			if ( child.type == "select-one" ) {
-			
-				runStd = true;
-			}
-			else { //Implicitly select-multiple
-			
-				var sChildren = child.options;
-				
-				for ( var childIdx = 0 ; childIdx < sChildren.length ; childIdx++ ) {
-					
-					var opt = sChildren[ childIdx ];
-					
-					for ( var fieldIdx in fieldData[ 0 ] ) {
-					
-						if ( fieldData[ 0 ][ fieldIdx ] == child.name) {
-							
-							if ( fieldData[ 1 ][ fieldIdx ] == opt.value ) {
-							
-								opt.selected = true;
-								break;
-							}
-						}
-					}
-				}
-			}
-		}
-		else if (child.nodeName == "TEXTAREA") { //All other :inputs types - textarea, HTMLSelect etc.
-
-			runStd = true;
-		}
-		
-		//TODO: Button, Std etc.
-		
-		
-		else {
-									
-			//May be, e.g., a form or div so go through all children
-			var sChildren = child.children;
-			for( var sIdx = 0; sIdx < sChildren.length; sIdx++ ){
-				
-				this._deserializeSingleControl( sChildren[ sIdx ], fieldData, clearEmpty );
-			}
-		}
-		
-		if (runStd) {
-			
-			for ( var fieldIdx in fieldData[ 0 ] ) {
-			
-				var fieldName = fieldData[ 0 ][ fieldIdx ];
-				
-				if ( fieldName === child.name ){
-				
-					var fieldValue = fieldData[ 1 ][ fieldIdx ];
-						
-					if ( fieldValue !== "" || clearEmpty )
-						child.value = fieldValue;
-					
-					break;
-				}
-				//else was missing altogether from field data
-			}
-		}
-	}
-	
 	this.deserialize = function( fieldDataStr, clearEmpty ){
 		
 		if ( !fieldDataStr )
@@ -1008,100 +826,16 @@ var AutoSave = function( rootControls, opts ){
 		//controlsArr is never null by post-condition of _updateRootControls
 		var controlsArr = this.__getRootControlsFunc();
 		
-		var fieldData = AutoSave._decodeFieldDataFromString( fieldDataStr );
+		var fieldData = this.__invokeExt( AutoSave._decodeFieldDataFromString,  fieldDataStr );
 		
 		for( var idx = 0; idx < controlsArr.length ; idx++ ) {
 
 			var child = controlsArr[ idx ];
 			
-			this._deserializeSingleControl( child, fieldData, clearEmpty );
+			this.__invokeExt( AutoSave._deserializeSingleControl, child, fieldData, clearEmpty );
 		}
 	}
-	
-	//Looks at a single control and it's children and returns an array of serialised object strings
-	this._serializeSingleControl = function( child, fieldData ){
-	
-		var nameKey = child.name;
-		var value = child.value;
 		
-		if ( child.nodeName == "INPUT" ) {
-		
-			//We only serialise controls with names (else we'll get, e.g., '=Oscar&=Mozart')
-			if ( !nameKey ) {
-
-				this.__sendLog( AutoSave.LOG_DEBUG, "Ignored INPUT node as no name was present", child );
-				return;
-			}
-			
-		   if ( child.type == "radio" || child.type == "checkbox" ){
-			
-				if ( child.checked ) {
-					
-					fieldData[0].push( nameKey );
-					fieldData[1].push( value );
-				}
-			}
-			else{ //Implicitly an <input type=text|button|password|hidden...>
-			
-				fieldData[0].push( nameKey );
-				fieldData[1].push( value );
-			}
-		}
-		else if ( child.nodeName == "SELECT" ){
-		
-			//We only serialise controls with names (else we'll get, e.g., '=Oscar&=Mozart')
-			if ( !nameKey ) {
-
-				this.__sendLog( AutoSave.LOG_DEBUG, "Ignored SELECT node as no name was present", child );
-				return;
-			}
-		
-			if ( child.type == "select-one" ){
-			
-				fieldData[0].push( nameKey );
-				fieldData[1].push( value );
-			}
-			else { //Must be of type == 'select-multiple'
-			
-				var sChildren = child.options;
-				for( var sIdx = 0 ; sIdx < sChildren.length ; ++sIdx ){
-				
-					if ( sChildren[sIdx].selected ) {
-					
-						fieldData[0].push( nameKey );
-						fieldData[1].push( sChildren[ sIdx ].value );
-					}
-				}
-			}
-		}
-		else if ( child.nodeName == "TEXTAREA" ) {
-		
-			//We only serialise controls with names (else we'll get, e.g., '=Oscar&=Mozart')
-			if ( !nameKey ) {
-
-				this.__sendLog( AutoSave.LOG_DEBUG,"Ignored TEXTAREA node as no name was present", child );
-				return;
-			}
-		
-			fieldData[0].push( nameKey );
-			fieldData[1].push( value );
-		}
-		
-		
-		//TODO: Button,  etc.
-		
-		
-		else {
-		
-			//May be, e.g., a form or div so go through all children
-			var sChildren = child.children;
-			for( var sIdx = 0 ; sIdx < sChildren.length ; sIdx++ ){
-				
-				this._serializeSingleControl( sChildren[ sIdx ], fieldData );
-			}
-		}
-	}
-	
 	//Returns the serialized string in the standard format(?) - 
 	//Must return a string instance - even if empty - as callback hooks assume it
 	this.serialize = function( rootControlsArr ){
@@ -1111,10 +845,10 @@ var AutoSave = function( rootControls, opts ){
 		
 		for( var idx=0 ; idx<rootControlsArr.length ; ++idx ) {
 		
-			this._serializeSingleControl( rootControlsArr[ idx ], fieldData );
+			this.__invokeExt( AutoSave._serializeSingleControl, rootControlsArr[ idx ], fieldData );
 		}
 		
-		var fieldDataStr = AutoSave._encodeFieldDataToString( fieldData );
+		var fieldDataStr = this.__invokeExt( AutoSave._encodeFieldDataToString, fieldData );
 		
 		return fieldDataStr;
 	}
@@ -1123,7 +857,7 @@ var AutoSave = function( rootControls, opts ){
 	//TODO: setOpt("", "...") for dynamic parameter modification - just pass in a modified options object as before? What if callbacks REMOVED?
 	
 	//optObj must not be null
-	this._ensureOptIn = function( optObj, allowedValues, optDesc ){
+	AutoSave._ensureOptIn = function( optObj, allowedValues, optDesc ){
 		
 		//Only verify level of options, not base members
 		var optKeys = Object.keys( optObj ); //todo: will this get parent values if inherited object? x-browser support?
@@ -1137,16 +871,6 @@ var AutoSave = function( rootControls, opts ){
 				  throw new Error( "Unexpected parameter '" + optKey + "' in " + optDesc + " options object");
 			 }
 		}
-	}
-
-	//Helper function incase user forgets to return our data from a callback
-	//If they really want to clear out a value, they can pass null
-	this._ifUndef = function(retValue, originalValue){
-	
-		if  (retValue === undefined)
-			return originalValue;
-		else
-			return retValue;
 	}
 
 	/* Additional 'classes'  - TODO: Best way whilst encapsulating ?*/
@@ -1363,6 +1087,178 @@ AutoSave.whenInitialized = function whenInitialized( funcToRun ){
 	}
 }
 
+
+AutoSave._getKeyFunc = function( parentElems, rawUserOption ){
+	
+	//User-supplied option takes precedence - we dont validate uniqueness etc. but trust what they're doing
+	if ( rawUserOption !== undefined ){
+	
+		if ( typeof( rawUserOption ) == "string" ){
+			
+			var fullKey = AutoSave.DEFAULT_KEY_PREFIX + rawUserOption;
+			
+			AutoSave.log( AutoSave.LOG_INFO, "Using static provided value for datastore key", fullKey );
+	
+			return function(){
+				
+				return fullKey;
+			}
+		}
+		else if ( typeof( rawUserOption ) === "function" ){
+			
+			AutoSave.log( AutoSave.LOG_DEBUG, "Using user-supplied function for generating datastore key when required" );
+			
+			var that = this;
+			return function(){
+				
+				//Dynamically recalc every time
+				var val = AutoSave.DEFAULT_KEY_PREFIX + rawUserOption();
+
+				
+				
+				
+				
+				//TODO: Effectively async
+				
+				
+				
+				AutoSave.log( AutoSave.LOG_DEBUG, "Calculated dynamic datastore key to use", val );
+				
+				return val;
+			}
+		}
+		else{
+			
+			throw new Error("Unexpected type of parameter 'dataStore.key'");
+		}
+	}
+	else {
+		
+		var keyValue = null;
+		
+		//If form supplied as the parameter
+		if ( parentElems.nodeName == "FORM" ){
+			
+			keyValue = parentElems.name;
+		}
+		else if ( parentElems.length == 1 && //If form supplied as the only parameter in a jQuery or [], use that
+				  parentElems[0].nodeName == "FORM" ){
+			
+			keyValue = parentElems[0].name;
+		}
+		
+		//Non-form element or form without name, default the key
+		if ( keyValue ){
+			
+			keyValue = AutoSave.DEFAULT_KEY_PREFIX + keyValue;
+		}
+		else{
+			
+			keyValue = AutoSave.DEFAULT_KEY_PREFIX;
+		}
+		
+		AutoSave.log( AutoSave.LOG_INFO, "Using calculated value for datastore key", keyValue);
+			
+		if ( AutoSave.__keysInUse.indexOf( keyValue ) != -1 ){
+			
+			throw new Error("There is already an AutoSave instance with the storage key of '"+keyValue+"'. See the documentation for solutions.")
+		}
+		
+		AutoSave.__keysInUse.push( keyValue );
+		
+		AutoSave.log( AutoSave.LOG_DEBUG, "Updated set of keys in use", AutoSave.__keysInUse );
+		
+		return function(){
+			
+			return keyValue;
+		}
+	}
+}
+
+//Looks at a single control and it's children and returns an array of serialised object strings
+AutoSave._serializeSingleControl = function( child, fieldData ){
+
+	var nameKey = child.name;
+	var value = child.value;
+	
+	if ( child.nodeName == "INPUT" ) {
+	
+		//We only serialise controls with names (else we'll get, e.g., '=Oscar&=Mozart')
+		if ( !nameKey ) {
+
+			AutoSave.log( AutoSave.LOG_DEBUG, "Ignored INPUT node as no name was present", child );
+			return;
+		}
+		
+	   if ( child.type == "radio" || child.type == "checkbox" ){
+		
+			if ( child.checked ) {
+				
+				fieldData[0].push( nameKey );
+				fieldData[1].push( value );
+			}
+		}
+		else{ //Implicitly an <input type=text|button|password|hidden...>
+		
+			fieldData[0].push( nameKey );
+			fieldData[1].push( value );
+		}
+	}
+	else if ( child.nodeName == "SELECT" ){
+	
+		//We only serialise controls with names (else we'll get, e.g., '=Oscar&=Mozart')
+		if ( !nameKey ) {
+
+			AutoSave.log( AutoSave.LOG_DEBUG, "Ignored SELECT node as no name was present", child );
+			return;
+		}
+	
+		if ( child.type == "select-one" ){
+		
+			fieldData[0].push( nameKey );
+			fieldData[1].push( value );
+		}
+		else { //Must be of type == 'select-multiple'
+		
+			var sChildren = child.options;
+			for( var sIdx = 0 ; sIdx < sChildren.length ; ++sIdx ){
+			
+				if ( sChildren[sIdx].selected ) {
+				
+					fieldData[0].push( nameKey );
+					fieldData[1].push( sChildren[ sIdx ].value );
+				}
+			}
+		}
+	}
+	else if ( child.nodeName == "TEXTAREA" ) {
+	
+		//We only serialise controls with names (else we'll get, e.g., '=Oscar&=Mozart')
+		if ( !nameKey ) {
+
+			AutoSave.log( AutoSave.LOG_DEBUG,"Ignored TEXTAREA node as no name was present", child );
+			return;
+		}
+	
+		fieldData[0].push( nameKey );
+		fieldData[1].push( value );
+	}
+	
+	
+	//TODO: Button,  etc.
+	
+	
+	else {
+	
+		//May be, e.g., a form or div so go through all children
+		var sChildren = child.children;
+		for( var sIdx = 0 ; sIdx < sChildren.length ; sIdx++ ){
+			
+			AutoSave._serializeSingleControl( sChildren[ sIdx ], fieldData );
+		}
+	}
+}
+
 AutoSave._encodeFieldDataToString = function _encodeFieldDataToString( fieldData ){
 		
 	var fieldDataStr = "";
@@ -1489,6 +1385,133 @@ AutoSave.getSerialisedValues = function getSerialisedValues( szString, key ){
 	return ret;
 }
 
+AutoSave._deserializeSingleControl = function( child, fieldData, clearEmpty ){
+
+	var fieldValue = null;
+	
+	var runStd = false;
+	
+	if (child.nodeName == "INPUT"){
+	
+	   if (child.type == "radio" || child.type == "checkbox") {
+
+			//For these, we need to check not only that the names exists but the value corresponds to this element.
+			//If it corresponds, we need to 
+			//	- If clearEmpty = true, also uncheck all those items with the same name that aren't in the field data.
+			//	- Else leave the element's value intact
+			//If theres no kvp that corresponds to this name, always leave the elements intact.
+			
+			var foundField = null;
+			
+			for (var fieldIdx in fieldData[ 0 ] ) {
+			
+				if ( fieldData[ 0 ][ fieldIdx ] == child.name ) {
+					
+					if ( fieldData[ 1 ][ fieldIdx ] == child.value ) {
+					
+						foundField = true;
+						break;
+					}
+					else{
+						
+						foundField = false;
+						
+						//Continue searching
+					}
+				}
+			}
+				
+			if ( foundField === true )
+				child.checked = true;
+			else if ( foundField === false && clearEmpty ) //Was of the form ...&fieldName=&...
+				child.checked = false;
+			//else missing altogether in the field data so leave untouched
+		}
+		else {
+			runStd = true;
+		}
+	}
+	else if ( child.nodeName == "SELECT" ) {
+	
+		if ( child.type == "select-one" ) {
+		
+			runStd = true;
+		}
+		else { //Implicitly select-multiple
+		
+			var sChildren = child.options;
+			
+			for ( var childIdx = 0 ; childIdx < sChildren.length ; childIdx++ ) {
+				
+				var opt = sChildren[ childIdx ];
+				
+				for ( var fieldIdx in fieldData[ 0 ] ) {
+				
+					if ( fieldData[ 0 ][ fieldIdx ] == child.name) {
+						
+						if ( fieldData[ 1 ][ fieldIdx ] == opt.value ) {
+						
+							opt.selected = true;
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+	else if (child.nodeName == "TEXTAREA") { //All other :inputs types - textarea, HTMLSelect etc.
+
+		runStd = true;
+	}
+	
+	//TODO: Button, Std etc.
+	
+	
+	else {
+								
+		//May be, e.g., a form or div so go through all children
+		var sChildren = child.children;
+		for( var sIdx = 0; sIdx < sChildren.length; sIdx++ ){
+			
+			AutoSave._deserializeSingleControl( sChildren[ sIdx ], fieldData, clearEmpty );
+		}
+	}
+	
+	if (runStd) {
+		
+		for ( var fieldIdx in fieldData[ 0 ] ) {
+		
+			var fieldName = fieldData[ 0 ][ fieldIdx ];
+			
+			if ( fieldName === child.name ){
+			
+				var fieldValue = fieldData[ 1 ][ fieldIdx ];
+					
+				if ( fieldValue !== "" || clearEmpty )
+					child.value = fieldValue;
+				
+				break;
+			}
+			//else was missing altogether from field data
+		}
+	}
+}
+
+AutoSave._parseExternalElemsArg = function _parseExternalElemsArg( seekExternalFormElements ){
+	
+	//Default hook external controls to true
+	if ( seekExternalFormElements === undefined )
+		seekExternalFormElements = true;
+	else if ( seekExternalFormElements === false ||
+			  seekExternalFormElements === true)
+	{ /* Valid */ }
+	else
+		throw new Error( "Unexpected type for parameter 'seekExternalFormElements'" );
+
+	return seekExternalFormElements;
+}
+
+
 //From MDN - @https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API#Feature-detecting_localStorage
 //Even though local storage is supported in browsers AutoSaveJS supports, still need to check for Safari
 AutoSave.isLocalStorageAvailable = function isLocalStorageAvailable() {
@@ -1569,7 +1592,7 @@ AutoSave.resetAll = function(){
 	//TODO: Unhook listeners too?
 	
 	//Remove reserved keys
-	AutoSave._keysInUse = [];
+	AutoSave.__keysInUse = [];
 		
 	//Iterate and remove all AutoSaveJS local storage
 	if ( AutoSave.isLocalStorageAvailable() ) {
@@ -1600,22 +1623,6 @@ AutoSave.resetAll = function(){
 		}
 	}
 }
-
-// AutoSave.calloutInContext = function( funcToRun, logger ){
-	
-	// var prevLogger = AutoSave.__currentLogger;
-	
-	// try{
-		
-		// AutoSave.__currentLogger = logger;
-		
-		// funcToRun();
-	// }
-	// finally{
-		
-		// AutoSave.__currentLogger = prevLogger;
-	// }
-// }
 
 AutoSave.getExternalFormControls = function( elems ){
 
@@ -1660,6 +1667,8 @@ AutoSave.getExternalFormControls = function( elems ){
 	if ( formNames.length ){
 		
 		var selector = "[form='"+formNames.join("'],[form='")+"']";
+		
+		AutoSave.log( AutoSave.LOG_DEBUG, "Querying for external form controls with selector", selector );
 		var externalElems = document.querySelectorAll( selector );
 	}
 	else{
@@ -1702,6 +1711,34 @@ AutoSave._logToConsole = function ( logLevel, msg ){
 		throw new Error( "Unknown log level: " + logLevel );
 }
 
+AutoSave._showSavingNotification = function _showSavingNotification( entireHtml, innerMsg ){
+	
+	var elem;
+	if ( entireHtml ) {
+	
+		var tempContainer = document.createElement( "div" );
+		
+		tempContainer.innerHTML = entireHtml;
+		
+		if ( tempContainer.children.length != 1 )
+			throw new Error( "Expected exactly 1 top-level element in saveNotification.template" );
+		
+		elem = tempContainer.children[0];
+	}
+	else {
+		
+		elem = document.createElement( "div" );
+		elem.classList.add( "autosave-notification" );
+		
+		var msg = innerMsg || "Saving...";
+		elem.innerHTML = "<span class='autosave-msg'>" + msg + "</span>";
+	}
+	
+	document.body.append( elem );
+	
+	return elem;
+}
+
 //todo: be consistent wrt usage of null vs constants, sample code shouldnt break on upgrades from null to constant parameters
 AutoSave.LOG_DEBUG = 100;
 AutoSave.LOG_INFO = 101;
@@ -1711,8 +1748,8 @@ AutoSave.LOG_ERROR = 103;
 // AutoSave.MSG_STORAGE_WARNING = 105; /* When about to show user a message that they have no support for autosave */
 // AutoSave.MSG_SAVING_STARTED = 106;
 // AutoSave.MSG_SAVING_COMPLETED = 107;
-AutoSave.DEFAULT_HTML_SAVE_NOTIFICATION = "<div class='autosave-notification'><span class='msg'>Saving...</span></div>";
-AutoSave.DEFAULT_LOAD_CHECK_INTERVAL = 100;    //Every 100 seconds, check if it's loaded
+
+AutoSave.DEFAULT_LOAD_CHECK_INTERVAL = 100;    //Every 100 ms, check if it's loaded
 AutoSave.DEFAULT_AUTOSAVE_INTERVAL   = 3*1000; //By default, autosave every 3 seconds
 AutoSave.DEFAULT_KEY_PREFIX = "AutoSaveJS_";
 AutoSave.log = AutoSave._logToConsole; //By default, log to console.
@@ -1720,3 +1757,10 @@ AutoSave.__keysInUse = [];
 AutoSave.__defaultListenOpts = { passive:true, capture:true };		//Let browser know we only listen passively so it can optimise
 AutoSave.__cachedLocalStorageAvailable;
 AutoSave.Version = "1.0.0";
+
+
+
+
+//TODO: Fix above so import-able as a re-nameable module - test?
+
+
