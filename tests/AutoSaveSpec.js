@@ -1,6 +1,6 @@
 describe("AutoSaveJS", function() {
 
-    _currTestAutoSave=null;
+	_allCurrAutoSaves = [];
 	_noOpLoad = function( key, loadCompleted){};
 	_noOpSave = function( key, data, saveCompleted){};
 	
@@ -190,17 +190,22 @@ describe("AutoSaveJS", function() {
 	  
 		if (clearPrev === undefined || clearPrev === true) {
 			
-			if(_currTestAutoSave) {
-				
-				_currTestAutoSave.dispose( true ); //detach all listeners, reset store
-				_currTestAutoSave = null;
+			for(var i=0; i< _allCurrAutoSaves.length; i++) {
+									
+				_allCurrAutoSaves[i].dispose( true ); //detach all listeners, reset store
 			}
-
+				
+			_allCurrAutoSaves.length = 0;
 			AutoSave.resetAll(); //Clear from previous instances of test runs
 		}
 		
-		_currTestAutoSave = new AutoSave(parent, opts);
-		return _currTestAutoSave;
+		if ($(".autosave-notification").length)
+			console.log(">>WHAT");
+		
+		var a = new AutoSave(parent, opts);
+		_allCurrAutoSaves.push(a);
+		
+		return a;
     }
 	
 	beforeEach(function(){
@@ -731,7 +736,7 @@ describe("AutoSaveJS", function() {
 		
 	})
 	
-	it('autosave_loads_controls_on_page_load', function(){
+	it('autosave loads controls on page load', function(){
 		
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<div>\
@@ -872,6 +877,7 @@ describe("AutoSaveJS", function() {
 		expect( getBrowserCookie("AutoSaveJS_225758493995") ).toEqual( "fullName=Jill+Wayne&description=~Blue%40cows~" );
 	});
 	
+	
 	it('can set a custom function as the local storage key provider', function(){
 		
 		//Arrange - Create and set a value on the input text box
@@ -916,7 +922,7 @@ describe("AutoSaveJS", function() {
 		
 	});
 	
-  	it('values_are_set_on_all_controls_in_watch_range_on_page_load', function(){
+  	it('values are set on all controls in watch range on page load', function(){
 		
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<div id='unwatched'>\
@@ -1222,16 +1228,11 @@ describe("AutoSaveJS", function() {
 	
 	internal_run_multi_instance_test = function(testFragment, parentParam1, parentParam2, pType, opts1, opts2){
 		
-		if(_currTestAutoSave) {
-			
-			_currTestAutoSave.dispose( true ); //detach all listeners, reset store
-		}
-		
 		resetSandbox();
 		addToSandbox(testFragment);
 
 		//Multiple non-overlapping instances, create with no-reset arg so no disposal
-		var inst1 = createAutoSave(gParam(parentParam1, pType), opts1, false);
+		var inst1 = createAutoSave(gParam(parentParam1, pType), opts1);
 		var inst2 = createAutoSave(gParam(parentParam2, pType), opts2, false);
 		
 		//inst1
@@ -1390,6 +1391,9 @@ describe("AutoSaveJS", function() {
 		//Dispose 2nd - ''
 		inst2.dispose();
 		var inst4 = createAutoSave(".some_other", null, false);
+		
+		inst3.dispose();
+		inst4.dispose();
 	});
 	
 	it('multiple non-form elements will throw an error', function(){
@@ -1710,20 +1714,85 @@ describe("AutoSaveJS", function() {
 
 		expect(1).toEqual(2);
 	});
+		
+	it('autosave shows for a mininum of half a second', function(){
 	
-	it('saving will not run multiple times if 1 is already in progress', function(){
-	
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox(testFragment);
+		
+		var _currCallback = null; //This is what the save function is expecting to be called to complete the save operation
+		
+		var defaultOpt = {
+			
+			dataStore:{
+				load: _noOpLoad,
+				save: _noOpSave
+			}
+		};
+		
+		var autoSave = createAutoSave(null, defaultOpt);
+		
+		//Setting a value should show the auto-save banner until we invoke the callback
+		setValue("[name='musician']", "Mozart");
+		
+		//Wait for banner to show after debouncing
+		while(!$(".autosave-notification").length) {
+			jasmine.clock().tick(50);
+		}
+		
+		
+		expect($(".autosave-notification").length).toEqual(1);
+		expect($(".autosave-notification").css("display")).not.toEqual("none");
+		
+		//Complete save operation 'async'
+		_currCallback();
+		
+		//Should only now get hidden 
+		expect($(".autosave-notification").css("display")).toEqual("none");
+
+		
 		expect(1).toEqual(2);
 	});
 	
 	it('onToggleSaveNotification fires at correct time even if save is async', function(){
-	
-		expect(1).toEqual(2);
+		
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox(testFragment);
+		
+		var _currCallback = null; //This is what the save function is expecting to be called to complete the save operation
+		
+		var defaultOpt = {
+			
+			dataStore:{
+				load: _noOpLoad,
+				save: function( key, data, callback ){
+					
+					_currCallback = callback;
+				}
+			}
+		};
+		
+		var autoSave = createAutoSave(null, defaultOpt);
+		
+		//Setting a value should show the auto-save banner until we invoke the callback
+		setValue("[name='musician']", "Mozart");
+		jasmine.clock().tick(60*1000);
+		expect($(".autosave-notification").length).toEqual(1);
+		expect($(".autosave-notification").css("display")).not.toEqual("none");
+		
+		//Complete save operation 'async'
+		_currCallback();
+		
+		//Should only now get hidden 
+		expect($(".autosave-notification").css("display")).toEqual("none");
 	});
 	
 	it('Save notification by default shows an auto-saving banner', function(){
 
-		//Arrange - Create and set a value on the input text box
 		var testFragment = "<h3>Please enter your preferred musician:</h3>\
 							<input type='text' name='musician'>";
 		
@@ -1862,7 +1931,7 @@ describe("AutoSaveJS", function() {
 		_currCallback();
 		
 		//Should get hidden
-		expect($(".autosave-my_save_msg").css("display")).toEqual("none");
+		expect($(".my_save_msg").css("display")).toEqual("none");
 	});
 	
 	it('onSaveNotification callback can modify the default behaviour of save notification', function(){
@@ -2918,6 +2987,64 @@ describe("AutoSaveJS", function() {
 		expect(1).toEqual(szCount);
 	});
 
+	it('saving won\'t run multiple times if 1 is already in progress', function(){
+			
+		//Arrange - Create and set a value on the input text box
+		var testFragment = "<select name='frmMusician'><option value='Mozart'>M</option>\
+							<option value='JayZ'>J</option><option value='Sipa'>S</option></select>";
+		addToSandbox(testFragment);
+
+		var currSaveCallback = null;
+		var saveCount = 0;
+		var aSave = createAutoSave(null,{
+			dataStore: {
+				load: _noOpLoad,
+				save: function(key, data, saveCompleteCallback){
+					
+					++saveCount;
+					currSaveCallback = saveCompleteCallback
+				}
+			},
+		});
+
+		//Sanity
+		jasmine.clock().tick(60*1000);
+		expect(0).toEqual(saveCount);
+
+		//Simulate save completed instantly
+		setValue("[name='frmMusician']", "Mozart");
+		jasmine.clock().tick(60*1000);
+		currSaveCallback();
+		expect(1).toEqual(saveCount);
+
+		//Make another save which takes a long time
+		setValue("[name='frmMusician']", "Beethoven");
+		jasmine.clock().tick(60*1000);
+		expect(2).toEqual(saveCount);
+
+		//Another 3 update comes through (even after debounce interval elapsed)
+		setValue("[name='frmMusician']", "Debussy");
+		jasmine.clock().tick(60*1000);
+		setValue("[name='frmMusician']", "Jay Z");
+		jasmine.clock().tick(60*1000);
+		setValue("[name='frmMusician']", "U2");
+		jasmine.clock().tick(60*1000);
+		expect(2).toEqual(saveCount); //Should NOT increment as it's pending a save
+
+		//Long running save completes
+		currSaveCallback();
+		
+		//Now the subsequent updates (the Debussy one) should come through but only as ONE batch
+		jasmine.clock().tick(60*1000);
+		expect(3).toEqual(saveCount); //Should NOT increment as it's pending a save
+		
+		//Completes instantly
+		currSaveCallback();
+		
+		//Sanity
+		jasmine.clock().tick(60*1000);
+		expect(3).toEqual(saveCount); //No more updates expected
+	});
 	
 	it('autosave is not normally triggered by inputs outside the watch range', function(){
 

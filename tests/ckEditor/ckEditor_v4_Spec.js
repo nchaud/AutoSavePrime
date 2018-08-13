@@ -73,13 +73,7 @@ describe("AutoSaveJS+CKEditor", function() {
 
     _currTestAutoSave=null;
     function createAutoSave(parent, opts){
-	  
-		if(_currTestAutoSave) {
-			
-			_currTestAutoSave.dispose(); //detach all listeners
-			_currTestAutoSave = null;
-		}
-		
+	  		
 	  _currTestAutoSave = new AutoSave(parent, opts);
 	  return _currTestAutoSave;
     }
@@ -110,6 +104,13 @@ describe("AutoSaveJS+CKEditor", function() {
 		
 		//Reset all elements in container
 		resetSandbox();
+		
+		if(_currTestAutoSave) {
+			
+			_currTestAutoSave.dispose();
+			_currTestAutoSave = null;
+		}
+		
 	});
 
 	function resetSandbox(){

@@ -16,6 +16,8 @@ var AutoSave = function( rootControls, opts ){
 	this.__onInitialiseInvoked;
 	this.__invokeExtBound;
 	this.__currSaveNotificationElement;
+	this.__saveInProgress;
+	this.__isPendingSave;
 	
 	// this.__onWarnNoStorageFunc;
 	
@@ -251,12 +253,22 @@ var AutoSave = function( rootControls, opts ){
 		}
 	}
 	
-	//AlWAYS called after a save is invoked
-	this._saveStepFinally = function(){
+	//AlWAYS called before and after a save is invoked
+	this._saveStartFinally = function( toggleOn ){
 		
-		this._toggleSavingNotification( false );
+		this._toggleSavingNotification( toggleOn );
+		
+		this.__saveInProgress = toggleOn;
+
+		//If a save has completed but another save is pending, kick it off
+		if ( !toggleOn && this.__isPendingSave ){
+			
+			this.__isPendingSave = false;
+			
+			this._executeSave();
+		}		
 	}
-	
+		
 	this._toggleSavingNotification = function( toggleOn ){
 		
 		var currElement = this.__currSaveNotificationElement;
@@ -282,26 +294,33 @@ var AutoSave = function( rootControls, opts ){
 			}
 		}
 		
-		if ( !currElement ){
+		if ( currElement ){
 			
-			//User probably cleared out showing notification through setting opts.saveNotification = null
-			return;
-		}
-		
-		if ( !toggleOn ){
+			if ( !toggleOn ){
+				
+				currElement.style.display = "none";
+			}
+			else{
 			
-			currElement.style.display = "none"
+				//If it was already created from previously, ensure it's now visible
+				currElement.style.display = "block"; //TODO: 'Reset' this so display is block or whatever it was before
+			}
 		}
-		else{
-		
-			//If it was already created from previously, ensure it's now visible
-			currElement.style.display = "block"; //TODO: 'Reset' this so display is block or whatever it was before
-		}
+		//else User probably cleared out showing notification through setting opts.saveNotification = null
 	}
 	
 	this._executeSave = function() {
 	
-		this._toggleSavingNotification( true );
+		if ( this.__saveInProgress ){
+			
+			this.__sendLog( AutoSave.LOG_WARN, "Save was postponed as one already in progress. (Did you remember to call saveComplete callback?)" );
+			
+			this.__isPendingSave = true;
+			
+			return;
+		}
+		
+		this._saveStartFinally( true );
 	
 		var cb = null; //Callback
 		
@@ -320,7 +339,7 @@ var AutoSave = function( rootControls, opts ){
 			if (rawUserInput === false) {
 
 				this.__sendLog( AutoSave.LOG_INFO, "User aborted the save in the onPreSerialize handler" );
-				this._saveStepFinally();
+				this._saveStartFinally( false );
 				return; //Cancel the save
 			}
 			else if (rawUserInput === undefined) { 
@@ -360,7 +379,7 @@ var AutoSave = function( rootControls, opts ){
 			if (rawUserInput === false) {
 				
 				this.__sendLog( AutoSave.LOG_INFO, "User aborted the save in the onPreStore handler" );
-				this._saveStepFinally();
+				this._saveStartFinally( false );
 				return; //Cancel the save
 			}
 			else if (rawUserInput === undefined) { 
@@ -390,7 +409,7 @@ var AutoSave = function( rootControls, opts ){
 			cb();
 		}
 		
-		this._saveStepFinally();
+		this._saveStartFinally( false );
 	}
 	
 	
