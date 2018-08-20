@@ -14,10 +14,19 @@ var AutoSave = function( rootControls, opts ){
 	this.__debounceTimeoutHandle;
 	this.__dataStoreKeyFunc; 	//Never null after init
 	this.__onInitialiseInvoked;
-	this.__invokeExtBound;
+
+	//Bound functions
+	this.__invokeExtBound;			
+	this.__resetNotificationDisplayBound;
+	this.__handleDebouncedEventBound;
+	
+	//Saving & Notifications
+	this.__minShowDuration;
 	this.__currSaveNotificationElement;
 	this.__saveInProgress;
 	this.__isPendingSave;
+	this.__autoToggleState; //null => interval not elapsed, true => auto toggle will run, false => interval elapsed + toggle will not run
+
 	
 	// this.__onWarnNoStorageFunc;
 	
@@ -50,6 +59,10 @@ var AutoSave = function( rootControls, opts ){
 			
 			//Set this very first as if there's an initialisation error, startup routine may dispose and may need to log
 			this.__callbacks = opts;		//TODO: Means it can be dynamic ?? But should be set explicitly for future compatability!
+
+			this.__resetNotificationDisplayBound = this._resetNotificationDisplay.bind( this );
+			this.__handleDebouncedEventBound = this._handleDebouncedEvent.bind( this );
+			this.__invokeExtBound = this.__sendLog.bind( this );
 			
 			AutoSave._ensureOptIn( opts, allowedOpts, "top level" );
 						
@@ -93,16 +106,41 @@ var AutoSave = function( rootControls, opts ){
 			
 			//Default behaviour
 			this.__currSaveNotificationElement = AutoSave._showSavingNotification( null, null );
+			this.__minShowDuration = AutoSave.DEFAULT_AUTOSAVE_SHOW_DURATION;
 		}
 		else {
 			
-			var allowedOpts = [ "template", "message" ];
+			var allowedOpts = [ "template", "message", "minShowDuration" ];
 			AutoSave._ensureOptIn( saveNotificationOpts, allowedOpts, "saveNotification" );
-			
+
 			var template = saveNotificationOpts.template;
 			var msg = saveNotificationOpts.message;
-			//var cb = saveNotificationOpts.onNotify;
+			var minShowDuration = saveNotificationOpts.minShowDuration;
+			
+			if ( minShowDuration !== undefined ){
 				
+				if ( typeof( minShowDuration ) == "number" ) {
+				
+					if ( minShowDuration <= 60 ){ //Must be a mistake
+					
+						throw new Error( "The 'minShowDuration' must be specified in milliseconds" );
+					}
+					else {
+						
+						this.__minShowDuration = minShowDuration;
+						this.__sendLog( AutoSave.LOG_INFO, "Min duration initialised with custom interval", this.__minShowDuration);
+					}
+				}
+				else{
+					
+					throw new Error( "Unexpected non-numeric type for parameter 'minShowDuration'" );
+				}
+			}
+			else{
+				
+				this.__minShowDuration = AutoSave.DEFAULT_AUTOSAVE_SHOW_DURATION;
+			}
+
 			if ( template && msg )
 				throw new Error( "Only 1 of saveNotification.template or saveNotification.message can be set - not both" );
 				
@@ -115,10 +153,9 @@ var AutoSave = function( rootControls, opts ){
 				
 				this.__sendLog( AutoSave.LOG_DEBUG, "Notification bar with customised template created." );
 				this.__currSaveNotificationElement = AutoSave._showSavingNotification( template, null);
-			}
-			else {
+			} else {
 				
-				throw new Error( "'saveNotification' parameter was supplied but no options were specified"); //Usage error
+				//Just the default
 			}
 		}
 	}
@@ -271,7 +308,6 @@ var AutoSave = function( rootControls, opts ){
 		
 	this._toggleSavingNotification = function( toggleOn ){
 		
-		var currElement = this.__currSaveNotificationElement;
 		var cb = this.__callbacks.onSaveNotification;
 		
 		if ( cb ){
@@ -290,23 +326,55 @@ var AutoSave = function( rootControls, opts ){
 			}
 			else {
 			
-				throw new Error( "Unexpected return type from callback onSaveNotification" );
+				throw new Error( "Unexpected return type from callback 'onSaveNotification'" );
 			}
 		}
+			
+		if ( !toggleOn ){
+			
+			//If it was already created from previously, ensure it's now visible
+			if ( this.__autoToggleState === null ){
+			
+				//Interval has not yet elapsed, flag that auto toggle visibility should run after elapsed
+				this.__autoToggleState = true;
+			}
+			else { //Interval has elapsed earlier, we need to toggle visibility ourself
+			
+				this._toggleSaveElementVisibility( false );
+			}
+		}
+		else{
 		
-		if ( currElement ){
-			
-			if ( !toggleOn ){
-				
-				currElement.style.display = "none";
-			}
-			else{
-			
-				//If it was already created from previously, ensure it's now visible
-				currElement.style.display = "block"; //TODO: 'Reset' this so display is block or whatever it was before
-			}
+			this._toggleSaveElementVisibility( true );
+			this.__autoToggleState = null;
+			setTimeout( this.__resetNotificationDisplayBound, this.__minShowDuration );
 		}
+	}
+	
+	this._resetNotificationDisplay = function() {
+		
+		if ( this.__autoToggleState == true ){
+			
+			this._toggleSaveElementVisibility( false );
+		}
+		else { //Save is taking a bit of time - flag that normal flow should toggle visibility
+			
+			this.__autoToggleState = false;
+		}
+	}
+	
+	this._toggleSaveElementVisibility = function( 	toggleOn ){
+		
+		var currElement = this.__currSaveNotificationElement;
+		
+		if ( !currElement )
+			return;
 		//else User probably cleared out showing notification through setting opts.saveNotification = null
+		
+		if ( toggleOn )
+			currElement.style.display = "block"; //TODO: 'Reset' this so display is block or whatever it was before
+		else
+			currElement.style.display = "none";
 	}
 	
 	this._executeSave = function() {
@@ -500,8 +568,6 @@ var AutoSave = function( rootControls, opts ){
 			
 			
 			
-			if ( !this.__invokeExtBound )
-				this.__invokeExtBound = this.__sendLog.bind(this);
 			
 			AutoSave.log = this.__invokeExtBound;
 			
@@ -718,9 +784,9 @@ var AutoSave = function( rootControls, opts ){
 			return;
 		}
 				
-		this.__debounceTimeoutHandle = setTimeout( this._handleDebouncedEvent.bind( this ), this.__debounceInterval );
+		this.__debounceTimeoutHandle = setTimeout( this.__handleDebouncedEventBound, this.__debounceInterval );
 	}
-	
+		
 	this._handleDebouncedEvent = function() {
 		
 		this.__sendLog( AutoSave.LOG_DEBUG, "Handling debounced control input event" );
@@ -1753,6 +1819,21 @@ AutoSave._showSavingNotification = function _showSavingNotification( entireHtml,
 		elem.innerHTML = "<span class='autosave-msg'>" + msg + "</span>";
 	}
 	
+	if ( elem.style.display == "none" ) {
+		
+		AutoSave.log( AutoSave.LOG_WARN, "Notification HTML template should not have a default display style of 'none' or it'll never show" );
+	}
+	
+
+	
+	//TOOD: Use this attribute later on when toggling
+	elem.attributes["autosave-original-display"] = elem.style.display;
+	
+	
+	
+	
+	elem.style.display = "none";
+	
 	document.body.append( elem );
 	
 	return elem;
@@ -1770,6 +1851,7 @@ AutoSave.LOG_ERROR = 103;
 
 AutoSave.DEFAULT_LOAD_CHECK_INTERVAL = 100;    //Every 100 ms, check if it's loaded
 AutoSave.DEFAULT_AUTOSAVE_INTERVAL   = 3*1000; //By default, autosave every 3 seconds
+AutoSave.DEFAULT_AUTOSAVE_SHOW_DURATION   = 500; //By default, show autosave msg for 1/2 a second
 AutoSave.DEFAULT_KEY_PREFIX = "AutoSaveJS_";
 AutoSave.log = AutoSave._logToConsole; //By default, log to console.
 AutoSave.__keysInUse = [];

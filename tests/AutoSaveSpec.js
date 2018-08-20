@@ -1,8 +1,8 @@
 describe("AutoSaveJS", function() {
 
 	_allCurrAutoSaves = [];
-	_noOpLoad = function( key, loadCompleted){};
-	_noOpSave = function( key, data, saveCompleted){};
+	_noOpLoad = function( key, loadCompleted){ loadCompleted() };
+	_noOpSave = function( key, data, saveCompleted){ saveCompleted() };
 	
 	/* Helper functions */
 	function testSerialize(parentParameter){
@@ -1714,15 +1714,52 @@ describe("AutoSaveJS", function() {
 
 		expect(1).toEqual(2);
 	});
-		
-	it('autosave shows for a mininum of half a second', function(){
 	
+	it('autosave min show time can be configured with minShowDuration option', function(){
+
 		var testFragment = "<h3>Please enter your preferred musician:</h3>\
 							<input type='text' name='musician'>";
 		
 		addToSandbox(testFragment);
 		
-		var _currCallback = null; //This is what the save function is expecting to be called to complete the save operation
+		var defaultOpt = {
+			
+			dataStore:{
+				load: _noOpLoad,
+				save: _noOpSave
+			},
+			saveNotification:{
+				minShowDuration: 3000
+			}
+		};
+		
+		var autoSave = createAutoSave(null, defaultOpt);
+		
+		//Setting a value should show the auto-save banner until we invoke the callback
+		setValue("[name='musician']", "Mozart");
+		
+		//Let debounce interval elapse
+		jasmine.clock().tick(AutoSave.DEFAULT_AUTOSAVE_INTERVAL + 1);
+
+		//Should show when save kicks off
+		expect($(".autosave-notification").css("display")).not.toEqual("none");
+			
+		//After ~2.9s, should not hide
+		jasmine.clock().tick(2900);
+		expect($(".autosave-notification").css("display")).not.toEqual("none");
+		
+		jasmine.clock().tick(200);
+
+		//Ensure after ~3s it does hide
+		expect($(".autosave-notification").css("display")).toEqual("none");
+	});
+	
+	it('autosave shows for a mininum of half a second by default', function(){
+	
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox(testFragment);
 		
 		var defaultOpt = {
 			
@@ -1734,26 +1771,41 @@ describe("AutoSaveJS", function() {
 		
 		var autoSave = createAutoSave(null, defaultOpt);
 		
+		//Initially should not be showing
+		expect($(".autosave-notification").css("display")).toEqual("none");
+		
 		//Setting a value should show the auto-save banner until we invoke the callback
 		setValue("[name='musician']", "Mozart");
 		
+		let INTERVAL = 50;
+		
+		let showCtr=0;
+		
 		//Wait for banner to show after debouncing
-		while(!$(".autosave-notification").length) {
-			jasmine.clock().tick(50);
+		while($(".autosave-notification").css("display")=="none") {
+			
+			jasmine.clock().tick(INTERVAL);
+			
+			if (AutoSave.DEFAULT_AUTOSAVE_INTERVAL - showCtr*INTERVAL < 0)
+				throw new Error("AutoSave notification didnt show");
+			
+			showCtr++;
 		}
 		
-		
-		expect($(".autosave-notification").length).toEqual(1);
-		expect($(".autosave-notification").css("display")).not.toEqual("none");
-		
-		//Complete save operation 'async'
-		_currCallback();
-		
-		//Should only now get hidden 
-		expect($(".autosave-notification").css("display")).toEqual("none");
+		let hideCtr=0;
+		while($(".autosave-notification").css("display")!="none") {
 
+			jasmine.clock().tick(INTERVAL);
+			
+			if (AutoSave.DEFAULT_AUTOSAVE_SHOW_DURATION - hideCtr*INTERVAL < 0)
+				throw new Error("AutoSave notification didnt hide");
+			
+			hideCtr++;
+		}
 		
-		expect(1).toEqual(2);
+		//Check intervals taking our ticking into account
+		expect(hideCtr).toBeGreaterThanOrEqual((500-INTERVAL-INTERVAL)/INTERVAL);
+		expect(hideCtr).toBeLessThanOrEqual((500+INTERVAL+INTERVAL)/INTERVAL);
 	});
 	
 	it('onToggleSaveNotification fires at correct time even if save is async', function(){
