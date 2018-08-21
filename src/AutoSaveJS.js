@@ -156,6 +156,7 @@ var AutoSave = function( rootControls, opts ){
 			} else {
 				
 				//Just the default
+				this.__currSaveNotificationElement = AutoSave._showSavingNotification( null, null );
 			}
 		}
 	}
@@ -367,21 +368,23 @@ var AutoSave = function( rootControls, opts ){
 		
 		var currElement = this.__currSaveNotificationElement;
 		
-		if ( !currElement )
+		if ( !currElement ) {
+
+			this.__sendLog( AutoSave.LOG_DEBUG, "No element found to toggle notification element visibility. No saving notification will show." );
 			return;
-		//else User probably cleared out showing notification through setting opts.saveNotification = null
+			//else User probably cleared out showing notification through setting opts.saveNotification = null
+		}
 		
-		if ( toggleOn )
-			currElement.style.display = "block"; //TODO: 'Reset' this so display is block or whatever it was before
-		else
-			currElement.style.display = "none";
+		//Toggle display value
+		let newStyle = toggleOn ? (currElement.getAttribute("autosave-original-display") || "block") : "none";
+		currElement.style.display = newStyle;
 	}
 	
 	this._executeSave = function() {
 	
 		if ( this.__saveInProgress ){
 			
-			this.__sendLog( AutoSave.LOG_WARN, "Save was postponed as one already in progress. (Did you remember to call saveComplete callback?)" );
+			this.__sendLog( AutoSave.LOG_WARN, "Save was postponed as one already in progress. (Did you remember to invoke the saveComplete callback?)" );
 			
 			this.__isPendingSave = true;
 			
@@ -571,7 +574,7 @@ var AutoSave = function( rootControls, opts ){
 			
 			AutoSave.log = this.__invokeExtBound;
 			
-			var args = Array.from(arguments).slice(1); //Bypass function argument -- TODO: CHECK SUPPORT OF NEW ARRAY like this
+			var args = AutoSave.toArray(arguments, 1); //Bypass function argument -- TODO: CHECK SUPPORT OF NEW ARRAY like this
 			
 			return funcToRun.apply( null, args );
 		}
@@ -581,12 +584,15 @@ var AutoSave = function( rootControls, opts ){
 		}
 	}
 	
-	this.__sendLog = function ( level, msg ){
+	this.__sendLog = function ( level, msg, __variadic_args__ ){
 
+		//Skip 2 fixed args
+		//var args = AutoSave.toArray(arguments, 2);
+	
 		 var cb = this.__callbacks.onLog;
 		 if ( cb )
 		 {
-			 var ret = cb( level, msg );
+			 var ret = cb.apply( this, arguments );//level, msg );	//TODO: CHECK CONTEXT PRESERVED IF ORIGINALLY BOUND?!
 			 
 			 //See @FUN semantics
 			 if ( ret === false ) {
@@ -605,7 +611,7 @@ var AutoSave = function( rootControls, opts ){
 		 }
 		 
  		 //TODO: Log Levels should correspond to popular logging libraries
-		 AutoSave._logToConsole( level, msg );
+		 AutoSave._logToConsole.apply(null, arguments);//( level, msg );
 	}
 	
 	//This function sets up when to save the state
@@ -621,7 +627,7 @@ var AutoSave = function( rootControls, opts ){
 		else if ( saveTrigger === undefined ) {
 
 			this.__debounceInterval = AutoSave.DEFAULT_AUTOSAVE_INTERVAL;
-			this.__sendLog( AutoSave.LOG_INFO, "Save trigger was initialised at default interval", this.__debounceInterval);
+			this.__sendLog( AutoSave.LOG_INFO, "Save trigger was initialised with default interval", this.__debounceInterval);
 		}
 		else if ( typeof( saveTrigger ) == "object" ) {
 
@@ -641,7 +647,7 @@ var AutoSave = function( rootControls, opts ){
 				else {
 					
 					this.__debounceInterval = debounceInterval;
-					this.__sendLog( AutoSave.LOG_INFO, "Save trigger was initialised at custom interval", this.__debounceInterval);
+					this.__sendLog( AutoSave.LOG_INFO, "Save trigger was initialised with custom interval", this.__debounceInterval);
 				}
 			}
 			else{
@@ -1767,7 +1773,7 @@ AutoSave.getExternalFormControls = function( elems ){
 
 AutoSave.getCtor = function ( constructor , __variadic_args__ ){
 	
-	var currArgs = Array.from(arguments).slice(1); //Bypass constructor argument -- TODO: CHECK SUPPORT OF NEW ARRAY like this
+	var currArgs = AutoSave.toArray(arguments, 1); //Bypass constructor argument -- TODO: CHECK SUPPORT OF NEW ARRAY like this
 	
 	return function(){
 		
@@ -1777,21 +1783,32 @@ AutoSave.getCtor = function ( constructor , __variadic_args__ ){
 	}
 }
 
-AutoSave._logToConsole = function ( logLevel, msg ){
+AutoSave.toArray = function ( arrayLike, skipStartEntries ){
+	
+	var currArgs = Array.from(arrayLike);
+	if (skipStartEntries)
+		currArgs = currArgs.slice(skipStartEntries);
+	return currArgs;
+}
+
+//todo: check performance of 'apply' on args
+AutoSave._logToConsole = function ( logLevel, __variadic_args__ ){
+	
+	var args = AutoSave.toArray( arguments, 1 ); //Skip logLevel
 	
 	if ( logLevel == AutoSave.LOG_DEBUG )
 	{
 		if (console.debug) 
-			console.debug( msg );
+			console.debug.apply(this, args);
 		else
-			console.log( msg ); //Distinguish from info level incase users need it
+			console.log.apply(this, args); //Distinguish from info level incase users need it
 	}
 	else if ( logLevel == AutoSave.LOG_INFO )
-		console.info( msg );
+		console.info.apply(this, args);
 	else if ( logLevel == AutoSave.LOG_WARN )
-		console.warn( msg );
+		console.warn.apply(this, args);
 	else if ( logLevel == AutoSave.LOG_ERROR )
-		console.error( msg );
+		console.error.apply(this, args);
 	else
 		throw new Error( "Unknown log level: " + logLevel );
 }
@@ -1824,14 +1841,10 @@ AutoSave._showSavingNotification = function _showSavingNotification( entireHtml,
 		AutoSave.log( AutoSave.LOG_WARN, "Notification HTML template should not have a default display style of 'none' or it'll never show" );
 	}
 	
+	//Preserve the user's original display style for when we're toggling
+	elem.setAttribute("autosave-original-display", elem.style.display);
 
-	
-	//TOOD: Use this attribute later on when toggling
-	elem.attributes["autosave-original-display"] = elem.style.display;
-	
-	
-	
-	
+	//Initially hidden
 	elem.style.display = "none";
 	
 	document.body.append( elem );

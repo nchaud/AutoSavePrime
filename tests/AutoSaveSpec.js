@@ -1554,7 +1554,6 @@ describe("AutoSaveJS", function() {
 		};
 		
 		var ctr = 0;
-		var wasCalled = false;
 		var autoSave = createAutoSave(null, defaultOpt);
 		
 		//Setting a value should trigger an auto-save which should log information msg about the same
@@ -1671,7 +1670,6 @@ describe("AutoSaveJS", function() {
 		};
 		
 		var ctr = 0;
-		var wasCalled = false;
 		
 		//Setting a value should trigger an auto-save which should log information msg about the same
 		createAutoSave("#NON_EXISTENT", defaultOpt);
@@ -1692,6 +1690,47 @@ describe("AutoSaveJS", function() {
 	});
   
 	
+	it('custom autosave element gets set back to inline-display style', function(){
+
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox(testFragment);
+		
+		var _currCallback = null; //This is what the save function is expecting to be called to complete the save operation
+		
+		var defaultOpt = {
+			
+			saveNotification: {
+				template: "<h1 class='my_save_msg' style='display:inline-block'>My template override saving msg...</h1>"
+			},
+			dataStore:{
+				load: _noOpLoad,
+				save: function( key, data, callback ){
+					
+					_currCallback = callback;
+				}
+			}
+		};
+		
+		var autoSave = createAutoSave(null, defaultOpt);
+		
+		//Setting a value should trigger an auto-save which should trigger showing the save banner
+		setValue("[name='musician']", "Mozart");
+		jasmine.clock().tick(60*1000);
+		expect($(".my_save_msg").css("display")).toEqual("inline-block");
+		
+		//Complete save operation
+		_currCallback();
+	});
+	
+	it('bound callbacks are invoked in original context', function(){
+
+		//logging etc.
+		expect(1).toEqual(2);
+	});
+
+	
 	it('a custom object can be specified as the log data', function(){
 		
 		//Watch the console for messages
@@ -1700,8 +1739,11 @@ describe("AutoSaveJS", function() {
 		var defaultOpt = {
 			onLog:function( level, msg ){
 				
+				//Override the msg with a custom
 				if ( msg == "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?" )
 					return {nested:{object:100}}
+
+				//Dont return anything so it logs to console so we can verify console args too
 			}
 		};
 		
@@ -1709,10 +1751,31 @@ describe("AutoSaveJS", function() {
 		createAutoSave("#NON_EXISTENT", defaultOpt);
 		expect(console.warn).toHaveBeenCalledWith( {nested:{object:100}} );
 	});
-
+	
 	it('logging can take any number of parameters', function(){
 
-		expect(1).toEqual(2);
+		//Watch the console for messages
+		var spy = spyOn( console, "info" );
+		
+		var wasCalled = false;
+		var defaultOpt = {
+			onLog:function( level, msg, extraArg ){
+				
+				if ( msg == "Min duration initialised with custom interval" ) {
+					expect(extraArg).toEqual(2700)
+					wasCalled = true;
+				}
+				
+				//Dont return anything so it logs to console so we can verify console args too
+			},
+			saveNotification:{
+				minShowDuration: 2700
+			}			
+		};
+
+		var autoSave = createAutoSave(null, defaultOpt);
+		
+		expect(console.info).toHaveBeenCalledWith( "Min duration initialised with custom interval", 2700 );
 	});
 	
 	it('autosave min show time can be configured with minShowDuration option', function(){
@@ -2007,10 +2070,6 @@ describe("AutoSaveJS", function() {
 					return false; //Should cancel the show altogther
 				else if (ctr == 2)
 					return "Override saving text..."; //Will throw
-				//else if (ctr == 3)
-				//	return "<div class='custom'>Custom container text...</div>";
-				//else if (ctr == 4)
-				//	return $("<div class='second_custom'></div>").get(0)
 			},
 			dataStore:{
 				load: _noOpLoad,
@@ -2022,7 +2081,6 @@ describe("AutoSaveJS", function() {
 		};
 		
 		var ctr = 0;
-		var wasCalled = false;
 		var autoSave = createAutoSave(null, defaultOpt);
 		
 		//Case #1: Setting a value should trigger an auto-save which should trigger showing the save banner
@@ -2050,30 +2108,7 @@ describe("AutoSaveJS", function() {
 		setValue("[name='musician']", "Debussy");
 		expect(function(){
 			jasmine.clock().tick(60*1000);
-		}).toThrowError( "Unexpected return type from callback onSaveNotification" );
-
-		//Continue save to reset showing the banner and sanity check
-		// _currCallback();
-		// _currCallback = null;
-
-		// //Case #4: Notification display's entire container is switched out with a string HTML
-		// ctr = 3;
-		// setValue("[name='musician']", "Debussy");
-		// jasmine.clock().tick(60*1000);
-		// expect($(".autosave-notification").css("display")).not.toEqual("none");
-		// expect($(".autosave-notification").html()).toEqual("<div class='custom'>Custom container text...</div>");
-
-		// //Continue save to reset showing the banner and sanity check
-		// _currCallback();
-		// _currCallback = null;
-
-		// //Case #5: Notification display's entire container is switched out with a custom element
-		// ctr = 4;
-		// setValue("[name='musician']", "Ravioli");
-		// jasmine.clock().tick(60*1000);
-		// expect($(".autosave-notification").css("display")).toEqual("none");
-		// expect($(".second_custom").css("display")).not.toEqual("none");
-		// expect($(".second_cutom").length).toEqual(1);
+		}).toThrowError( "Unexpected return type from callback 'onSaveNotification'" );
 	});
 	
 	it('parentElement_parameter_need_not_be_a_form', function(){
@@ -3534,7 +3569,7 @@ describe("AutoSaveJS", function() {
 	 // As a cheap hosted-service plugin? Over SSL?
 	 // WP plugin wrapper? Give "Free" to top theme authors
 	 // Create fiddle - starter code for server-side
-	 
+	//TODO: All log messages should be constants (so they can be selectively customised on the onLog if needed by user)
 			 
   });
 });
