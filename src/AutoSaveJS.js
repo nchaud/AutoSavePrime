@@ -1,8 +1,6 @@
 //todo: consistent open spacing
 //license etc.
 
-//All stateless
-
 //TODO: Encapsulate it inside !
 
 var AutoSave = function( rootControls, opts ){
@@ -14,6 +12,7 @@ var AutoSave = function( rootControls, opts ){
 	this.__debounceTimeoutHandle;
 	this.__dataStoreKeyFunc; 	//Never null after init
 	this.__onInitialiseInvoked;
+	this.__pendingInitRoutines = 0;
 
 	//Bound functions
 	this.__invokeExtBound;			
@@ -21,15 +20,15 @@ var AutoSave = function( rootControls, opts ){
 	this.__handleDebouncedEventBound;
 	
 	//Saving & Notifications
-	this.__minShowDuration;
-	this.__currSaveNotificationElement;
+	this.__minShowDuration;		//Minimum duration to show the 'Saving...' notification for
+	this.__warnMsgShowDuration; //Duration to show the 'No Storage Warning' notification for
+	this.__currSaveNotificationElement; //May be null if user does not want to show anything
+	this.__currWarnStorageNotificationElement; //May be null if user does not want to show anything
 	this.__saveInProgress;
 	this.__isPendingSave;
 	this.__autoToggleState; //null => interval not elapsed, true => auto toggle will run, false => interval elapsed + toggle will not run
-
-	
-	// this.__onWarnNoStorageFunc;
-	
+	this.__warnNoStore; 	//Will be true if a store was expected but wasn't present
+		
 	this.__clearEmptyValuesOnLoad; //When keys dont have a value in the data store (e.g....&name=&...), clear out those elements on load
 			//TODO: On reconnect with internet, it'll kick off a reload? Could trash all the users changes !!
 			//		If new fields are added in the meantime, should be handled fine as ignored
@@ -39,20 +38,16 @@ var AutoSave = function( rootControls, opts ){
 			//		Workaround if this is a problem : Just remove all empty values coming from server-side. TODO: Sample.
 
 	
-	// this.__onWarnNoStorage = function (){
-		
-		// //You can specify css or completely override the JS by specifying a HTML string
-		// //or just return false and do your own thing. Same with above method.
-	// }
-		
 	this._initialise = function( parentElement, opts ) {
 	
 		opts = opts || {};
 
 		var allowedOpts = [ "dataStore", "autoSaveTrigger", "autoLoadTrigger", "seekExternalFormElements",
-							"saveNotification",
-							"onLog", "onWarnNoStorage", "onSaveNotification",
-							"onInitialised", "onPreLoad", "onPostLoad", "onPostDeserialize",
+							"saveNotification", "noStorageNotification",
+							
+							//Callbacks
+							"onSaveNotification", "onNoStorageNotification", "onLog", "onInitialised", 
+							"onPreLoad", "onPostLoad", "onPostDeserialize",
 							"onPreSerialize", "onPreStore", "onPostStore" ];
 		
 		try {
@@ -65,8 +60,11 @@ var AutoSave = function( rootControls, opts ){
 			this.__invokeExtBound = this.__sendLog.bind( this );
 			
 			AutoSave._ensureOptIn( opts, allowedOpts, "top level" );
-						
+			
 			//Sequencing is important here :-
+			
+			//Mark that registration is happening
+			this._registerInitQueue( 1 );
 			
 			var seekExternalFormElements = AutoSave._parseExternalElemsArg( opts.seekExternalFormElements );
 						
@@ -82,6 +80,19 @@ var AutoSave = function( rootControls, opts ){
 			this._updateLoadStrategy( opts.autoLoadTrigger );
 			
 			this._updateSaveNotification( opts.saveNotification );
+			
+			//Show warning banner if there's no storage
+			if ( this.__warnNoStore ) {
+				
+				//Lazy create banner state only if needed
+				this._updateNoStorageNotification( opts.noStorageNotification );
+				
+				//Toggle it
+				this._toggleNoStorageNotification( this.__warnNoStore );
+			}
+			
+			//Kick off init callback if everything else complete
+			this._registerInitQueue( -1 );
 		}
 		catch (e) {
 			
@@ -91,6 +102,76 @@ var AutoSave = function( rootControls, opts ){
 			this.dispose();				
 			
 			throw e;
+		}
+	}
+	
+	this._updateNoStorageNotification = function( noStorageNotification ){
+		
+		if ( noStorageNotification === null ) {
+			
+			//Implies dont show notification
+			this.__sendLog( AutoSave.LOG_DEBUG, "User requested no storage-warning notification bar. Skipping creation..." );
+			this.__currWarnStorageNotificationElement = null;
+		}
+		else if ( noStorageNotification === undefined ){
+			
+			//Default behaviour
+			this.__currWarnStorageNotificationElement = 
+				AutoSave._createNotification( AutoSave.DEFAULT_AUTOSAVE_WARN_TYPE, AutoSave.DEFAULT_AUTOSAVE_WARN_MSG, null );
+			this.__warnMsgShowDuration = AutoSave.DEFAULT_AUTOSAVE_WARN_DURATION;
+		}
+		else {
+			
+			var allowedOpts = [ "template", "message", "showDuration" ];
+			AutoSave._ensureOptIn( noStorageNotification, allowedOpts, "noStorageNotification" );
+
+			var template = noStorageNotification.template;
+			var msg = noStorageNotification.message;
+			var showDuration = noStorageNotification.showDuration;
+			
+			if ( showDuration !== undefined ){
+				
+				if ( typeof( showDuration ) == "number" ) {
+				
+					if ( showDuration <= 60 ){ //Must be a mistake
+					
+						throw new Error( "The 'showDuration' must be specified in milliseconds" );
+					}
+					else {
+						
+						this.__warnMsgShowDuration = showDuration;
+						this.__sendLog( AutoSave.LOG_INFO, "Warning notification duration initialised with custom interval", 
+							this.__warnMsgShowDuration);
+					}
+				}
+				else{
+					
+					throw new Error( "Unexpected non-numeric type for parameter 'showDuration'" );
+				}
+			}
+			else{
+				
+				this.__warnMsgShowDuration = AutoSave.DEFAULT_AUTOSAVE_WARN_DURATION;
+			}
+
+			if ( template && msg )
+				throw new Error( "Only 1 of noStorageNotification.template or noStorageNotification.message can be set - not both" );
+				
+			if ( msg ) {
+				
+				this.__sendLog( AutoSave.LOG_DEBUG, "Warn Storage Notification bar with customised msg created." );
+				this.__currWarnStorageNotificationElement = AutoSave._createNotification( AutoSave.DEFAULT_AUTOSAVE_WARN_TYPE, msg, null );
+			}
+			else if ( template ){
+				
+				this.__sendLog( AutoSave.LOG_DEBUG, "Warn Storage Notification bar with customised template created." );
+				this.__currWarnStorageNotificationElement = AutoSave._createNotification( AutoSave.DEFAULT_AUTOSAVE_WARN_TYPE, null, template );
+			} else {
+				
+				//Just the default
+				this.__currWarnStorageNotificationElement = 
+					AutoSave._createNotification( AutoSave.DEFAULT_AUTOSAVE_WARN_TYPE, AutoSave.DEFAULT_AUTOSAVE_WARN_MSG, null );
+			}
 		}
 	}
 	
@@ -105,7 +186,8 @@ var AutoSave = function( rootControls, opts ){
 		else if ( saveNotificationOpts === undefined ){
 			
 			//Default behaviour
-			this.__currSaveNotificationElement = AutoSave._showSavingNotification( null, null );
+			this.__currSaveNotificationElement = 
+				AutoSave._createNotification( AutoSave.DEFAULT_AUTOSAVE_SHOW_TYPE, AutoSave.DEFAULT_AUTOSAVE_SHOW_MSG, null );
 			this.__minShowDuration = AutoSave.DEFAULT_AUTOSAVE_SHOW_DURATION;
 		}
 		else {
@@ -128,7 +210,7 @@ var AutoSave = function( rootControls, opts ){
 					else {
 						
 						this.__minShowDuration = minShowDuration;
-						this.__sendLog( AutoSave.LOG_INFO, "Min duration initialised with custom interval", this.__minShowDuration);
+						this.__sendLog( AutoSave.LOG_INFO, "Svaing Min duration initialised with custom interval", this.__minShowDuration);
 					}
 				}
 				else{
@@ -146,17 +228,18 @@ var AutoSave = function( rootControls, opts ){
 				
 			if ( msg ) {
 				
-				this.__sendLog( AutoSave.LOG_DEBUG, "Notification bar with customised msg created." );
-				this.__currSaveNotificationElement = AutoSave._showSavingNotification( null, msg );
+				this.__sendLog( AutoSave.LOG_DEBUG, "Saving Notification bar with customised msg created." );
+				this.__currSaveNotificationElement = AutoSave._createNotification( AutoSave.DEFAULT_AUTOSAVE_SHOW_TYPE, msg, null );
 			}
 			else if ( template ){
 				
-				this.__sendLog( AutoSave.LOG_DEBUG, "Notification bar with customised template created." );
-				this.__currSaveNotificationElement = AutoSave._showSavingNotification( template, null);
+				this.__sendLog( AutoSave.LOG_DEBUG, "Saving Notification bar with customised template created." );
+				this.__currSaveNotificationElement = AutoSave._createNotification( AutoSave.DEFAULT_AUTOSAVE_SHOW_TYPE, null, template );
 			} else {
 				
 				//Just the default
-				this.__currSaveNotificationElement = AutoSave._showSavingNotification( null, null );
+				this.__currSaveNotificationElement = 
+					AutoSave._createNotification( AutoSave.DEFAULT_AUTOSAVE_SHOW_TYPE, AutoSave.DEFAULT_AUTOSAVE_SHOW_MSG, null );
 			}
 		}
 	}
@@ -167,7 +250,6 @@ var AutoSave = function( rootControls, opts ){
 			
 			//User does not want to auto-load
 			this.__sendLog( AutoSave.LOG_DEBUG, "User requested no auto-load. Skipping..." );
-			this._loadStepFinally();
 			return;
 		}
 		else if ( autoLoadTrigger === undefined ){
@@ -205,7 +287,6 @@ var AutoSave = function( rootControls, opts ){
 			if (rawUserInput === false) {
 				
 				this.__sendLog( AutoSave.LOG_INFO, "User aborted the load in the onPreLoad handler" );
-				this._loadStepFinally();
 				return; //Cancel the load
 			}
 			else if (rawUserInput === undefined) { 
@@ -224,6 +305,7 @@ var AutoSave = function( rootControls, opts ){
 		}
 		
 		//May execute asynchronously - e.g. fetching from service
+		this._registerInitQueue( 1 );
 		this.__theStore.load( this._loadCallbackHandler.bind( this ) );
 	}
 	
@@ -241,7 +323,7 @@ var AutoSave = function( rootControls, opts ){
 			if (rawUserInput === false) {
 				
 				this.__sendLog( AutoSave.LOG_INFO, "User aborted the load in the onPostLoad handler" );
-				this._loadStepFinally();
+				this._registerInitQueue( -1 );
 				return; //Cancel the load
 			}
 			else if (rawUserInput === undefined) { 
@@ -265,15 +347,17 @@ var AutoSave = function( rootControls, opts ){
 			cb();
 		}
 		
-		this._loadStepFinally();
+		this._registerInitQueue( -1 );
 	}
 	
-	//ALWAYS called at some time after the load step is invoked
-	//Regardless of whether it completed, got cancelled, came through callback, some time later after an async call etc.
-	this._loadStepFinally = function(){
+	//ALWAYS called at some time after the initial sequence of construction
+	//May even be after an async call later etc.
+	this._registerInitQueue = function( numOfRoutines ){
+		
+		this.__pendingInitRoutines += numOfRoutines;
 		
 		//Call the initialisation callback once after the load step
-		if ( !this.__onInitialiseInvoked ) {
+		if ( this.__pendingInitRoutines == 0 ) {
 			
 			try {
 				
@@ -286,10 +370,11 @@ var AutoSave = function( rootControls, opts ){
 			}
 			finally{
 				
-				this.__onInitialiseInvoked = true;
+				//this.__onInitialiseInvoked = true;
 			}
 		}
 	}
+	
 	
 	//AlWAYS called before and after a save is invoked
 	this._saveStartFinally = function( toggleOn ){
@@ -307,6 +392,44 @@ var AutoSave = function( rootControls, opts ){
 		}		
 	}
 		
+	this._toggleNoStorageNotification = function( toggleOn ){
+		
+		var cb = this.__callbacks.onNoStorageNotification;
+		
+		if ( cb ){
+			
+			var rawUserInput = cb( toggleOn );
+			
+			//See @FUN Semantics
+			if ( rawUserInput === false ) {
+
+				this.__sendLog( AutoSave.LOG_INFO, "User aborted toggle no-storage bar" );
+				return; //Cancel toggling it
+			}
+			else if ( rawUserInput === undefined ) { 
+			
+				//Do nothing - continue with toggling as normal
+			}
+			else {
+			
+				throw new Error( "Unexpected return type from callback 'onNoStorageNotification'" );
+			}
+		}
+			
+		if ( !toggleOn ){
+			
+			this._toggleSaveElementVisibility( this.__currWarnStorageNotificationElement, false );
+		}
+		else{
+		
+			this._toggleSaveElementVisibility( this.__currWarnStorageNotificationElement, true );
+			
+			//Switch off after a specific time
+			setTimeout( this._toggleNoStorageNotification.bind( this, false ), 
+						this.__warnMsgShowDuration );
+		}
+	}
+	
 	this._toggleSavingNotification = function( toggleOn ){
 		
 		var cb = this.__callbacks.onSaveNotification;
@@ -341,12 +464,12 @@ var AutoSave = function( rootControls, opts ){
 			}
 			else { //Interval has elapsed earlier, we need to toggle visibility ourself
 			
-				this._toggleSaveElementVisibility( false );
+				this._toggleSaveElementVisibility( this.__currSaveNotificationElement, false );
 			}
 		}
 		else{
 		
-			this._toggleSaveElementVisibility( true );
+			this._toggleSaveElementVisibility( this.__currSaveNotificationElement, true );
 			this.__autoToggleState = null;
 			setTimeout( this.__resetNotificationDisplayBound, this.__minShowDuration );
 		}
@@ -356,7 +479,7 @@ var AutoSave = function( rootControls, opts ){
 		
 		if ( this.__autoToggleState == true ){
 			
-			this._toggleSaveElementVisibility( false );
+			this._toggleSaveElementVisibility( this.__currSaveNotificationElement, false );
 		}
 		else { //Save is taking a bit of time - flag that normal flow should toggle visibility
 			
@@ -364,19 +487,19 @@ var AutoSave = function( rootControls, opts ){
 		}
 	}
 	
-	this._toggleSaveElementVisibility = function( 	toggleOn ){
+	this._toggleSaveElementVisibility = function( currElement, toggleOn ){
 		
-		var currElement = this.__currSaveNotificationElement;
+//		var currElement = this.__currSaveNotificationElement;
 		
 		if ( !currElement ) {
 
-			this.__sendLog( AutoSave.LOG_DEBUG, "No element found to toggle notification element visibility. No saving notification will show." );
+			this.__sendLog( AutoSave.LOG_DEBUG, "No element found to toggle notification element visibility. Notification will not show/hide." );
 			return;
 			//else User probably cleared out showing notification through setting opts.saveNotification = null
 		}
 		
 		//Toggle display value
-		let newStyle = toggleOn ? (currElement.getAttribute("autosave-original-display") || "block") : "none";
+		let newStyle = toggleOn ? (currElement.getAttribute("autosave-od") || "block") : "none";
 		currElement.style.display = newStyle;
 	}
 	
@@ -488,8 +611,9 @@ var AutoSave = function( rootControls, opts ){
 	this._updateDataStore = function( dataStore ){
 		
 		var hasLocalStorage = AutoSave.isLocalStorageAvailable();
+		var hasCookieStorage = AutoSave.isCookieStorageAvailable();
 		
-		this.__sendLog( AutoSave.LOG_DEBUG, "Has local storage was calculated", hasLocalStorage );
+		this.__sendLog( AutoSave.LOG_DEBUG, "Has Local Storage: ", hasLocalStorage, ", Has Cookie Storage: ", hasCookieStorage );
 		
 		var elems = this.__getRootControlsFunc();
 		
@@ -498,11 +622,15 @@ var AutoSave = function( rootControls, opts ){
 		//If not set at all, default it 
 		if ( dataStore === undefined ){
 			
-			if ( !hasLocalStorage )
-				this.__theStore = new _CookieStore( this.__dataStoreKeyFunc );
-			else
+			if ( hasLocalStorage )
 				this.__theStore = new _LocalStore( this.__dataStoreKeyFunc );
-
+			else if ( hasCookieStorage )
+				this.__theStore = new _CookieStore( this.__dataStoreKeyFunc );
+			else {
+				
+				this.__warnNoStore = true;
+				this.__theStore = new _NoStore();
+			}
 		}
 		//If expicitly null, don't load or store anywhere
 		else if ( dataStore === null ){
@@ -517,18 +645,31 @@ var AutoSave = function( rootControls, opts ){
 			AutoSave._ensureOptIn( dataStore, allowedOpts, "dataStore" );
 
 			this.__clearEmptyValuesOnLoad = dataStore.clearEmptyValuesOnLoad;
-			
-			var storeToCookies = dataStore.preferCookies === true || !hasLocalStorage;
-			
+						
 			//TODO: Raise error if cookies not supported (DEMO: How to ask user to enable cookies)
 			
 			if (dataStore.load === undefined && dataStore.save === undefined) {
+
+				var storeToCookies = dataStore.preferCookies === true || !hasLocalStorage;
 				
-				//Unset by user - use default
-				if (storeToCookies)
+				//Take user's preference into account first
+				if ( hasCookieStorage && dataStore.preferCookies === true ) {
+					
 					this.__theStore = new _CookieStore( this.__dataStoreKeyFunc );
-				else
+				}
+				else if (hasLocalStorage) {
+					
 					this.__theStore = new _LocalStore( this.__dataStoreKeyFunc );
+				}
+				else if (hasCookieStorage) {
+					
+					this.__theStore = new _CookieStore( this.__dataStoreKeyFunc );
+				}
+				else {
+					
+					this.__warnNoStore = true;
+					this.__theStore = new _NoStore();
+				}
 			}
 			else if (dataStore.load === null && dataStore.save === null) {
 				
@@ -537,12 +678,6 @@ var AutoSave = function( rootControls, opts ){
 			}
 			else if (typeof( dataStore.load ) != "function" || typeof( dataStore.save ) != "function") {
 
-
-				
-				//TODO: Allow either to be null explicitly?
-
-
-			
 				throw new Error("The dataStore.load and dataStore.save parameters must 1) both be set or both be unset and 2) must be functions.");
 			}
 			else {
@@ -574,7 +709,7 @@ var AutoSave = function( rootControls, opts ){
 			
 			AutoSave.log = this.__invokeExtBound;
 			
-			var args = AutoSave.toArray(arguments, 1); //Bypass function argument -- TODO: CHECK SUPPORT OF NEW ARRAY like this
+			var args = AutoSave.toArray(arguments, 1);
 			
 			return funcToRun.apply( null, args );
 		}
@@ -586,13 +721,10 @@ var AutoSave = function( rootControls, opts ){
 	
 	this.__sendLog = function ( level, msg, __variadic_args__ ){
 
-		//Skip 2 fixed args
-		//var args = AutoSave.toArray(arguments, 2);
-	
 		 var cb = this.__callbacks.onLog;
 		 if ( cb )
 		 {
-			 var ret = cb.apply( this, arguments );//level, msg );	//TODO: CHECK CONTEXT PRESERVED IF ORIGINALLY BOUND?!
+			 var ret = cb.apply( this, arguments );
 			 
 			 //See @FUN semantics
 			 if ( ret === false ) {
@@ -611,7 +743,7 @@ var AutoSave = function( rootControls, opts ){
 		 }
 		 
  		 //TODO: Log Levels should correspond to popular logging libraries
-		 AutoSave._logToConsole.apply(null, arguments);//( level, msg );
+		 AutoSave._logToConsole.apply(null, arguments);
 	}
 	
 	//This function sets up when to save the state
@@ -893,6 +1025,13 @@ var AutoSave = function( rootControls, opts ){
 			
 			notifyElem.parentNode.removeChild ( notifyElem );
 		}
+		
+		//Remove the "No Local Storage warning..." html element from DOM
+		var warnElem = this.__currWarnStorageNotificationElement;
+		if ( warnElem && warnElem.parentNode ) {
+			
+			warnElem.parentNode.removeChild ( warnElem );
+		}
 	}
 	
 	this.resetStore = function() {
@@ -1150,10 +1289,10 @@ var AutoSave = function( rootControls, opts ){
 		}
 	}
 
-	AutoSave.whenInitialized( this._initialise.bind(this, rootControls, opts) );
+	AutoSave.whenDocReady( this._initialise.bind(this, rootControls, opts) );
 };
 
-AutoSave.whenInitialized = function whenInitialized( funcToRun ){
+AutoSave.whenDocReady = function whenDocReady( funcToRun ){
 
 	if ( document.readyState == "complete" ){
 		
@@ -1640,6 +1779,30 @@ AutoSave.isLocalStorageAvailable = function isLocalStorageAvailable() {
 	return AutoSave.__cachedLocalStorageAvailable;
 }
 
+//From Modernizr
+AutoSave.isCookieStorageAvailable = function isCookieStorageAvailable(){
+	
+	if ( AutoSave.__cachedCookiesAvailable === undefined) {
+	
+		//This property works in all but IE<11
+		if ( navigator.cookieEnabled ){
+			
+			AutoSave.__cachedCookiesAvailable = true;
+		}
+		else {
+			// Create and test cookie
+			document.cookie = "AutoSave_cookietest=1";
+			AutoSave.__cachedCookiesAvailable = document.cookie.indexOf("AutoSave_cookietest=") != -1;
+			
+			// Delete cookie
+			document.cookie = "AutoSave_cookietest=1; expires=Thu, 01-Jan-1970 00:00:01 GMT";
+		}
+	}
+	
+	return AutoSave.__cachedCookiesAvailable;
+	
+}
+
 AutoSave._uniq = function( value, index, self ) {
 
 	return self.indexOf(value) === index;
@@ -1677,12 +1840,12 @@ AutoSave._buildFullCookieStr = function( key, data, opts ) {
 	return cookieParamsStr;
 }
 
-//Clears AutoSaveJS state from all data stores
+//Clears AutoSaveJS state from all data stores as this may be a pain to clear up otherwise (as will persist across page refreshes etc)
+//Dont unhook listeners etc as dispose will do that + refresh can always be done.
 AutoSave.resetAll = function(){
 	
-	//TODO: Unhook listeners too?
-	
 	//Remove reserved keys
+	//TODO: Use this array combined with checking prefix to remove all entries? Or do even custom entries always have this prefix?
 	AutoSave.__keysInUse = [];
 		
 	//Iterate and remove all AutoSaveJS local storage
@@ -1813,7 +1976,8 @@ AutoSave._logToConsole = function ( logLevel, __variadic_args__ ){
 		throw new Error( "Unknown log level: " + logLevel );
 }
 
-AutoSave._showSavingNotification = function _showSavingNotification( entireHtml, innerMsg ){
+//Exactly 1 of innerMsg and entireHtml must be non-null
+AutoSave._createNotification = function _createNotification( type, innerMsg, entireHtml ){
 	
 	var elem;
 	if ( entireHtml ) {
@@ -1826,23 +1990,24 @@ AutoSave._showSavingNotification = function _showSavingNotification( entireHtml,
 			throw new Error( "Expected exactly 1 top-level element in saveNotification.template" );
 		
 		elem = tempContainer.children[0];
+		//elem.classList.add( "autosave-"+type );
 	}
 	else {
 		
 		elem = document.createElement( "div" );
-		elem.classList.add( "autosave-notification" );
+		elem.classList.add( "autosave-ctr" );
+		elem.classList.add( "autosave-"+type );
 		
-		var msg = innerMsg || "Saving...";
-		elem.innerHTML = "<span class='autosave-msg'>" + msg + "</span>";
+		elem.innerHTML = "<span class='autosave-msg'>" + innerMsg + "</span>";
 	}
 	
 	if ( elem.style.display == "none" ) {
 		
-		AutoSave.log( AutoSave.LOG_WARN, "Notification HTML template should not have a default display style of 'none' or it'll never show" );
+		AutoSave.log( AutoSave.LOG_WARN, "Notification HTML template should not have a display style of 'none' or it'll never show" );
 	}
 	
 	//Preserve the user's original display style for when we're toggling
-	elem.setAttribute("autosave-original-display", elem.style.display);
+	elem.setAttribute("autosave-od", elem.style.display);
 
 	//Initially hidden
 	elem.style.display = "none";
@@ -1857,18 +2022,19 @@ AutoSave.LOG_DEBUG = 100;
 AutoSave.LOG_INFO = 101;
 AutoSave.LOG_WARN = 102;
 AutoSave.LOG_ERROR = 103;
-// AutoSave.MSG_STORAGE_SUPPORT = 104;
-// AutoSave.MSG_STORAGE_WARNING = 105; /* When about to show user a message that they have no support for autosave */
-// AutoSave.MSG_SAVING_STARTED = 106;
-// AutoSave.MSG_SAVING_COMPLETED = 107;
 
-AutoSave.DEFAULT_LOAD_CHECK_INTERVAL = 100;    //Every 100 ms, check if it's loaded
-AutoSave.DEFAULT_AUTOSAVE_INTERVAL   = 3*1000; //By default, autosave every 3 seconds
-AutoSave.DEFAULT_AUTOSAVE_SHOW_DURATION   = 500; //By default, show autosave msg for 1/2 a second
+AutoSave.DEFAULT_LOAD_CHECK_INTERVAL = 100;    			//Every 100 ms, check if it's loaded
+AutoSave.DEFAULT_AUTOSAVE_INTERVAL   = 3*1000; 			//By default, autosave every 3 seconds
+AutoSave.DEFAULT_AUTOSAVE_SHOW_DURATION   = 500; 		//By default, show autosave msg for 1/2 a second
+AutoSave.DEFAULT_AUTOSAVE_SHOW_MSG        = "Saving...";
+AutoSave.DEFAULT_AUTOSAVE_SHOW_TYPE       = "saving";
+AutoSave.DEFAULT_AUTOSAVE_WARN_DURATION   = 5*1000; 		//By default, show local warning msg for 5 secs
+AutoSave.DEFAULT_AUTOSAVE_WARN_MSG        = "AutoSave is turned off - no datastore available to store input data.";
+AutoSave.DEFAULT_AUTOSAVE_WARN_TYPE       = "noStore";
 AutoSave.DEFAULT_KEY_PREFIX = "AutoSaveJS_";
-AutoSave.log = AutoSave._logToConsole; //By default, log to console.
+AutoSave.log = AutoSave._logToConsole; 					//By default, log to console.
 AutoSave.__keysInUse = [];
-AutoSave.__defaultListenOpts = { passive:true, capture:true };		//Let browser know we only listen passively so it can optimise
+AutoSave.__defaultListenOpts = { passive:true, capture:true };	//Let browser know we only listen passively so it can optimise
 AutoSave.__cachedLocalStorageAvailable;
 AutoSave.Version = "1.0.0";
 

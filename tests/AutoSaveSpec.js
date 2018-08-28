@@ -199,9 +199,6 @@ describe("AutoSaveJS", function() {
 			AutoSave.resetAll(); //Clear from previous instances of test runs
 		}
 		
-		if ($(".autosave-notification").length)
-			console.log(">>WHAT");
-		
 		var a = new AutoSave(parent, opts);
 		_allCurrAutoSaves.push(a);
 		
@@ -1726,8 +1723,59 @@ describe("AutoSaveJS", function() {
 	
 	it('bound callbacks are invoked in original context', function(){
 
-		//logging etc.
-		expect(1).toEqual(2);
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox(testFragment);
+		
+		var testContext = {
+			
+			someContextValue: 199
+		};
+		
+		var onInitPassed, onPreLoadPassed, loadPassed, savePassed, logPassed;
+		var defaultOpt = {
+			
+			onInitialised: function(){
+				
+				onInitPassed = this.someContextValue==199;
+			}.bind(testContext),
+			
+			onPreLoad: function(){
+				
+				onPreLoadPassed = this.someContextValue==199;
+			}.bind(testContext),
+			
+			dataStore: {
+				load: function(key, callback){
+					
+					loadPassed = this.someContextValue==199;
+					callback();
+				}.bind(testContext),
+				save: function( key, data, callback ){
+					
+					savePassed = this.someContextValue==199;
+					callback();
+				}.bind(testContext)
+			},
+			
+			onLog: function(){
+				
+				logPassed = this.someContextValue==199;
+			}.bind(testContext)
+		};
+		
+		var autoSave = createAutoSave(null, defaultOpt);
+		
+		//Setting a value should trigger an auto-save which should trigger showing the save banner
+		setValue("[name='musician']", "Mozart");
+		jasmine.clock().tick(60*1000);
+
+		expect(onInitPassed).toEqual(true);
+		expect(onPreLoadPassed).toEqual(true);
+		expect(loadPassed).toEqual(true);
+		expect(savePassed).toEqual(true);
+		expect(logPassed).toEqual(true);
 	});
 
 	
@@ -1778,7 +1826,7 @@ describe("AutoSaveJS", function() {
 		expect(console.info).toHaveBeenCalledWith( "Min duration initialised with custom interval", 2700 );
 	});
 	
-	it('autosave min show time can be configured with minShowDuration option', function(){
+	it('save notification min show time can be configured with minShowDuration option', function(){
 
 		var testFragment = "<h3>Please enter your preferred musician:</h3>\
 							<input type='text' name='musician'>";
@@ -1805,19 +1853,19 @@ describe("AutoSaveJS", function() {
 		jasmine.clock().tick(AutoSave.DEFAULT_AUTOSAVE_INTERVAL + 1);
 
 		//Should show when save kicks off
-		expect($(".autosave-notification").css("display")).not.toEqual("none");
+		expect($(".autosave-saving").css("display")).not.toEqual("none");
 			
 		//After ~2.9s, should not hide
 		jasmine.clock().tick(2900);
-		expect($(".autosave-notification").css("display")).not.toEqual("none");
+		expect($(".autosave-saving").css("display")).not.toEqual("none");
 		
 		jasmine.clock().tick(200);
 
 		//Ensure after ~3s it does hide
-		expect($(".autosave-notification").css("display")).toEqual("none");
+		expect($(".autosave-saving").css("display")).toEqual("none");
 	});
 	
-	it('autosave shows for a mininum of half a second by default', function(){
+	it('save notification shows for a mininum of half a second by default', function(){
 	
 		var testFragment = "<h3>Please enter your preferred musician:</h3>\
 							<input type='text' name='musician'>";
@@ -1835,7 +1883,7 @@ describe("AutoSaveJS", function() {
 		var autoSave = createAutoSave(null, defaultOpt);
 		
 		//Initially should not be showing
-		expect($(".autosave-notification").css("display")).toEqual("none");
+		expect($(".autosave-saving").css("display")).toEqual("none");
 		
 		//Setting a value should show the auto-save banner until we invoke the callback
 		setValue("[name='musician']", "Mozart");
@@ -1845,7 +1893,7 @@ describe("AutoSaveJS", function() {
 		let showCtr=0;
 		
 		//Wait for banner to show after debouncing
-		while($(".autosave-notification").css("display")=="none") {
+		while($(".autosave-saving").css("display")=="none") {
 			
 			jasmine.clock().tick(INTERVAL);
 			
@@ -1856,7 +1904,7 @@ describe("AutoSaveJS", function() {
 		}
 		
 		let hideCtr=0;
-		while($(".autosave-notification").css("display")!="none") {
+		while($(".autosave-saving").css("display")!="none") {
 
 			jasmine.clock().tick(INTERVAL);
 			
@@ -1896,14 +1944,14 @@ describe("AutoSaveJS", function() {
 		//Setting a value should show the auto-save banner until we invoke the callback
 		setValue("[name='musician']", "Mozart");
 		jasmine.clock().tick(60*1000);
-		expect($(".autosave-notification").length).toEqual(1);
-		expect($(".autosave-notification").css("display")).not.toEqual("none");
+		expect($(".autosave-saving").length).toEqual(1);
+		expect($(".autosave-saving").css("display")).not.toEqual("none");
 		
 		//Complete save operation 'async'
 		_currCallback();
 		
 		//Should only now get hidden 
-		expect($(".autosave-notification").css("display")).toEqual("none");
+		expect($(".autosave-saving").css("display")).toEqual("none");
 	});
 	
 	it('Save notification by default shows an auto-saving banner', function(){
@@ -1931,15 +1979,15 @@ describe("AutoSaveJS", function() {
 		//Setting a value should trigger an auto-save which should trigger showing the save banner
 		setValue("[name='musician']", "Mozart");
 		jasmine.clock().tick(60*1000);
-		expect($(".autosave-notification").length).toEqual(1);
-		expect($(".autosave-notification").css("display")).not.toEqual("none");
-		expect($(".autosave-notification .autosave-msg").text()).toEqual("Saving..."); //Default text
+		expect($(".autosave-saving").length).toEqual(1);
+		expect($(".autosave-saving").css("display")).not.toEqual("none");
+		expect($(".autosave-saving .autosave-msg").text()).toEqual("Saving..."); //Default text
 		
 		//Complete save operation
 		_currCallback();
 		
 		//Should get hidden
-		expect($(".autosave-notification").css("display")).toEqual("none");
+		expect($(".autosave-saving").css("display")).toEqual("none");
 	});
 	
 	it('Save notification can be customised to not show anything by setting null', function(){
@@ -1968,7 +2016,7 @@ describe("AutoSaveJS", function() {
 		//Setting a value should trigger an auto-save which should trigger showing the save banner
 		setValue("[name='musician']", "Mozart");
 		jasmine.clock().tick(60*1000);
-		expect($(".autosave-notification").length).toEqual(0);
+		expect($(".autosave-saving").length).toEqual(0);
 	});
 	
 	it('Save notification can be customised with a specific message', function(){
@@ -1999,15 +2047,15 @@ describe("AutoSaveJS", function() {
 		//Setting a value should trigger an auto-save which should trigger showing the save banner
 		setValue("[name='musician']", "Mozart");
 		jasmine.clock().tick(60*1000);
-		expect($(".autosave-notification").length).toEqual(1);
-		expect($(".autosave-notification").css("display")).not.toEqual("none");
-		expect($(".autosave-notification .autosave-msg").text()).toEqual("Save override..."); //Default text
+		expect($(".autosave-saving").length).toEqual(1);
+		expect($(".autosave-saving").css("display")).not.toEqual("none");
+		expect($(".autosave-saving .autosave-msg").text()).toEqual("Save override..."); //Default text
 		
 		//Complete save operation
 		_currCallback();
 		
 		//Should get hidden
-		expect($(".autosave-notification").css("display")).toEqual("none");
+		expect($(".autosave-saving").css("display")).toEqual("none");
 	});
 	
 	it('Save notification can be customised with a specific template', function(){
@@ -2038,7 +2086,7 @@ describe("AutoSaveJS", function() {
 		//Setting a value should trigger an auto-save which should trigger showing the save banner
 		setValue("[name='musician']", "Mozart");
 		jasmine.clock().tick(60*1000);
-		expect($(".autosave-notification").length).toEqual(0); //Should not exist as customiesd
+		expect($(".autosave-saving").length).toEqual(0); //Neither sould exist as customiesd
 		expect($(".my_save_msg").css("display")).not.toEqual("none");
 		expect($(".my_save_msg").text()).toEqual("My template override saving msg..."); //Default text
 		
@@ -2086,18 +2134,18 @@ describe("AutoSaveJS", function() {
 		//Case #1: Setting a value should trigger an auto-save which should trigger showing the save banner
 		setValue("[name='musician']", "Mozart");
 		jasmine.clock().tick(60*1000);
-		expect($(".autosave-notification").css("display")).not.toEqual("none");
+		expect($(".autosave-saving").css("display")).not.toEqual("none");
 		
 		//Continue save to reset showing the banner and sanity check
 		_currCallback();
 		_currCallback = null;
-		expect($(".autosave-notification").css("display")).toEqual("none");
+		expect($(".autosave-saving").css("display")).toEqual("none");
 		
 		//Case #2: Notification display should get cancelled
 		ctr = 1;
 		setValue("[name='musician']", "Beethoven");
 		jasmine.clock().tick(60*1000);
-		expect($(".autosave-notification").css("display")).toEqual("none");
+		expect($(".autosave-saving").css("display")).toEqual("none");
 		
 		//Continue save to reset showing the banner and sanity check
 		_currCallback();
@@ -2110,6 +2158,77 @@ describe("AutoSaveJS", function() {
 			jasmine.clock().tick(60*1000);
 		}).toThrowError( "Unexpected return type from callback 'onSaveNotification'" );
 	});
+	
+	
+	
+	it('No-Storage notification does not show if a custom store is provided', function(){
+		
+		expect(1).toEqual(2);
+	});
+	
+	it('No-Storage notification can be customised with a message', function(){
+		
+		expect(1).toEqual(2);
+	});
+	
+	it('No-Storage notification can be customised with a template', function(){
+		
+		expect(1).toEqual(2);
+	});
+	
+	it('No-Storage notification callback can customise the behaviour of the notification', function(){
+		
+		expect(1).toEqual(2);
+	});
+	
+	it('No-Storage notification show time can be customised with showDuration option', function(){
+		
+		expect(1).toEqual(2);
+	});
+
+	it('No-Storage notification by default shows a banner for 5 seconds', function(done){
+
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox(testFragment);
+
+		//Mock not having local data stores - TODO: Use spies to change behaviour?
+		AutoSave.isLocalStorageAvailable = function(){return false;}
+		AutoSave.isCookieStorageAvailable = function(){return false;}
+		
+		var defaultOpt = {
+			onInitialised: function(){
+				runChecks();
+				done();
+			}
+		};
+		
+		var autoSave = createAutoSave(null, defaultOpt);
+		
+		function runChecks(){
+			
+			for(var i=0;i<2;i++) {
+								
+				expect($(".autosave-noStore").length).toEqual(1);
+				expect($(".autosave-noStore").css("display")).not.toEqual("none");
+				expect($(".autosave-noStore .autosave-msg").text())
+					.toEqual("AutoSave is turned off - no datastore available to store input data."); //Default text
+
+				//After 4.9s, should still show
+				if (i==0)
+					jasmine.clock().tick(4.9*1000);
+			}
+			
+			//At 5.1s should be hidden - either removed or with style.display
+			jasmine.clock().tick(200);
+			expect($(".autosave-noStore").length == 0 ||
+				   $(".autosave-noStore").css("display") == "none")
+			.toEqual(true);
+		};
+	});
+
+
 	
 	it('parentElement_parameter_need_not_be_a_form', function(){
 	
@@ -3565,6 +3684,7 @@ describe("AutoSaveJS", function() {
 
 			//TODO: Example with loading and unloading of HTML content / dynamic content - e.g. flicking through tabs. jQuery UI tabs?
 
+			//DOcument: Exceptions during initialisation will cause onInit to not be invoked
 	//TODO: Demo with diffing logic
 	 // As a cheap hosted-service plugin? Over SSL?
 	 // WP plugin wrapper? Give "Free" to top theme authors
