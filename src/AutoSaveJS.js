@@ -210,7 +210,7 @@ var AutoSave = function( rootControls, opts ){
 					else {
 						
 						this.__minShowDuration = minShowDuration;
-						this.__sendLog( AutoSave.LOG_INFO, "Svaing Min duration initialised with custom interval", this.__minShowDuration);
+						this.__sendLog( AutoSave.LOG_INFO, "Saving Min duration initialised with custom interval", this.__minShowDuration);
 					}
 				}
 				else{

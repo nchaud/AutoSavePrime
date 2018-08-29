@@ -1823,7 +1823,7 @@ describe("AutoSaveJS", function() {
 
 		var autoSave = createAutoSave(null, defaultOpt);
 		
-		expect(console.info).toHaveBeenCalledWith( "Min duration initialised with custom interval", 2700 );
+		expect(console.info).toHaveBeenCalledWith( "Saving Min duration initialised with custom interval", 2700 );
 	});
 	
 	it('save notification min show time can be configured with minShowDuration option', function(){
@@ -2160,30 +2160,149 @@ describe("AutoSaveJS", function() {
 	});
 	
 	
-	
-	it('No-Storage notification does not show if a custom store is provided', function(){
+	it('No-Storage notification never shows if a custom store is provided', function(){
 		
-		expect(1).toEqual(2);
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox(testFragment);
+
+		//Mock not having local data stores
+		var spy = spyOn( AutoSave, "isLocalStorageAvailable" ).and.returnValue(false);
+		var spy2 = spyOn( AutoSave, "isCookieStorageAvailable" ).and.returnValue(false);
+		
+		var autoSave = createAutoSave();
+		
+		//Sanity
+		expect($(".autosave-noStore").length).toEqual(1);
+		
+		var opt = {
+			
+			dataStore:{
+				load: _noOpLoad,
+				save: _noOpSave
+			}
+		};
+
+		var autoSave = createAutoSave(null, opt);
+		
+		expect($(".autosave-noStore").length).toEqual(0);
 	});
 	
 	it('No-Storage notification can be customised with a message', function(){
 		
-		expect(1).toEqual(2);
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox(testFragment);
+
+		//Mock not having local data stores
+		var spy = spyOn( AutoSave, "isLocalStorageAvailable" ).and.returnValue(false);
+		var spy2 = spyOn( AutoSave, "isCookieStorageAvailable" ).and.returnValue(false);
+		
+		var opt = {
+			
+			noStorageNotification:{
+				message: "This is a custom override message"
+			}
+		};
+
+		var autoSave = createAutoSave(null, opt);
+		
+		expect($(".autosave-noStore .autosave-msg").html()).toEqual("This is a custom override message");
 	});
 	
 	it('No-Storage notification can be customised with a template', function(){
 		
-		expect(1).toEqual(2);
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox( testFragment );
+
+		//Mock not having local data stores
+		var spy = spyOn( AutoSave, "isLocalStorageAvailable" ).and.returnValue(false);
+		var spy2 = spyOn( AutoSave, "isCookieStorageAvailable" ).and.returnValue(false);
+		
+		var opt = {
+			
+			noStorageNotification:{
+				template: "<h1 id='my_msg'><div>This is a custom override template</div></h1>"
+			}
+		};
+
+		var autoSave = createAutoSave( null, opt );
+		
+		expect( $( ".autosave-noStore" ).length ).toEqual( 0 );//Default shouldnt exist
+		expect( $( "#my_msg" ).html() ).toEqual( "<div>This is a custom override template</div>" );
 	});
 	
 	it('No-Storage notification callback can customise the behaviour of the notification', function(){
 		
-		expect(1).toEqual(2);
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox( testFragment );
+
+		//Mock not having local data stores
+		var spy = spyOn( AutoSave, "isLocalStorageAvailable" ).and.returnValue(false);
+		var spy2 = spyOn( AutoSave, "isCookieStorageAvailable" ).and.returnValue(false);
+		
+		var defaultOpt = {
+			
+			onNoStorageNotification:function( toggleOn ){
+				
+				//See @FUN semantics
+				if(ctr == 0)
+					return; //Leave as undefined, which shouldn't change anything
+				else if (ctr == 1)
+					return false; //Should cancel the show altogther
+				else if (ctr == 2)
+					return "Override no-store text..."; //Will throw
+			}
+		};
+		
+		var ctr = 0;
+		var autoSave = createAutoSave(null, defaultOpt);
+		expect($(".autosave-noStore").css("display")).not.toEqual("none");
+		
+		
+		++ctr;
+		autoSave = createAutoSave(null, defaultOpt);
+		expect($(".autosave-noStore").css("display")).toEqual("none");
+		
+		++ctr;
+		expect(function(){
+			autoSave = createAutoSave(null, defaultOpt);
+		}).toThrowError( "Unexpected return type from callback 'onNoStorageNotification'" );
 	});
 	
 	it('No-Storage notification show time can be customised with showDuration option', function(){
 		
-		expect(1).toEqual(2);
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox( testFragment );
+
+		//Mock not having local data stores
+		var spy = spyOn( AutoSave, "isLocalStorageAvailable" ).and.returnValue(false);
+		var spy2 = spyOn( AutoSave, "isCookieStorageAvailable" ).and.returnValue(false);
+		
+		var opt = {
+			
+			noStorageNotification:{
+				showDuration: 30*1000 //extend from 5s to 30s
+			}
+		};
+
+		var autoSave = createAutoSave( null, opt );
+
+		//After 29 secs should still be showing
+		jasmine.clock().tick(29*1000);
+		expect($(".autosave-noStore").css("display")).not.toEqual("none");
+		
+		//At 31s, should hide
+		jasmine.clock().tick(2*1000);
+		expect($(".autosave-noStore").css("display")).toEqual("none");
 	});
 
 	it('No-Storage notification by default shows a banner for 5 seconds', function(done){
@@ -2193,9 +2312,9 @@ describe("AutoSaveJS", function() {
 		
 		addToSandbox(testFragment);
 
-		//Mock not having local data stores - TODO: Use spies to change behaviour?
-		AutoSave.isLocalStorageAvailable = function(){return false;}
-		AutoSave.isCookieStorageAvailable = function(){return false;}
+		//Mock not having local data stores
+		var spy = spyOn( AutoSave, "isLocalStorageAvailable" ).and.returnValue(false);
+		var spy2 = spyOn( AutoSave, "isCookieStorageAvailable" ).and.returnValue(false);
 		
 		var defaultOpt = {
 			onInitialised: function(){
@@ -2227,8 +2346,6 @@ describe("AutoSaveJS", function() {
 			.toEqual(true);
 		};
 	});
-
-
 	
 	it('parentElement_parameter_need_not_be_a_form', function(){
 	
