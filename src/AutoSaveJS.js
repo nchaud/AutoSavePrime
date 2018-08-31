@@ -103,155 +103,6 @@ var AutoSave = function( rootControls, opts ){
 		}
 	}
 	
-	this._updateNoStorageNotification = function( noStorageNotification ){
-		
-		var defaultType = AutoSave.DEFAULT_AUTOSAVE_WARN_TYPE, 
-			defaultBg   = AutoSave.DEFAULT_AUTOSAVE_WARN_BG,
-			defaultMsg	= AutoSave.DEFAULT_AUTOSAVE_WARN_MSG,
-			defaultTime	= AutoSave.DEFAULT_AUTOSAVE_WARN_DURATION;
-		
-		if ( noStorageNotification === null ) {
-			
-			//Implies dont show notification
-			this.__sendLog( AutoSave.LOG_DEBUG, "User requested no storage-warning notification bar. Skipping creation..." );
-			this.__currWarnStorageNotificationElement = null;
-		}
-		else if ( noStorageNotification === undefined ){
-			
-			//Default behaviour
-			this.__currWarnStorageNotificationElement = 
-				AutoSave._createNotification( defaultType, defaultBg, defaultMsg, null );
-			this.__warnMsgShowDuration = defaultTime;
-		}
-		else {
-			
-			var allowedOpts = [ "template", "message", "showDuration" ];
-			AutoSave._ensureOptIn( noStorageNotification, allowedOpts, "noStorageNotification" );
-
-			var template = noStorageNotification.template;
-			var msg = noStorageNotification.message;
-			var showDuration = noStorageNotification.showDuration;
-			
-			if ( showDuration !== undefined ){
-				
-				if ( typeof( showDuration ) == "number" ) {
-				
-					if ( showDuration <= 60 ){ //Must be a mistake
-					
-						throw new Error( "The 'showDuration' must be specified in milliseconds" );
-					}
-					else {
-						
-						this.__warnMsgShowDuration = showDuration;
-						this.__sendLog( AutoSave.LOG_INFO, "Warning notification duration initialised with custom interval", 
-							this.__warnMsgShowDuration);
-					}
-				}
-				else{
-					
-					throw new Error( "Unexpected non-numeric type for parameter 'showDuration'" );
-				}
-			}
-			else{
-				
-				this.__warnMsgShowDuration = defaultTime;
-			}
-
-			if ( template && msg )
-				throw new Error( "Only 1 of noStorageNotification.template or noStorageNotification.message can be set - not both" );
-				
-			if ( msg ) {
-				
-				this.__sendLog( AutoSave.LOG_DEBUG, "Warn Storage Notification bar with customised msg created." );
-				this.__currWarnStorageNotificationElement = AutoSave._createNotification( defaultType, defaultBg, msg, null );
-			}
-			else if ( template ){
-				
-				this.__sendLog( AutoSave.LOG_DEBUG, "Warn Storage Notification bar with customised template created." );
-				this.__currWarnStorageNotificationElement = AutoSave._createNotification( defaultType, defaultBg, null, template );
-			} else {
-				
-				//Just the default
-				this.__currWarnStorageNotificationElement = 
-					AutoSave._createNotification( defaultType, defaultBg, defaultMsg, null );
-			}
-		}
-	}
-	
-	this._updateSaveNotification = function ( saveNotificationOpts ){
-
-		var defaultType = AutoSave.DEFAULT_AUTOSAVE_SHOW_TYPE, 
-			defaultBg   = AutoSave.DEFAULT_AUTOSAVE_SHOW_BG,
-			defaultMsg	= AutoSave.DEFAULT_AUTOSAVE_SHOW_MSG,
-			defaultTime	= AutoSave.DEFAULT_AUTOSAVE_SHOW_DURATION;
-			
-		if ( saveNotificationOpts === null ) {
-			
-			//Implies dont show notification
-			this.__sendLog( AutoSave.LOG_DEBUG, "User requested no saving notification bar. Skipping creation..." );
-			this.__currSaveNotificationElement = null;
-		}
-		else if ( saveNotificationOpts === undefined ){
-			
-			//Default behaviour
-			this.__currSaveNotificationElement = 
-				AutoSave._createNotification( defaultType, defaultBg, defaultMsg, null );
-			this.__minShowDuration = defaultTime;
-		}
-		else {
-			
-			var allowedOpts = [ "template", "message", "minShowDuration" ];
-			AutoSave._ensureOptIn( saveNotificationOpts, allowedOpts, "saveNotification" );
-
-			var template = saveNotificationOpts.template;
-			var msg = saveNotificationOpts.message;
-			var minShowDuration = saveNotificationOpts.minShowDuration;
-			
-			if ( minShowDuration !== undefined ){
-				
-				if ( typeof( minShowDuration ) == "number" ) {
-				
-					if ( minShowDuration <= 60 ){ //Must be a mistake
-					
-						throw new Error( "The 'minShowDuration' must be specified in milliseconds" );
-					}
-					else {
-						
-						this.__minShowDuration = minShowDuration;
-						this.__sendLog( AutoSave.LOG_INFO, "Saving Min duration initialised with custom interval", this.__minShowDuration);
-					}
-				}
-				else{
-					
-					throw new Error( "Unexpected non-numeric type for parameter 'minShowDuration'" );
-				}
-			}
-			else{
-				
-				this.__minShowDuration = defaultTime;
-			}
-
-			if ( template && msg )
-				throw new Error( "Only 1 of saveNotification.template or saveNotification.message can be set - not both" );
-				
-			if ( msg ) {
-				
-				this.__sendLog( AutoSave.LOG_DEBUG, "Saving Notification bar with customised msg created." );
-				this.__currSaveNotificationElement = AutoSave._createNotification( defaultType, defaultBg, msg, null );
-			}
-			else if ( template ){
-				
-				this.__sendLog( AutoSave.LOG_DEBUG, "Saving Notification bar with customised template created." );
-				this.__currSaveNotificationElement = AutoSave._createNotification( defaultType, defaultBg, null, template );
-			} else {
-				
-				//Just the default
-				this.__currSaveNotificationElement = 
-					AutoSave._createNotification( defaultType, defaultBg, defaultMsg, null );
-			}
-		}
-	}
-	
 	this._updateLoadStrategy = function( autoLoadTrigger ) {
 						
 		if ( autoLoadTrigger === null ) {
@@ -508,7 +359,157 @@ var AutoSave = function( rootControls, opts ){
 		let newStyle = toggleOn ? (currElement.getAttribute("autosave-od") || "block") : "none";
 		currElement.style.display = newStyle;
 	}
+
+		
+	this._updateNoStorageNotification = function( noStorageNotification ){
+		
+		var defaultType = AutoSave.DEFAULT_AUTOSAVE_WARN_TYPE, 
+			defaultBg   = AutoSave.DEFAULT_AUTOSAVE_WARN_BG,
+			defaultMsg	= AutoSave.DEFAULT_AUTOSAVE_WARN_MSG,
+			defaultTime	= AutoSave.DEFAULT_AUTOSAVE_WARN_DURATION;
+		
+		if ( noStorageNotification === null ) {
+			
+			//Implies dont show notification
+			this.__sendLog( AutoSave.LOG_DEBUG, "User requested no storage-warning notification bar. Skipping creation..." );
+			this.__currWarnStorageNotificationElement = null;
+		}
+		else if ( noStorageNotification === undefined ){
+			
+			//Default behaviour
+			this.__currWarnStorageNotificationElement = 
+				AutoSave._createNotification( defaultType, defaultBg, defaultMsg, null );
+			this.__warnMsgShowDuration = defaultTime;
+		}
+		else {
+			
+			var allowedOpts = [ "template", "message", "showDuration" ];
+			AutoSave._ensureOptIn( noStorageNotification, allowedOpts, "noStorageNotification" );
+
+			var template = noStorageNotification.template;
+			var msg = noStorageNotification.message;
+			var showDuration = noStorageNotification.showDuration;
+			
+			if ( showDuration !== undefined ){
+				
+				if ( typeof( showDuration ) == "number" ) {
+				
+					if ( showDuration <= 60 ){ //Must be a mistake
+					
+						throw new Error( "The 'showDuration' must be specified in milliseconds" );
+					}
+					else {
+						
+						this.__warnMsgShowDuration = showDuration;
+						this.__sendLog( AutoSave.LOG_INFO, "Warning notification duration initialised with custom interval", 
+							this.__warnMsgShowDuration);
+					}
+				}
+				else{
+					
+					throw new Error( "Unexpected non-numeric type for parameter 'showDuration'" );
+				}
+			}
+			else{
+				
+				this.__warnMsgShowDuration = defaultTime;
+			}
+
+			if ( template && msg )
+				throw new Error( "Only 1 of noStorageNotification.template or noStorageNotification.message can be set - not both" );
+				
+			if ( msg ) {
+				
+				this.__sendLog( AutoSave.LOG_DEBUG, "Warn Storage Notification bar with customised msg created." );
+				this.__currWarnStorageNotificationElement = AutoSave._createNotification( defaultType, defaultBg, msg, null );
+			}
+			else if ( template ){
+				
+				this.__sendLog( AutoSave.LOG_DEBUG, "Warn Storage Notification bar with customised template created." );
+				this.__currWarnStorageNotificationElement = AutoSave._createNotification( defaultType, defaultBg, null, template );
+			} else {
+				
+				//Just the default
+				this.__currWarnStorageNotificationElement = 
+					AutoSave._createNotification( defaultType, defaultBg, defaultMsg, null );
+			}
+		}
+	}
 	
+	this._updateSaveNotification = function ( saveNotificationOpts ){
+
+		var defaultType = AutoSave.DEFAULT_AUTOSAVE_SHOW_TYPE, 
+			defaultBg   = AutoSave.DEFAULT_AUTOSAVE_SHOW_BG,
+			defaultMsg	= AutoSave.DEFAULT_AUTOSAVE_SHOW_MSG,
+			defaultTime	= AutoSave.DEFAULT_AUTOSAVE_SHOW_DURATION;
+			
+		if ( saveNotificationOpts === null ) {
+			
+			//Implies dont show notification
+			this.__sendLog( AutoSave.LOG_DEBUG, "User requested no saving notification bar. Skipping creation..." );
+			this.__currSaveNotificationElement = null;
+		}
+		else if ( saveNotificationOpts === undefined ){
+			
+			//Default behaviour
+			this.__currSaveNotificationElement = 
+				AutoSave._createNotification( defaultType, defaultBg, defaultMsg, null );
+			this.__minShowDuration = defaultTime;
+		}
+		else {
+			
+			var allowedOpts = [ "template", "message", "minShowDuration" ];
+			AutoSave._ensureOptIn( saveNotificationOpts, allowedOpts, "saveNotification" );
+
+			var template = saveNotificationOpts.template;
+			var msg = saveNotificationOpts.message;
+			var minShowDuration = saveNotificationOpts.minShowDuration;
+			
+			if ( minShowDuration !== undefined ){
+				
+				if ( typeof( minShowDuration ) == "number" ) {
+				
+					if ( minShowDuration <= 60 ){ //Must be a mistake
+					
+						throw new Error( "The 'minShowDuration' must be specified in milliseconds" );
+					}
+					else {
+						
+						this.__minShowDuration = minShowDuration;
+						this.__sendLog( AutoSave.LOG_INFO, "Saving Min duration initialised with custom interval", this.__minShowDuration);
+					}
+				}
+				else{
+					
+					throw new Error( "Unexpected non-numeric type for parameter 'minShowDuration'" );
+				}
+			}
+			else{
+				
+				this.__minShowDuration = defaultTime;
+			}
+
+			if ( template && msg )
+				throw new Error( "Only 1 of saveNotification.template or saveNotification.message can be set - not both" );
+				
+			if ( msg ) {
+				
+				this.__sendLog( AutoSave.LOG_DEBUG, "Saving Notification bar with customised msg created." );
+				this.__currSaveNotificationElement = AutoSave._createNotification( defaultType, defaultBg, msg, null );
+			}
+			else if ( template ){
+				
+				this.__sendLog( AutoSave.LOG_DEBUG, "Saving Notification bar with customised template created." );
+				this.__currSaveNotificationElement = AutoSave._createNotification( defaultType, defaultBg, null, template );
+			} else {
+				
+				//Just the default
+				this.__currSaveNotificationElement = 
+					AutoSave._createNotification( defaultType, defaultBg, defaultMsg, null );
+			}
+		}
+	}
+
 	this._executeSave = function() {
 	
 		if ( this.__saveInProgress ){
@@ -699,19 +700,11 @@ var AutoSave = function( rootControls, opts ){
 	
 	this.__invokeExt = function( funcToRun, __variadic_args__ ){
 	
+		//Temporary redirect the AutoSave.log call while invoking external callers so logging knows our context
+		//and hence our callbacks
 		var prevLogger = AutoSave.log;
 		
 		try{
-			
-			
-			
-			
-			//TODO: Instead of the below, consider just doing funcToRun.apply ( this, args )
-			//		and in AutoSave.serialize = function(){ AutoSave.log(...) }
-			//		and in AutoSave.log = ()=>if (this.__sendLog){this.__sendLog} /* i.e. called in AS context */ else console.log(...)
-			
-			
-			
 			
 			AutoSave.log = this.__invokeExtBound;
 			
@@ -725,12 +718,14 @@ var AutoSave = function( rootControls, opts ){
 		}
 	}
 	
-	this.__sendLog = function ( level, msg, __variadic_args__ ){
+	this.__sendLog = function ( __variadic_args__ ){
 
 		 var cb = this.__callbacks.onLog;
+		 var args = AutoSave.toArray( arguments );
+		 
 		 if ( cb )
 		 {
-			 var ret = cb.apply( this, arguments );
+			 var ret = cb.apply( this, args );
 			 
 			 //See @FUN semantics
 			 if ( ret === false ) {
@@ -744,12 +739,16 @@ var AutoSave = function( rootControls, opts ){
 			 }
 			 else {//could be string, object, anything user specifies take as-is
 				 
-				 msg = ret;
+				 //Preserve the level and treat array specially
+				 if ( ret && ret.length )
+					args = [ args[0] ].concat( ret );
+				 else
+					args = [ args[0], ret ];
 			 }
 		 }
 		 
  		 //TODO: Log Levels should correspond to popular logging libraries
-		 AutoSave._logToConsole.apply(null, arguments);
+		 AutoSave._logToConsole.apply(null, args);
 	}
 	
 	//This function sets up when to save the state
@@ -2045,7 +2044,7 @@ AutoSave.DEFAULT_AUTOSAVE_WARN_BG         = "orangered"; //TODO: Pastel
 AutoSave.DEFAULT_AUTOSAVE_CTR_STYLE       = "position:fixed;left:48%;top:5px;border:1px solid gray;padding:3px 30px;border-radius:3px;"; //TODO: Legacy border styles?
 
 AutoSave.DEFAULT_KEY_PREFIX = "AutoSaveJS_";
-AutoSave.log = AutoSave._logToConsole; 					//By default, log to console.
+AutoSave.log = AutoSave._logToConsole; 					//For callers outside of AutoSaveJS
 AutoSave.__keysInUse = [];
 AutoSave.__defaultListenOpts = { passive:true, capture:true };	//Let browser know we only listen passively so it can optimise
 AutoSave.__cachedLocalStorageAvailable;

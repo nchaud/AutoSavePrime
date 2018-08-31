@@ -1547,6 +1547,8 @@ describe("AutoSaveJS", function() {
 					return false; //Should cancel the logging altogther
 				else if (ctr == 2)
 					return "Override Test";
+				else if (ctr == 3)
+					return  ["Some", {obj:12345}];
 			}
 		};
 		
@@ -1571,7 +1573,14 @@ describe("AutoSaveJS", function() {
 		setValue("[name='musician']", "Debussy");
 		jasmine.clock().tick(60*1000);
 		expect(console.info).not.toHaveBeenCalledWith( 'Executing save: after element changed' );
-		expect(console.info).toHaveBeenCalledWith('Override Test');
+		
+		spy.calls.reset();
+		
+		ctr = 3;
+		setValue("[name='musician']", "Debussy");
+		jasmine.clock().tick(60*1000);
+		expect(console.info).not.toHaveBeenCalledWith( 'Executing save: after element changed' );
+		expect(console.info).toHaveBeenCalledWith("Some", {obj:12345});
 	});
   
 	it('onLog callback option behaviour is correct - debug level will revert to \'log\' if debug not available', function(){
