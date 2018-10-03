@@ -3800,6 +3800,9 @@ describe("AutoSaveJS", function() {
 	 // IE7+, It's fast - performance tests... 
 	 //TODO: All hooks should be proper events and listenable to via 'addEventListener' etc. (?)
 	 
+			
+	//TODO: Demo of calling store.resetStore() when page saved to server so doesn't auto-populate next time - if using cookies/local storage instead of ajax! **
+			
 	 //Have version, along with minified file has version at top. see ckEditor top.
 	 //Document: IF you suply a custom function for root control set - wont be re-hooked wrt listeners, no external form elems will work etc
 		// JSFiddle with various examples

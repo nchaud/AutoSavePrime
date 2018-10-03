@@ -1,8 +1,6 @@
 //todo: consistent open spacing
 //license etc.
 
-//TODO: Encapsulate it inside !
-
 var AutoSave = function( rootControls, opts ){
 
 	this.__callbacks;
@@ -94,7 +92,7 @@ var AutoSave = function( rootControls, opts ){
 			//Kick off init callback if everything else complete
 			this._registerInitQueue( -1 );
 		}
-		catch (e) {
+		catch ( e ) {
 						
 			//Clean up listeners, free up keys allocated etc.
 			this.dispose();				
@@ -143,12 +141,12 @@ var AutoSave = function( rootControls, opts ){
 			var rawUserInput = cb();
 		
 			//See @FUN Semantics
-			if (rawUserInput === false) {
+			if ( rawUserInput === false ) {
 				
 				this.__sendLog( AutoSave.LOG_INFO, "User aborted the load in the onPreLoad handler" );
 				return; //Cancel the load
 			}
-			else if (rawUserInput === undefined) { 
+			else if ( rawUserInput === undefined ) { 
 				
 				//Do nothing - continue with the load
 			}
@@ -179,13 +177,13 @@ var AutoSave = function( rootControls, opts ){
 			var rawUserInput = cb( szData );
 		
 			//See @FUN Semantics
-			if (rawUserInput === false) {
+			if ( rawUserInput === false ) {
 				
 				this.__sendLog( AutoSave.LOG_INFO, "User aborted the load in the onPostLoad handler" );
 				this._registerInitQueue( -1 );
 				return; //Cancel the load
 			}
-			else if (rawUserInput === undefined) { 
+			else if ( rawUserInput === undefined ) { 
 				
 				//Do nothing - continue with the load
 			}
@@ -218,18 +216,11 @@ var AutoSave = function( rootControls, opts ){
 		//Call the initialisation callback once after the load step
 		if ( this.__pendingInitRoutines == 0 ) {
 			
-			try {
+			var cb = this.__callbacks.onInitialised;
+			if (cb) {
 				
-				var cb = this.__callbacks.onInitialised;
-				if (cb) {
-					
-					this.__sendLog( AutoSave.LOG_DEBUG, "Invoking callback onInitialised" );
-					cb();
-				}
-			}
-			finally{
-				
-				//this.__onInitialiseInvoked = true;
+				this.__sendLog( AutoSave.LOG_DEBUG, "Invoking callback onInitialised" );
+				cb();
 			}
 		}
 	}
@@ -356,7 +347,7 @@ var AutoSave = function( rootControls, opts ){
 		}
 		
 		//Toggle display value
-		let newStyle = toggleOn ? (currElement.getAttribute("autosave-od") || "block") : "none";
+		let newStyle = toggleOn ? ( currElement.getAttribute("autosave-od") || "block" ) : "none";
 		currElement.style.display = newStyle;
 	}
 
@@ -655,7 +646,7 @@ var AutoSave = function( rootControls, opts ){
 						
 			//DEMO: How to ask user to enable cookies
 			
-			if (dataStore.load === undefined && dataStore.save === undefined) {
+			if ( dataStore.load === undefined && dataStore.save === undefined ) {
 
 				var storeToCookies = dataStore.preferCookies === true || !hasLocalStorage;
 				
@@ -664,11 +655,11 @@ var AutoSave = function( rootControls, opts ){
 					
 					this.__theStore = new _CookieStore( this.__dataStoreKeyFunc );
 				}
-				else if (hasLocalStorage) {
+				else if ( hasLocalStorage ) {
 					
 					this.__theStore = new _LocalStore( this.__dataStoreKeyFunc );
 				}
-				else if (hasCookieStorage) {
+				else if ( hasCookieStorage ) {
 					
 					this.__theStore = new _CookieStore( this.__dataStoreKeyFunc );
 				}
@@ -678,14 +669,14 @@ var AutoSave = function( rootControls, opts ){
 					this.__theStore = new _NoStore();
 				}
 			}
-			else if (dataStore.load === null && dataStore.save === null) {
+			else if ( dataStore.load === null && dataStore.save === null ) {
 				
 				//User explicitly does not want to load from anywhere
 				this.__theStore = new _NoStore();
 			}
-			else if (typeof( dataStore.load ) != "function" || typeof( dataStore.save ) != "function") {
+			else if ( typeof( dataStore.load ) != "function" || typeof( dataStore.save ) != "function" ) {
 
-				throw new Error("The dataStore.load and dataStore.save parameters must 1) both be set or both be unset and 2) must be functions.");
+				throw new Error( "The dataStore.load and dataStore.save parameters must 1) both be set or both be unset and 2) must be functions." );
 			}
 			else {
 				
@@ -708,7 +699,7 @@ var AutoSave = function( rootControls, opts ){
 			
 			AutoSave.log = this.__invokeExtBound;
 			
-			var args = AutoSave.toArray(arguments, 1);
+			var args = AutoSave.toArray( arguments, 1 );
 			
 			return funcToRun.apply( null, args );
 		}
@@ -748,7 +739,7 @@ var AutoSave = function( rootControls, opts ){
 		 }
 		 
  		 //TODO: Log Levels should correspond to popular logging libraries
-		 AutoSave._logToConsole.apply(null, args);
+		 AutoSave._logToConsole.apply( null, args );
 	}
 	
 	//This function sets up when to save the state
@@ -764,7 +755,7 @@ var AutoSave = function( rootControls, opts ){
 		else if ( saveTrigger === undefined ) {
 
 			this.__debounceInterval = AutoSave.DEFAULT_AUTOSAVE_INTERVAL;
-			this.__sendLog( AutoSave.LOG_INFO, "Save trigger was initialised with default interval", this.__debounceInterval);
+			this.__sendLog( AutoSave.LOG_INFO, "Save trigger was initialised with default interval", this.__debounceInterval );
 		}
 		else if ( typeof( saveTrigger ) == "object" ) {
 
@@ -784,7 +775,7 @@ var AutoSave = function( rootControls, opts ){
 				else {
 					
 					this.__debounceInterval = debounceInterval;
-					this.__sendLog( AutoSave.LOG_INFO, "Save trigger was initialised with custom interval", this.__debounceInterval);
+					this.__sendLog( AutoSave.LOG_INFO, "Save trigger was initialised with custom interval", this.__debounceInterval );
 				}
 			}
 			else{
@@ -816,23 +807,23 @@ var AutoSave = function( rootControls, opts ){
 			//TODO: What about un-hooking/re-hooking listeners when this set changes?
 			this.__getRootControlsFunc = function() {
 			
-				var rawUserInput = parentElement();	//TODO: Context in which this is invoked?
+				var rawUserInput = parentElement();
 				
 				if ( !rawUserInput ){
 					
-					this.__sendLog( AutoSave.LOG_INFO, "User specified custom function returned empty set of elements");
+					this.__sendLog( AutoSave.LOG_INFO, "User specified custom function returned empty set of elements" );
 					return []; //Always standardise to an array
 				}
 				else{
 					
 					var elems = this._getControlsFromUserInput( rawUserInput );
 					
-					this.__sendLog( AutoSave.LOG_INFO, "Extracted "+elems.length+" root level controls from user specified input");
+					this.__sendLog( AutoSave.LOG_INFO, "Extracted "+elems.length+" root level controls from user specified input" );
 					
 					if ( seekExternalFormElements ){
 						
 						var externalElems = this.__invokeExt( AutoSave.getExternalFormControls, elems );
-						this.__sendLog( AutoSave.LOG_INFO, "Found "+externalElems.length+" external form-linked controls");
+						this.__sendLog( AutoSave.LOG_INFO, "Found "+externalElems.length+" external form-linked controls" );
 						
 						for( var idx = 0; idx < externalElems.length; idx++ ){
 							
@@ -847,26 +838,26 @@ var AutoSave = function( rootControls, opts ){
 		else {
 		
 			//Static - so calculate it just once beforehand and return the same set every time
-			//TODO: SHOULD BE DYNAMIC IF STRING
+			//TODO: SHOULD BE DYNAMIC IF STRING (?) - other libs dont do that, they just need an always-present container
 			var elems = this._getControlsFromUserInput( parentElement );
 			
 			//Validation - TODO: Test if something an array and not a jQuery array or dom-like ?
 			//If user-supplied parameter didn't resolve to any elements, throw, as there will be nothing to listen to.
 			//Except if explicitly specified an empty [] so continue 
-			if ( !Array.isArray(parentElement) && elems.length == 0){
+			if ( !Array.isArray(parentElement) && elems.length == 0 ){
 				
-				this.__sendLog( AutoSave.LOG_WARN, "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?");
+				this.__sendLog( AutoSave.LOG_WARN, "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?" );
 			}
 			else{
 				
-				this.__sendLog( AutoSave.LOG_INFO, "Extracted "+elems.length+" root level controls");
+				this.__sendLog( AutoSave.LOG_INFO, "Extracted "+elems.length+" root level controls" );
 			}
 		
 			//Find all elements that use a 'form=...' attribute explicitly and assume they're outside the root control set so capture them
 			if ( seekExternalFormElements ) {
 				
 				var externalElems = this.__invokeExt( AutoSave.getExternalFormControls, elems );
-				this.__sendLog( AutoSave.LOG_INFO, "Found "+externalElems.length+" external form-linked controls");
+				this.__sendLog( AutoSave.LOG_INFO, "Found "+externalElems.length+" external form-linked controls" );
 				
 				for( var idx = 0; idx < externalElems.length; idx++ ){
 					
@@ -884,13 +875,11 @@ var AutoSave = function( rootControls, opts ){
 	this._hookListeners = function ( hookOn, seekExternalFormElements ){ 
 
 		this.__sendLog( AutoSave.LOG_DEBUG, 
-						(hookOn?"Hooking":"Unhooking")+
-						" listeners. Seeking external controls for hooking: "+seekExternalFormElements);
-				
+						( hookOn?"Hooking":"Unhooking")+
+						" listeners. Seeking external controls for hooking: "+seekExternalFormElements );
+		
 		//controlsArr is never null by post-condition of _updateRootControls
 		var controlsArr = this.__getRootControlsFunc();
-
-		//TODO: Test: If control change triggers another? Should be captured by timeout
 		
 		for( var ctrlIdx=0; ctrlIdx<controlsArr.length; ctrlIdx++ ){
 			
@@ -902,8 +891,8 @@ var AutoSave = function( rootControls, opts ){
 	
 	this._hookSingleControl = function ( child, hookOn ){
 
-		//TODO: What about whilst typing? Neither of these will fire ?
-		if (hookOn) {
+		//TODO: What about whilst typing? Neither of these will fire ? Check jQuery list of all events to be sure.
+		if ( hookOn ) {
 			
 			//'change' event is primarily for checkboxes and radios for browsers - 'historical reasons'
 			//But we can hook both as we'll debounce changes anyway
@@ -917,12 +906,12 @@ var AutoSave = function( rootControls, opts ){
 		}
 	}
 		
-	this.handleEvent = function (ev){
+	this.handleEvent = function ( ev ){
 		
 		this.__sendLog( AutoSave.LOG_DEBUG, "Handling raw control input event", ev );
 		
 		//If already have a timer running, return
-		if (this.__debounceTimeoutHandle){
+		if ( this.__debounceTimeoutHandle ){
 			
 			return;
 		}
@@ -982,7 +971,7 @@ var AutoSave = function( rootControls, opts ){
 		}
 		catch(e){
 			
-			this.__sendLog( AutoSave.LOG_WARN, "Error unhooking listeners", e);
+			this.__sendLog( AutoSave.LOG_WARN, "Error unhooking listeners", e );
 		}
 
 		//Free this key to be re-used by another AutoSave instance
@@ -991,17 +980,17 @@ var AutoSave = function( rootControls, opts ){
 			if ( this.__dataStoreKeyFunc ) {
 				
 				var key = this.__dataStoreKeyFunc();
-				var keyIdx = AutoSave.__keysInUse.indexOf(key);
+				var keyIdx = AutoSave.__keysInUse.indexOf( key );
 				
-				if (keyIdx != -1){
+				if ( keyIdx != -1 ){
 					
 					AutoSave.__keysInUse.splice( keyIdx, 1 );
 				}
 			}
 		}
-		catch(e){
+		catch( e ){
 			
-			this.__sendLog( AutoSave.LOG_WARN, "Error freeing key", e);
+			this.__sendLog( AutoSave.LOG_WARN, "Error freeing key", e );
 		}
 
 		//Clear any pending saves
@@ -1021,7 +1010,7 @@ var AutoSave = function( rootControls, opts ){
 		}
 		catch(e){
 			
-			this.__sendLog( AutoSave.LOG_WARN, "Error resetting store", e);
+			this.__sendLog( AutoSave.LOG_WARN, "Error resetting store", e );
 		}
 		
 		//Remove the "Saving..." html element from DOM
@@ -1088,9 +1077,6 @@ var AutoSave = function( rootControls, opts ){
 		return fieldDataStr;
 	}
 	
-	
-	//TODO: setOpt("", "...") for dynamic parameter modification - just pass in a modified options object as before? What if callbacks REMOVED?
-	
 	//optObj must not be null
 	AutoSave._ensureOptIn = function( optObj, allowedValues, optDesc ){
 		
@@ -1103,7 +1089,7 @@ var AutoSave = function( rootControls, opts ){
 
 			 if ( allowedValues.indexOf( optKey ) == -1 ) {
 				
-				  throw new Error( "Unexpected parameter '" + optKey + "' in " + optDesc + " options object");
+				  throw new Error( "Unexpected parameter '" + optKey + "' in " + optDesc + " options object" );
 			 }
 		}
 	}
@@ -1115,7 +1101,7 @@ var AutoSave = function( rootControls, opts ){
 		
 		if ( !navigator.cookieEnabled ){
 			
-			AutoSave.log( AutoSave.LOG_WARN, "Cookie Store requested but cookies not enabled.");
+			AutoSave.log( AutoSave.LOG_WARN, "Cookie Store requested but cookies not enabled." );
 		}
 
 		this.__currStoreKeyFunc = keyFunc;
@@ -1138,8 +1124,6 @@ var AutoSave = function( rootControls, opts ){
 			loadCompleted( szString );
 		}
 
-		//TODO: error handling for callbacks? invoke with an Error object / string ?
-
 		this.save = function ( data, saveCompleted ){
 			
 			var key = this.__currStoreKeyFunc();
@@ -1147,20 +1131,20 @@ var AutoSave = function( rootControls, opts ){
 			//Could be specified in the preStoreHook or the resetStore() to clear it out
 			if ( data === null ){
 				
-				data = AutoSave._buildFullCookieStr( key, "", { expireNow: true});
+				data = AutoSave._buildFullCookieStr( key, "", { expireNow: true} );
 			}
-				
+			
 			//We know data has been moulded to a cookie format already so save straight down
 			document.cookie = data;
 			
-			saveCompleted( );		
+			saveCompleted();
 		}
 		
 		this.mouldForOutput = function( data ) {
 			
 			var key = this.__currStoreKeyFunc();
 
-			var cookieParamsStr = AutoSave._buildFullCookieStr( key, data, { neverExpire: true});
+			var cookieParamsStr = AutoSave._buildFullCookieStr( key, data, { neverExpire: true} );
 			
 			AutoSave.log( AutoSave.LOG_DEBUG, "Created cookie params string", cookieParamsStr );
 			
@@ -1209,8 +1193,6 @@ var AutoSave = function( rootControls, opts ){
 			}
 			
 			saveCompleted( );
-			
-			//TODO: ** Clear cookie when page saved so doesn't auto-populate next time - if using cookies/local storage instead of ajax! **
 		}
 	
 		this.mouldForOutput = function( data ){
@@ -1256,12 +1238,12 @@ var AutoSave = function( rootControls, opts ){
 		
 		if ( userLoadFunc.length != 2 ) {
 			
-			throw new Error("dataStore.load function must take 2 parameters.");
+			throw new Error( "dataStore.load function must take 2 parameters." );
 		}
 		
 		if ( userSaveFunc.length != 3 ) {
 			
-			throw new Error("dataStore.save function must take 3 parameters.");
+			throw new Error( "dataStore.save function must take 3 parameters." );
 		}
 
 		this.__currStoreKeyFunc = keyFunc;
@@ -1294,7 +1276,7 @@ var AutoSave = function( rootControls, opts ){
 		}
 	}
 
-	AutoSave.whenDocReady( this._initialise.bind(this, rootControls, opts) );
+	AutoSave.whenDocReady( this._initialise.bind( this, rootControls, opts ) );
 };
 
 AutoSave.whenDocReady = function whenDocReady( funcToRun ){
@@ -1349,14 +1331,6 @@ AutoSave._getKeyFunc = function( parentElems, rawUserOption ){
 				//Dynamically recalc every time
 				var val = AutoSave.DEFAULT_KEY_PREFIX + rawUserOption();
 
-				
-				
-				
-				
-				//TODO: Effectively async
-				
-				
-				
 				AutoSave.log( AutoSave.LOG_DEBUG, "Calculated dynamic datastore key to use", val );
 				
 				return val;
@@ -1364,7 +1338,7 @@ AutoSave._getKeyFunc = function( parentElems, rawUserOption ){
 		}
 		else{
 			
-			throw new Error("Unexpected type of parameter 'dataStore.key'");
+			throw new Error( "Unexpected type of parameter 'dataStore.key'" );
 		}
 	}
 	else {
@@ -1392,11 +1366,11 @@ AutoSave._getKeyFunc = function( parentElems, rawUserOption ){
 			keyValue = AutoSave.DEFAULT_KEY_PREFIX;
 		}
 		
-		AutoSave.log( AutoSave.LOG_INFO, "Using calculated value for datastore key", keyValue);
+		AutoSave.log( AutoSave.LOG_INFO, "Using calculated value for datastore key", keyValue );
 			
 		if ( AutoSave.__keysInUse.indexOf( keyValue ) != -1 ){
 			
-			throw new Error("There is already an AutoSave instance with the storage key of '"+keyValue+"'. See the documentation for solutions.")
+			throw new Error( "There is already an AutoSave instance with the storage key of '"+keyValue+"'. See the documentation for solutions." )
 		}
 		
 		AutoSave.__keysInUse.push( keyValue );
@@ -1497,57 +1471,37 @@ AutoSave._serializeSingleControl = function( child, fieldData ){
 AutoSave._encodeFieldDataToString = function _encodeFieldDataToString( fieldData ){
 		
 	var fieldDataStr = "";
-	for( var fieldIdx in fieldData[0] ){
+	for( var fieldIdx in fieldData[ 0 ] ){
 		
-		var name  = fieldData[0][fieldIdx];
-		var value = fieldData[1][fieldIdx];
+		var name  = fieldData[ 0 ][ fieldIdx ];
+		var value = fieldData[ 1 ][ fieldIdx ];
 		
-		fieldDataStr += encodeURIComponent(name)+"="+encodeURIComponent(value);
+		fieldDataStr += encodeURIComponent( name ) + "=" + encodeURIComponent( value );
 		
-		if ( fieldIdx != fieldData[0].length-1 )
+		if ( fieldIdx != fieldData[ 0 ].length - 1 )
 			fieldDataStr += "&";
 	}
 
-	//Convert %20 to + as per x-www-form-urlencoded protocol
-	//TODO: Sub optimal?
-	var prev = null;
-	var curr = fieldDataStr;
-	do{
-		prev = curr;
-		curr = prev.replace("%20","+");
-	}while(curr != prev)
-	
-	fieldDataStr = curr;
+	fieldDataStr = fieldDataStr.replace( /%20/g,"+" );
 
 	return fieldDataStr;
 }
 
-//TODO: clear up all whitespace in file
-
 AutoSave._decodeFieldDataFromString = function _decodeFieldDataFromString( fieldDataStr ){
 	
-	//Convert + back to %20 as per x-www-form-urlencoded protocol
-	//TODO: Sub optimal? Regex !
-	var prev = null;
-	var curr = fieldDataStr;
-	do{
-		prev = curr;
-		curr = prev.replace("+","%20");
-	}while(curr != prev)
-	
-	fieldDataStr = curr;
+	fieldDataStr = fieldDataStr.replace( /\+/g,"%20" )
 	
 	//Reconstruct a field data object from the string
-	var fieldData = [[],[]];
-	var pairs = fieldDataStr.split("&");
-	for(var pairIdx in pairs){
+	var fieldData = [ [],[] ];
+	var pairs = fieldDataStr.split( "&" );
+	for( var pairIdx in pairs ){
 		
 		var pair = pairs[ pairIdx ];
 		var items = pair.split( "=" );
 		
 		if ( items.length != 2 ) {
 			
-			AutoSave.log( AutoSave.LOG_WARN, "Expected a pair of items separated by '=' in "+pair+". Got "+items.length+". Ignoring...")
+			AutoSave.log( AutoSave.LOG_WARN, "Expected a pair of items separated by '=' in "+pair+". Got "+items.length+". Ignoring..." );
 		}
 		else{
 			
@@ -1561,8 +1515,6 @@ AutoSave._decodeFieldDataFromString = function _decodeFieldDataFromString( field
 	return fieldData;
 }
 
-
-//TODO: AutoSaveJS should also use this method
 AutoSave.addSerialisedValue = function addSerialisedValue( szString, key, value ){
 	
 	if ( !key ) {
@@ -1586,7 +1538,7 @@ AutoSave.addSerialisedValue = function addSerialisedValue( szString, key, value 
 	}
 	
 	var ret=[ [key],[value] ];
-	var encoded = AutoSave._encodeFieldDataToString(ret);
+	var encoded = AutoSave._encodeFieldDataToString( ret );
 	szString += encoded;
 	
 	return szString;
@@ -1626,9 +1578,9 @@ AutoSave._deserializeSingleControl = function( child, fieldData, clearEmpty ){
 	
 	var runStd = false;
 	
-	if (child.nodeName == "INPUT"){
+	if ( child.nodeName == "INPUT" ){
 	
-	   if (child.type == "radio" || child.type == "checkbox") {
+	   if ( child.type == "radio" || child.type == "checkbox" ) {
 
 			//For these, we need to check not only that the names exists but the value corresponds to this element.
 			//If it corresponds, we need to 
@@ -1638,7 +1590,7 @@ AutoSave._deserializeSingleControl = function( child, fieldData, clearEmpty ){
 			
 			var foundField = null;
 			
-			for (var fieldIdx in fieldData[ 0 ] ) {
+			for ( var fieldIdx in fieldData[ 0 ] ) {
 			
 				if ( fieldData[ 0 ][ fieldIdx ] == child.name ) {
 					
@@ -1694,7 +1646,7 @@ AutoSave._deserializeSingleControl = function( child, fieldData, clearEmpty ){
 			}
 		}
 	}
-	else if (child.nodeName == "TEXTAREA") { //All other :inputs types - textarea, HTMLSelect etc.
+	else if ( child.nodeName == "TEXTAREA" ) { //All other :inputs types - textarea, HTMLSelect etc.
 
 		runStd = true;
 	}
@@ -1751,18 +1703,18 @@ AutoSave._parseExternalElemsArg = function _parseExternalElemsArg( seekExternalF
 //Even though local storage is supported in browsers AutoSaveJS supports, still need to check for Safari
 AutoSave.isLocalStorageAvailable = function isLocalStorageAvailable() {
 	
-	if ( AutoSave.__cachedLocalStorageAvailable === undefined) {
+	if ( AutoSave.__cachedLocalStorageAvailable === undefined ) {
 	
 		try {
 			
-			var storage = window['localStorage'];
+			var storage = window[ 'localStorage' ];
 			var x = '__ASJS_test__';
-			storage.setItem(x, "_");
-			storage.removeItem(x);
+			storage.setItem( x, "_" );
+			storage.removeItem( x );
 			
 			AutoSave.__cachedLocalStorageAvailable = true;
 		}
-		catch(e) {
+		catch( e ) {
 			
 			AutoSave.__cachedLocalStorageAvailable =
 				(
@@ -1775,9 +1727,9 @@ AutoSave.isLocalStorageAvailable = function isLocalStorageAvailable() {
 				// everything except Firefox
 				e.name === 'QuotaExceededError' ||
 				// Firefox
-				e.name === 'NS_ERROR_DOM_QUOTA_REACHED') &&
+				e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ) &&
 				// acknowledge QuotaExceededError only if there's something already stored
-				storage.length !== 0) ;
+				storage.length !== 0 ) ;
 		}
 	}
 	
@@ -1787,7 +1739,7 @@ AutoSave.isLocalStorageAvailable = function isLocalStorageAvailable() {
 //From Modernizr
 AutoSave.isCookieStorageAvailable = function isCookieStorageAvailable(){
 	
-	if ( AutoSave.__cachedCookiesAvailable === undefined) {
+	if ( AutoSave.__cachedCookiesAvailable === undefined ) {
 	
 		//This property works in all but IE<11
 		if ( navigator.cookieEnabled ){
@@ -1797,7 +1749,7 @@ AutoSave.isCookieStorageAvailable = function isCookieStorageAvailable(){
 		else {
 			// Create and test cookie
 			document.cookie = "AutoSave_cookietest=1";
-			AutoSave.__cachedCookiesAvailable = document.cookie.indexOf("AutoSave_cookietest=") != -1;
+			AutoSave.__cachedCookiesAvailable = document.cookie.indexOf( "AutoSave_cookietest=" ) != -1;
 			
 			// Delete cookie
 			document.cookie = "AutoSave_cookietest=1; expires=Thu, 01-Jan-1970 00:00:01 GMT";
@@ -1810,7 +1762,7 @@ AutoSave.isCookieStorageAvailable = function isCookieStorageAvailable(){
 
 AutoSave._uniq = function( value, index, self ) {
 
-	return self.indexOf(value) === index;
+	return self.indexOf( value ) === index;
 }
 
 
@@ -1819,7 +1771,7 @@ AutoSave._buildFullCookieStr = function( key, data, opts ) {
 	
 	if ( !key ){
 		
-		throw new Error("No key specified for saving to cookie");
+		throw new Error( "No key specified for saving to cookie" );
 	}
 	
 	//This regex is from MDN - @https://developer.mozilla.org/en-US/docs/Web/API/Document/cookie/Simple_document.cookie_framework
@@ -1850,7 +1802,6 @@ AutoSave._buildFullCookieStr = function( key, data, opts ) {
 AutoSave.resetAll = function(){
 	
 	//Remove reserved keys
-	//TODO: Use this array combined with checking prefix to remove all entries? Or do even custom entries always have this prefix?
 	AutoSave.__keysInUse = [];
 		
 	//Iterate and remove all AutoSaveJS local storage
@@ -1858,25 +1809,25 @@ AutoSave.resetAll = function(){
 		
 		for (var i = localStorage.length - 1; i >= 0; i--) {
 			
-			var key = localStorage.key(i);
+			var key = localStorage.key( i );
 			
-			if (key && key.indexOf(AutoSave.DEFAULT_KEY_PREFIX) === 0){
+			if (key && key.indexOf( AutoSave.DEFAULT_KEY_PREFIX ) === 0){
 				
-				localStorage.removeItem(key);
+				localStorage.removeItem( key );
 			}
 		}
 	}
 	
 	//Iterate and delete all AutoSaveJS cookies - regex from MDN
-	var aKeys = document.cookie.replace(/((?:^|\s*;)[^\=]+)(?=;|$)|^\s*|\s*(?:\=[^;]*)?(?:\1|$)/g, "").split(/\s*(?:\=[^;]*)?;\s*/);
+	var aKeys = document.cookie.replace( /((?:^|\s*;)[^\=]+)(?=;|$)|^\s*|\s*(?:\=[^;]*)?(?:\1|$)/g, "" ).split( /\s*(?:\=[^;]*)?;\s*/ );
 	
 	for (var nIdx = 0; nIdx < aKeys.length; nIdx++) { 
 	
-		var key = decodeURIComponent(aKeys[nIdx]);
+		var key = decodeURIComponent( aKeys[ nIdx ] );
 		
-		if (key.indexOf(AutoSave.DEFAULT_KEY_PREFIX) === 0) {
+		if ( key.indexOf(AutoSave.DEFAULT_KEY_PREFIX) === 0 ) {
 			
-			var str = AutoSave._buildFullCookieStr( key, "", { expireNow: true});
+			var str = AutoSave._buildFullCookieStr( key, "", { expireNow: true} );
 			
 			document.cookie = str;
 		}
@@ -1903,7 +1854,7 @@ AutoSave.getExternalFormControls = function( elems ){
 		{
 			var nestedForms = elem.querySelectorAll( "form" );
 			
-			for(var nIdx = 0; nIdx < nestedForms.length; nIdx++){
+			for( var nIdx = 0; nIdx < nestedForms.length; nIdx++ ){
 				
 				var nElem = nestedForms[ nIdx ];
 				
@@ -1925,7 +1876,7 @@ AutoSave.getExternalFormControls = function( elems ){
 	//Find all elements that use a 'form=...' attribute explicitly and assume they're outside the root control set so capture them
 	if ( formNames.length ){
 		
-		var selector = "[form='"+formNames.join("'],[form='")+"']";
+		var selector = "[form='" + formNames.join( "'],[form='" ) + "']";
 		
 		AutoSave.log( AutoSave.LOG_DEBUG, "Querying for external form controls with selector", selector );
 		var externalElems = document.querySelectorAll( selector );
@@ -1941,21 +1892,22 @@ AutoSave.getExternalFormControls = function( elems ){
 
 AutoSave.getCtor = function ( constructor , __variadic_args__ ){
 	
-	var currArgs = AutoSave.toArray(arguments, 1); //Bypass constructor argument -- TODO: CHECK SUPPORT OF NEW ARRAY like this
+	var currArgs = AutoSave.toArray( arguments, 1 ); //Bypass constructor argument
 	
 	return function(){
 		
-		var args = [null].concat(currArgs);
-		var factoryFunction = constructor.bind.apply(constructor, args);
+		var args = [ null ].concat( currArgs );
+		var factoryFunction = constructor.bind.apply( constructor, args );
 		return new factoryFunction();
 	}
 }
 
 AutoSave.toArray = function ( arrayLike, skipStartEntries ){
 	
-	var currArgs = Array.from(arrayLike);
-	if (skipStartEntries)
-		currArgs = currArgs.slice(skipStartEntries);
+	//TODO: Browser support?
+	var currArgs = Array.from( arrayLike );
+	if ( skipStartEntries )
+		currArgs = currArgs.slice( skipStartEntries );
 	return currArgs;
 }
 
@@ -1966,17 +1918,17 @@ AutoSave._logToConsole = function ( logLevel, __variadic_args__ ){
 	
 	if ( logLevel == AutoSave.LOG_DEBUG )
 	{
-		if (console.debug) 
-			console.debug.apply(this, args);
+		if ( console.debug ) 
+			console.debug.apply( this, args );
 		else
-			console.log.apply(this, args); //Distinguish from info level incase users need it
+			console.log.apply( this, args ); //Distinguish from info level incase users need it
 	}
 	else if ( logLevel == AutoSave.LOG_INFO )
-		console.info.apply(this, args);
+		console.info.apply( this, args );
 	else if ( logLevel == AutoSave.LOG_WARN )
-		console.warn.apply(this, args);
+		console.warn.apply( this, args );
 	else if ( logLevel == AutoSave.LOG_ERROR )
-		console.error.apply(this, args);
+		console.error.apply( this, args );
 	else
 		throw new Error( "Unknown log level: " + logLevel );
 }
@@ -1994,13 +1946,13 @@ AutoSave._createNotification = function _createNotification( typeClass, bgColor,
 		if ( tempContainer.children.length != 1 )
 			throw new Error( "Expected exactly 1 top-level element in saveNotification.template" );
 		
-		elem = tempContainer.children[0];
+		elem = tempContainer.children[ 0 ];
 	}
 	else {
 		
 		elem = document.createElement( "div" );
 		elem.classList.add( "autosave-ctr" );
-		elem.classList.add( "autosave-"+typeClass );
+		elem.classList.add( "autosave-" + typeClass );
 		elem.style = AutoSave.DEFAULT_AUTOSAVE_CTR_STYLE; //TODO: Is this x-browser compatible?
 		
 		if ( bgColor )
@@ -2015,7 +1967,7 @@ AutoSave._createNotification = function _createNotification( typeClass, bgColor,
 	}
 	
 	//Preserve the user's original display style for when we're toggling
-	elem.setAttribute("autosave-od", elem.style.display);
+	elem.setAttribute( "autosave-od", elem.style.display );
 
 	//Initially hidden
 	elem.style.display = "none";
