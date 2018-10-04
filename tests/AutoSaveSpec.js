@@ -2850,8 +2850,8 @@ describe("AutoSaveJS", function() {
 		if ( ! AutoSave.isLocalStorageAvailable() )
 			return; //Not relevant here
 
+		//TODO: UNICODE/CHINESE etc. tests with cookies + local storage. UTF8?
 
-																//TODO: UNICODE/CHINESE etc. tests with cookies + local storage. UTF8?
 		setValue("[name='frmNameEntry']", "Jonathan / Nash"); //This will also ensure the local storage correctly stores special chars
 		setValue("[name='frmAgeEntry']",  10);
 		
@@ -3708,30 +3708,30 @@ describe("AutoSaveJS", function() {
 	});
 	
 	//'PROGRAMATIC CHANGES HANDLING? DIFF FEATURE? V2?
-	// button serialisation! ALL other inputs covered?
+	// button serialisation! ALL other inputs covered? toggle button a reason to do button?
 	 // "Some data was not saved. Are you sure you want to navigate away...?"
 
-	//todo: for each event type, hook different events?
-	//TODO: Many of these in browser for browser-based integration tests OR send native key-press/mouse-moves
-	//todo: allow intercepting autosave ? or just cancel on the pre-serialisation?
-	//TODO: Changes due to .Load() should not call .Save() 
-	//TODO: *** 'on' string if no name for checkbox/radio *** (as per spec?)
+	//for each event type, hook different events?
+	//Many of these in browser for browser-based integration tests OR send native key-press/mouse-moves
+	//allow intercepting autosave ? or just cancel on the pre-serialisation?
+	//Changes due to .Load() should not call .Save() 
+	//*** 'on' string if no name for checkbox/radio *** (as per spec?)
 	//ensure name is available on NPM - e.g. AutoSavePrime
-	// TODO: Unselected select remains unselected 
+	// Unselected select remains unselected 
 	//check jQuery implementation of :input selector
-	// TODO: Check all options of all controls in MDN - e.g. select.multiselect
-	//Post-* method should always be called, even for failure(?) with finally
+	// Check all options of all controls in MDN - e.g. select.multiselect
 	// If string selector provided for parent-element, should re-calculate on each invocation (how works on loading then?)
 	// ensure tests work across all versions of jQuery old and new - when supplied as the parameter        
-	// TOOD: ensure ALL form control types are covered wrt triggering an event
-	// TODO: multiple input radio group
-	// TODO: Test with dynamically added or removed controls after serializing + before deserializing
+	// ensure ALL form control types are covered wrt triggering an event
+	// multiple input radio group
+	// Test with dynamically added or removed controls after serializing + before deserializing
+
 	
 	 // Without IDs, server-side or client-side auto-saving, jQuery-UI + CKEditor etc. tests,
 	 // Way to revert to local storage if no connectivity with my ajax service?
 	 // AutoSave.Serialize, AutoSave.Deserialize, AutoSave.FindControls all static 
 	 // Github-integrated tests
-	 // If [type='radio'] has now value attribute, chrome uses 'on'. Do? X-browser support?
+	 // If [type='radio'] has no value attribute, chrome uses 'on'. Do? X-browser support?
 	 // No Gung-ho rewrites ; backwards compatability are a core *feature* of this library
 	 // Never break backwards compatability in future versions : never-break-backwards-compat.com - compatpact.com
 	 // TODO: Google "Reading/writing to cookies with full unicode support" and ensure we cover too
@@ -3761,9 +3761,10 @@ describe("AutoSaveJS", function() {
 	 // As we're using event handlers, test if us throwing doesn't invoke the remaining handles. If so, try-catch and pipe to errorHandler 
 	 //(by default throws an Error with code)
 	 // Unhook events on elements removed from DOM (?)
-	 // TODO: Dont trigger another save if one already in progress? Queue/throttle it.
+	 // TODO: Dont trigger another save if one already in progress? Queue/throttle it. We already throttle so can be done by user hooks?
 
-
+//FIRST PRIORITY FOR LIBRARY IS WORKING IN ALL SCENARIOS, OUT OF BOX - THEN ALLOW THEM TO TWEAK PARAMTERS FOR PERFORMANCE
+	 
 //TODO: Localisation
 //TODO: get control values just for controls that've changed?
 //TODO: test dispose() causes no more save invocations
@@ -3822,6 +3823,4 @@ describe("AutoSaveJS", function() {
 			 
   });
 });
-
-
 

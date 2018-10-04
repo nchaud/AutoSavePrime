@@ -28,13 +28,8 @@ var AutoSave = function( rootControls, opts ){
 	this.__warnNoStore; 	//Will be true if a store was expected but wasn't present
 		
 	this.__clearEmptyValuesOnLoad; //When keys dont have a value in the data store (e.g....&name=&...), clear out those elements on load
-			//TODO: On reconnect with internet, it'll kick off a reload? Could trash all the users changes !!
-			//		If new fields are added in the meantime, should be handled fine as ignored
-			//		If value cleared out server-side though, should clear out client-side? Or with other users' machines?
-			//		Plus provides for useful "reset" ability
-			//		TODO: Demo with above reset 
-			//		Workaround if this is a problem : Just remove all empty values coming from server-side. TODO: Sample.
-
+			//TODO: Notify before leaving page
+			//TODO: How handle changing option ?
 	
 	this._initialise = function( parentElement, opts ) {
 	
@@ -798,7 +793,7 @@ var AutoSave = function( rootControls, opts ){
 		
 		 	this.__sendLog( AutoSave.LOG_DEBUG, "No parent element specified - will use whole document" );
 			
-			parentElement = document.body;	//TODO: Will this capture all? In Node too?
+			parentElement = document.body;
 		}
 		
 		if ( typeof( parentElement ) == "function" ){
@@ -839,6 +834,7 @@ var AutoSave = function( rootControls, opts ){
 		
 			//Static - so calculate it just once beforehand and return the same set every time
 			//TODO: SHOULD BE DYNAMIC IF STRING (?) - other libs dont do that, they just need an always-present container
+			//but child set - e.g. "#multi-form-container form" - should work dynamically?
 			var elems = this._getControlsFromUserInput( parentElement );
 			
 			//Validation - TODO: Test if something an array and not a jQuery array or dom-like ?
@@ -1081,7 +1077,7 @@ var AutoSave = function( rootControls, opts ){
 	AutoSave._ensureOptIn = function( optObj, allowedValues, optDesc ){
 		
 		//Only verify level of options, not base members
-		var optKeys = Object.keys( optObj ); //todo: will this get parent values if inherited object? x-browser support?
+		var optKeys = Object.keys( optObj ); //todo: x-browser support?
 		
 		for( var idx in optKeys ) {
 			
@@ -1452,11 +1448,6 @@ AutoSave._serializeSingleControl = function( child, fieldData ){
 		fieldData[0].push( nameKey );
 		fieldData[1].push( value );
 	}
-	
-	
-	//TODO: Button,  etc.
-	
-	
 	else {
 	
 		//May be, e.g., a form or div so go through all children
@@ -1563,7 +1554,7 @@ AutoSave.getSerialisedValues = function getSerialisedValues( szString, key ){
 	var ret = [];
 	for( var i in decoded[ 0 ] ) {
 		
-		if ( decoded[ 0 ][ i ] == key ) { //TODO: INHERITED ONES? Keys?
+		if ( decoded[ 0 ][ i ] == key ) {
 			
 			ret.push( decoded[ 1 ][ i ] );
 		}
@@ -1650,10 +1641,6 @@ AutoSave._deserializeSingleControl = function( child, fieldData, clearEmpty ){
 
 		runStd = true;
 	}
-	
-	//TODO: Button, Std etc.
-	
-	
 	else {
 								
 		//May be, e.g., a form or div so go through all children
@@ -1904,10 +1891,14 @@ AutoSave.getCtor = function ( constructor , __variadic_args__ ){
 
 AutoSave.toArray = function ( arrayLike, skipStartEntries ){
 	
-	//TODO: Browser support?
-	var currArgs = Array.from( arrayLike );
+	var currArgs = [];
+	
+	for( var i=0; i<arrayLike.length; i++ )
+		currArgs.push( arrayLike[ i ] );
+	
 	if ( skipStartEntries )
 		currArgs = currArgs.slice( skipStartEntries );
+	
 	return currArgs;
 }
 
@@ -1977,7 +1968,6 @@ AutoSave._createNotification = function _createNotification( typeClass, bgColor,
 	return elem;
 }
 
-//todo: be consistent wrt usage of null vs constants, sample code shouldnt break on upgrades from null to constant parameters
 AutoSave.LOG_DEBUG = 100;
 AutoSave.LOG_INFO = 101;
 AutoSave.LOG_WARN = 102;
