@@ -259,7 +259,7 @@ describe("AutoSaveJS", function() {
 		internal_run_input_serialise_and_deserialise_test('hidden');
     });
 	 
-	it('input_password_entry_is_restored_with_text_value', function(){
+	it('input password entry is restored with_text_value', function(){
 		
 		internal_run_input_serialise_and_deserialise_test('password');
     });
@@ -294,7 +294,7 @@ describe("AutoSaveJS", function() {
 		expect(elem.value).toEqual("G");
 	});
 	
-	it('select_entry_with_multiple_selections_is_restored',function(){
+	it('select entry with multiple selections is restored',function(){
 		 
 		//Arrange - Create and set a value on the input text box - put None at bottom to ensure it's not working coincidentally !
 		var testFragment = "<select multiple name='frmNameEntry'>\
@@ -324,7 +324,7 @@ describe("AutoSaveJS", function() {
 		expect($("[value='B']").prop("selected")).toEqual(false); //sanity check this should not be selected
 	});
 	
-	it('select_single_options_with_no_name_attribute_should_still_select_correct_option',function(){ //As per spec #...
+	it('select single options with no option values should still select correct option',function(){ //As per spec #...
 		
 		//Arrange - Create and set a value on the input text box - check special characters preserved
 		var testFragment = "<select name='frmNameEntry'>\
@@ -348,8 +348,8 @@ describe("AutoSaveJS", function() {
 
 		//Assert
 		expect(elem.value).toEqual("Green & Black+Pistachio");
-		expect(Array.from($("option:selected"))).toEqual(
-			Array.from(document.querySelectorAll("#toChoose")));
+		expect(AutoSave.toArray($("option:selected"))).toEqual(
+			AutoSave.toArray(document.querySelectorAll("#toChoose")));
 	});
 	
 	it('input_text_entry_can_handle_special_characters_and_unicode', function(){
@@ -407,7 +407,7 @@ describe("AutoSaveJS", function() {
 		testDeserialize(fieldData);
 
 		//Assert - exactly 1 selected and correct one
-		expect(Array.from(document.querySelectorAll("input[type='radio']:checked")))
+		expect(AutoSave.toArray(document.querySelectorAll("input[type='radio']:checked")))
 		.toEqual([elem]);
 	});
 	
@@ -439,7 +439,7 @@ describe("AutoSaveJS", function() {
 		testDeserialize(fieldData);
 
 		//Assert - exactly 2 selected and correct one -- TODO: Test cases
-		expect(Array.from(document.querySelectorAll("input[type='checkbox']:checked")))
+		expect(AutoSave.toArray(document.querySelectorAll("input[type='checkbox']:checked")))
 		.toEqual([elem1,elem2]);
 	});
 
@@ -529,7 +529,7 @@ describe("AutoSaveJS", function() {
 		if (shouldPreserve){
 			expect( $textElem.val() ).toBe("Oscar");
 			expect( $textArea.val() ).toBe("Because they make me feel good");
-			expect(Array.from(document.querySelectorAll("input[type='checkbox']:checked")))
+			expect(AutoSave.toArray(document.querySelectorAll("input[type='checkbox']:checked")))
 				.toEqual([elem1,elem2]);		
 			expect( $("[name='frmColorEntry']").val()).toBe("B");
 		}
@@ -3709,7 +3709,7 @@ describe("AutoSaveJS", function() {
 	
 	//'PROGRAMATIC CHANGES HANDLING? DIFF FEATURE? V2?
 	// button serialisation! ALL other inputs covered? toggle button a reason to do button?
-	 // "Some data was not saved. Are you sure you want to navigate away...?"
+	// "Some data was not saved. Are you sure you want to navigate away...?"
 
 	//for each event type, hook different events?
 	//Many of these in browser for browser-based integration tests OR send native key-press/mouse-moves

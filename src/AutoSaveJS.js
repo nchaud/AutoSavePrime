@@ -343,16 +343,14 @@ var AutoSave = function( rootControls, opts ){
 		
 		//Toggle display value
 		let newStyle = toggleOn ? ( currElement.getAttribute("autosave-od") || "block" ) : "none";
+
 		currElement.style.display = newStyle;
 	}
 
 		
 	this._updateNoStorageNotification = function( noStorageNotification ){
 		
-		var defaultType = AutoSave.DEFAULT_AUTOSAVE_WARN_TYPE, 
-			defaultBg   = AutoSave.DEFAULT_AUTOSAVE_WARN_BG,
-			defaultMsg	= AutoSave.DEFAULT_AUTOSAVE_WARN_MSG,
-			defaultTime	= AutoSave.DEFAULT_AUTOSAVE_WARN_DURATION;
+		var renderOpts = AutoSave.cloneObj( AutoSave.DEFAULT_AUTOSAVE_WARN ); //clone for modifications
 		
 		if ( noStorageNotification === null ) {
 			
@@ -363,9 +361,8 @@ var AutoSave = function( rootControls, opts ){
 		else if ( noStorageNotification === undefined ){
 			
 			//Default behaviour
-			this.__currWarnStorageNotificationElement = 
-				AutoSave._createNotification( defaultType, defaultBg, defaultMsg, null );
-			this.__warnMsgShowDuration = defaultTime;
+			this.__currWarnStorageNotificationElement = AutoSave._createNotification( renderOpts, null );
+			this.__warnMsgShowDuration = renderOpts.duration;
 		}
 		else {
 			
@@ -398,7 +395,7 @@ var AutoSave = function( rootControls, opts ){
 			}
 			else{
 				
-				this.__warnMsgShowDuration = defaultTime;
+				this.__warnMsgShowDuration = renderOpts.duration;
 			}
 
 			if ( template && msg )
@@ -406,29 +403,27 @@ var AutoSave = function( rootControls, opts ){
 				
 			if ( msg ) {
 				
+				renderOpts.msg = msg;
 				this.__sendLog( AutoSave.LOG_DEBUG, "Warn Storage Notification bar with customised msg created." );
-				this.__currWarnStorageNotificationElement = AutoSave._createNotification( defaultType, defaultBg, msg, null );
+				this.__currWarnStorageNotificationElement = AutoSave._createNotification( renderOpts, null );
 			}
 			else if ( template ){
 				
+				renderOpts.msg = null;
 				this.__sendLog( AutoSave.LOG_DEBUG, "Warn Storage Notification bar with customised template created." );
-				this.__currWarnStorageNotificationElement = AutoSave._createNotification( defaultType, defaultBg, null, template );
+				this.__currWarnStorageNotificationElement = AutoSave._createNotification( renderOpts, template );
 			} else {
 				
 				//Just the default
-				this.__currWarnStorageNotificationElement = 
-					AutoSave._createNotification( defaultType, defaultBg, defaultMsg, null );
+				this.__currWarnStorageNotificationElement = AutoSave._createNotification( renderOpts, null );
 			}
 		}
 	}
 	
 	this._updateSaveNotification = function ( saveNotificationOpts ){
 
-		var defaultType = AutoSave.DEFAULT_AUTOSAVE_SHOW_TYPE, 
-			defaultBg   = AutoSave.DEFAULT_AUTOSAVE_SHOW_BG,
-			defaultMsg	= AutoSave.DEFAULT_AUTOSAVE_SHOW_MSG,
-			defaultTime	= AutoSave.DEFAULT_AUTOSAVE_SHOW_DURATION;
-			
+		var renderOpts = AutoSave.cloneObj( AutoSave.DEFAULT_AUTOSAVE_SHOW ); //clone for modifications
+					
 		if ( saveNotificationOpts === null ) {
 			
 			//Implies dont show notification
@@ -438,9 +433,8 @@ var AutoSave = function( rootControls, opts ){
 		else if ( saveNotificationOpts === undefined ){
 			
 			//Default behaviour
-			this.__currSaveNotificationElement = 
-				AutoSave._createNotification( defaultType, defaultBg, defaultMsg, null );
-			this.__minShowDuration = defaultTime;
+			this.__currSaveNotificationElement = AutoSave._createNotification( renderOpts, null );
+			this.__minShowDuration = renderOpts.duration;
 		}
 		else {
 			
@@ -472,7 +466,7 @@ var AutoSave = function( rootControls, opts ){
 			}
 			else{
 				
-				this.__minShowDuration = defaultTime;
+				this.__minShowDuration = renderOpts.duration;
 			}
 
 			if ( template && msg )
@@ -480,18 +474,19 @@ var AutoSave = function( rootControls, opts ){
 				
 			if ( msg ) {
 				
+				renderOpts.msg = msg;
 				this.__sendLog( AutoSave.LOG_DEBUG, "Saving Notification bar with customised msg created." );
-				this.__currSaveNotificationElement = AutoSave._createNotification( defaultType, defaultBg, msg, null );
+				this.__currSaveNotificationElement = AutoSave._createNotification( renderOpts, null );
 			}
 			else if ( template ){
 				
+				renderOpts.msg = null;
 				this.__sendLog( AutoSave.LOG_DEBUG, "Saving Notification bar with customised template created." );
-				this.__currSaveNotificationElement = AutoSave._createNotification( defaultType, defaultBg, null, template );
+				this.__currSaveNotificationElement = AutoSave._createNotification( renderOpts, template );
 			} else {
 				
 				//Just the default
-				this.__currSaveNotificationElement = 
-					AutoSave._createNotification( defaultType, defaultBg, defaultMsg, null );
+				this.__currSaveNotificationElement = AutoSave._createNotification( renderOpts, null );
 			}
 		}
 	}
@@ -1904,28 +1899,45 @@ AutoSave.toArray = function ( arrayLike, skipStartEntries ){
 
 //todo: check performance of 'apply' on args
 AutoSave._logToConsole = function ( logLevel, __variadic_args__ ){
-	
+
+	var that = this;
+	var oArgs = arguments;
 	var args = AutoSave.toArray( arguments, 1 ); //Skip logLevel
+
+	var docState = document.readyState;
 	
-	if ( logLevel == AutoSave.LOG_DEBUG )
-	{
-		if ( console.debug ) 
-			console.debug.apply( this, args );
+	try {
+		
+		
+		if ( logLevel == AutoSave.LOG_DEBUG )
+		{
+			if ( console.debug ) 
+				console.debug.apply( this, args );
+			else
+				console.log.apply( this, args ); //Distinguish from info level incase users need it
+		}
+		else if ( logLevel == AutoSave.LOG_INFO )
+			console.info.apply( this, args );		//TODO: Check this and all other log levels wrt x-browser support
+		else if ( logLevel == AutoSave.LOG_WARN )
+			console.warn.apply( this, args );
+		else if ( logLevel == AutoSave.LOG_ERROR )
+			console.error.apply( this, args );
 		else
-			console.log.apply( this, args ); //Distinguish from info level incase users need it
+			throw new Error( "Unknown log level: " + logLevel );
 	}
-	else if ( logLevel == AutoSave.LOG_INFO )
-		console.info.apply( this, args );
-	else if ( logLevel == AutoSave.LOG_WARN )
-		console.warn.apply( this, args );
-	else if ( logLevel == AutoSave.LOG_ERROR )
-		console.error.apply( this, args );
-	else
-		throw new Error( "Unknown log level: " + logLevel );
+	catch(e){
+		
+		setInterval(function(){
+			console.log("ERROR WAS HERE", docState, logLevel, args);//, e, arguments,that);
+			console.log(e);
+		}, 1000);
+		
+		//TODO: FIX
+	}
 }
 
-//Exactly 1 of innerMsg and entireHtml must be non-null
-AutoSave._createNotification = function _createNotification( typeClass, bgColor, innerMsg, entireHtml ){
+//Exactly 1 of renderOpts.msg or entireHtml must be non-null
+AutoSave._createNotification = function _createNotification( renderOpts, entireHtml ){
 	
 	var elem;
 	if ( entireHtml ) {
@@ -1943,13 +1955,16 @@ AutoSave._createNotification = function _createNotification( typeClass, bgColor,
 		
 		elem = document.createElement( "div" );
 		elem.classList.add( "autosave-ctr" );
-		elem.classList.add( "autosave-" + typeClass );
-		elem.style = AutoSave.DEFAULT_AUTOSAVE_CTR_STYLE; //TODO: Is this x-browser compatible?
+		elem.classList.add( "autosave-" + renderOpts.type );
+		AutoSave._styleNotificationElem( elem );
 		
-		if ( bgColor )
-			elem.style.backgroundColor = bgColor;
+		if ( renderOpts.bg )
+			elem.style.backgroundColor = renderOpts.bg;
 		
-		elem.innerHTML = "<span class='autosave-msg'>" + innerMsg + "</span>";
+		if ( renderOpts.marginLeft )
+			elem.style.marginLeft = renderOpts.marginLeft;
+		
+		elem.innerHTML = "<span class='autosave-msg'>" + renderOpts.msg + "</span>";
 	}
 	
 	if ( elem.style.display == "none" ) {
@@ -1963,9 +1978,34 @@ AutoSave._createNotification = function _createNotification( typeClass, bgColor,
 	//Initially hidden
 	elem.style.display = "none";
 	
-	document.body.append( elem );
+	document.body.appendChild( elem );
 	
 	return elem;
+}
+
+AutoSave._styleNotificationElem = function _styleNotificationElem(elem){
+	
+	var s = elem.style;
+	
+	s.position = "fixed";
+	s.top = "5px";
+	s.left = "50%"; //Needs to be used in conjunction with margin-left
+	s.border = "1px solid #adabab";
+	s.padding = "3px 30px";
+	s.borderRadius = "2px";
+	s.color = "#484848";
+	
+	//TODO: Legacy border styles?
+}
+
+//IE doesnt support Object.assign so implement ourself. Assumes a shallow clone.
+AutoSave.cloneObj = function cloneObject( obj ){
+	
+	let ret = {};
+	for(var key in obj){
+		ret[key] = obj[key];
+	}
+	return ret;
 }
 
 AutoSave.LOG_DEBUG = 100;
@@ -1975,16 +2015,21 @@ AutoSave.LOG_ERROR = 103;
 
 AutoSave.DEFAULT_LOAD_CHECK_INTERVAL      = 100;    	//Every 100 ms, check if it's loaded
 AutoSave.DEFAULT_AUTOSAVE_INTERVAL   	  = 3*1000; 	//By default, autosave every 3 seconds
-AutoSave.DEFAULT_AUTOSAVE_SHOW_DURATION   = 500; 		//By default, show autosave msg for 1/2 a second
-AutoSave.DEFAULT_AUTOSAVE_SHOW_MSG        = "Saving...";
-AutoSave.DEFAULT_AUTOSAVE_SHOW_TYPE       = "saving";
-AutoSave.DEFAULT_AUTOSAVE_SHOW_BG         = "";
-AutoSave.DEFAULT_AUTOSAVE_WARN_DURATION   = 5*1000; 	//By default, show local warning msg for 5 secs
-AutoSave.DEFAULT_AUTOSAVE_WARN_MSG        = "AutoSave is turned off - no datastore available to store input data.";
-AutoSave.DEFAULT_AUTOSAVE_WARN_TYPE       = "noStore";
-AutoSave.DEFAULT_AUTOSAVE_WARN_BG         = "orangered"; //TODO: Pastel
-AutoSave.DEFAULT_AUTOSAVE_CTR_STYLE       = "position:fixed;left:48%;top:5px;border:1px solid gray;padding:3px 30px;border-radius:3px;"; //TODO: Legacy border styles?
 
+AutoSave.DEFAULT_AUTOSAVE_SHOW = {
+	duration: 500,
+	msg: "Saving...",
+	type: "saving",
+	bg: "#ecebeb",
+	marginLeft:"-20px"
+}
+AutoSave.DEFAULT_AUTOSAVE_WARN = {
+	duration: 5*1000, 	//By default, show no-local-storage warning msg for 5 secs
+	msg: "AutoSave is turned off - no datastore available to store input data.",
+	type: "noStore",
+	bg: "#ff9b74",
+	marginLeft:"-240px"
+}
 AutoSave.DEFAULT_KEY_PREFIX = "AutoSaveJS_";
 AutoSave.log = AutoSave._logToConsole; 					//For callers outside of AutoSaveJS
 AutoSave.__keysInUse = [];
