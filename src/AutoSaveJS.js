@@ -702,10 +702,14 @@ var AutoSave = function( rootControls, opts ){
 	this.__sendLog = function ( __variadic_args__ ){
 
 		 var cb = this.__callbacks.onLog;
-		 var args = AutoSave.toArray( arguments );
 		 
-		 if ( cb )
-		 {
+		 var args;
+		 
+		 if ( cb ) {
+			 
+			 //Provide a first class array to the callback and so we can amend
+			 args = AutoSave.toArray( arguments );
+		 
 			 var ret = cb.apply( this, args );
 			 
 			 //See @FUN semantics
@@ -727,9 +731,13 @@ var AutoSave = function( rootControls, opts ){
 					args = [ args[0], ret ];
 			 }
 		 }
+		 else {
+			 
+			 args = arguments;
+		 }
 		 
  		 //TODO: Log Levels should correspond to popular logging libraries
-		 AutoSave._logToConsole.apply( null, args );
+		 AutoSave._logToConsole.apply( this, args );
 	}
 	
 	//This function sets up when to save the state
@@ -1897,43 +1905,25 @@ AutoSave.toArray = function ( arrayLike, skipStartEntries ){
 	return currArgs;
 }
 
-//todo: check performance of 'apply' on args
 AutoSave._logToConsole = function ( logLevel, __variadic_args__ ){
 
-	var that = this;
-	var oArgs = arguments;
 	var args = AutoSave.toArray( arguments, 1 ); //Skip logLevel
 
-	var docState = document.readyState;
-	
-	try {
-		
-		
-		if ( logLevel == AutoSave.LOG_DEBUG )
-		{
-			if ( console.debug ) 
-				console.debug.apply( this, args );
-			else
-				console.log.apply( this, args ); //Distinguish from info level incase users need it
-		}
-		else if ( logLevel == AutoSave.LOG_INFO )
-			console.info.apply( this, args );		//TODO: Check this and all other log levels wrt x-browser support
-		else if ( logLevel == AutoSave.LOG_WARN )
-			console.warn.apply( this, args );
-		else if ( logLevel == AutoSave.LOG_ERROR )
-			console.error.apply( this, args );
+	if ( logLevel == AutoSave.LOG_DEBUG )
+	{
+		if ( console.debug ) 
+			console.debug.apply( console, args );
 		else
-			throw new Error( "Unknown log level: " + logLevel );
+			console.log.apply( console, args ); //Distinguish from info level incase users need it
 	}
-	catch(e){
-		
-		setInterval(function(){
-			console.log("ERROR WAS HERE", docState, logLevel, args);//, e, arguments,that);
-			console.log(e);
-		}, 1000);
-		
-		//TODO: FIX
-	}
+	else if ( logLevel == AutoSave.LOG_INFO )
+		console.info.apply( console, args );
+	else if ( logLevel == AutoSave.LOG_WARN )
+		console.warn.apply( console, args );
+	else if ( logLevel == AutoSave.LOG_ERROR )
+		console.error.apply( console, args );
+	else
+		throw new Error( "Unknown log level: " + logLevel );
 }
 
 //Exactly 1 of renderOpts.msg or entireHtml must be non-null
