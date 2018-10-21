@@ -1569,13 +1569,23 @@ AutoSave.getSerialisedValues = function getSerialisedValues( szString, key ){
 AutoSave._deserializeSingleControl = function( child, fieldData, clearEmpty ){
 
 	var fieldValue = null;
-	
 	var runStd = false;
 	
 	if ( child.nodeName == "INPUT" ){
 	
 	   if ( child.type == "radio" || child.type == "checkbox" ) {
 
+	   
+	   
+	   
+	   
+			//TODO: on string catered for? check !
+
+
+
+			
+	   
+	   
 			//For these, we need to check not only that the names exists but the value corresponds to this element.
 			//If it corresponds, we need to 
 			//	- If clearEmpty = true, also uncheck all those items with the same name that aren't in the field data.
@@ -1601,7 +1611,14 @@ AutoSave._deserializeSingleControl = function( child, fieldData, clearEmpty ){
 					}
 				}
 			}
-				
+			
+			
+		
+		
+		//TODO: Debug statements like debugSz(input, "Field was missing in dataset") => would then calc a meaning string from input IF debug enabled
+			
+			
+			
 			if ( foundField === true )
 				child.checked = true;
 			else if ( foundField === false && clearEmpty ) //Was of the form ...&fieldName=&...
@@ -1609,32 +1626,34 @@ AutoSave._deserializeSingleControl = function( child, fieldData, clearEmpty ){
 			//else missing altogether in the field data so leave untouched
 		}
 		else {
+			
 			runStd = true;
 		}
 	}
 	else if ( child.nodeName == "SELECT" ) {
 	
-		if ( child.type == "select-one" ) {
+		var sChildren = child.options;
 		
-			runStd = true;
-		}
-		else { //Implicitly select-multiple
-		
-			var sChildren = child.options;
+		outer:
+		for ( var childIdx = 0 ; childIdx < sChildren.length ; childIdx++ ) {
 			
-			for ( var childIdx = 0 ; childIdx < sChildren.length ; childIdx++ ) {
-				
-				var opt = sChildren[ childIdx ];
-				
-				for ( var fieldIdx in fieldData[ 0 ] ) {
-				
-					if ( fieldData[ 0 ][ fieldIdx ] == child.name) {
-						
-						if ( fieldData[ 1 ][ fieldIdx ] == opt.value ) {
-						
+			var opt = sChildren[ childIdx ];
+			
+			for ( var fieldIdx in fieldData[ 0 ] ) {
+			
+				if ( fieldData[ 0 ][ fieldIdx ] == child.name ) { //Data field with this select's name
+					
+					var fieldValue = fieldData[ 1 ][ fieldIdx ];
+					
+					if ( fieldValue == opt.value ) { //Data field with this option's value
+					
+						if ( fieldValue !== "" || clearEmpty ) //Only change selected option to blank if allowed
 							opt.selected = true;
-							break;
-						}
+						
+						if ( child.type == "select-one" )
+							break outer; //Only one option can be selected for this select, we found it, bail
+						else
+							break; //There may be more options for this select, keep going through all data fields
 					}
 				}
 			}
@@ -1654,7 +1673,7 @@ AutoSave._deserializeSingleControl = function( child, fieldData, clearEmpty ){
 		}
 	}
 	
-	if (runStd) {
+	if ( runStd ) {
 		
 		for ( var fieldIdx in fieldData[ 0 ] ) {
 		

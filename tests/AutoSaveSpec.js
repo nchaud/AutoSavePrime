@@ -249,22 +249,22 @@ describe("AutoSaveJS", function() {
 		expect(elem.value).toEqual("Oscar");
 	}
 	 
-	it('input_text_entry_is_restored_with_text_value', function(){
+	it('input text entry is restored with text value', function(){
 		
 		internal_run_input_serialise_and_deserialise_test('text');
     });
 	
-	it('input_hidden_entry_is_restored_with_text_value', function(){
+	it('input hidden entry is restored with text value', function(){
 		
 		internal_run_input_serialise_and_deserialise_test('hidden');
     });
 	 
-	it('input password entry is restored with_text_value', function(){
+	it('input password entry is restored with text value', function(){
 		
 		internal_run_input_serialise_and_deserialise_test('password');
     });
 	 
-	it('select_entry_is_restored_with_selected_option',function(){
+	it('select entry is restored with selected option',function(){
 		 
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<select name='frmNameEntry'>\
@@ -324,7 +324,37 @@ describe("AutoSaveJS", function() {
 		expect($("[value='B']").prop("selected")).toEqual(false); //sanity check this should not be selected
 	});
 	
-	it('select single options with no option values should still select correct option',function(){ //As per spec #...
+	it('select entry with multiple selections without option values is restored',function(){
+		 
+		//Arrange - Create and set a value on the input text box - put None at bottom to ensure it's not working coincidentally !
+		var testFragment = "<select multiple name='frmNameEntry'>\
+								<option id='B'>Blue</option>\
+								<option id='G'>Green</option>\
+								<option id='R'>Red</option>\
+								<option>(None)</option>\
+						   </select>";
+		addToSandbox(testFragment);
+		
+		//Select 2 options
+		setSelected("#R,#G", true);
+		
+		//Act - Store all field data as a string
+		var fieldData = testSerialize();
+
+		//Recreate the default state HTML
+		resetSandbox();
+		addToSandbox(testFragment);
+		
+		//Act - load the inputs
+		testDeserialize(fieldData);
+
+		//Assert
+		expect($("#R").prop("selected")).toEqual(true);
+		expect($("#G").prop("selected")).toEqual(true);
+		expect($("#B").prop("selected")).toEqual(false); //sanity check this should not be selected
+	});
+	
+	it('select single options with no option values should still select correct option',function(){ //TODO: As per spec #...
 		
 		//Arrange - Create and set a value on the input text box - check special characters preserved
 		var testFragment = "<select name='frmNameEntry'>\
@@ -352,8 +382,105 @@ describe("AutoSaveJS", function() {
 			AutoSave.toArray(document.querySelectorAll("#toChoose")));
 	});
 	
-	it('input_text_entry_can_handle_special_characters_and_unicode', function(){
-					
+	it('select single options with no option values and optgroup should still select correct option',function(){
+		
+		//Arrange - Create and set a value on the input text box - check special characters preserved
+		var testFragment = "<select name='frmNameEntry'>\
+								<optgroup>\
+									<option>Blue</option>\
+									<option id='toChoose'>Green & Black+Pistachio</option>\
+								</optgroup>\
+								<option>Red</option>\
+						   </select>";
+		addToSandbox(testFragment);
+		setSelected("#toChoose", true);
+		
+		//Act - Store all field data as a string
+		var fieldData = testSerialize();
+
+		//Recreate the default state HTML
+		resetSandbox();
+		addToSandbox(testFragment);
+		var elem = document.querySelector("[name='frmNameEntry']");
+		
+		//Act - load the inputs
+		testDeserialize(fieldData);
+
+		//Assert
+		expect(elem.value).toEqual("Green & Black+Pistachio");
+		expect(AutoSave.toArray($("option:selected"))).toEqual(
+			AutoSave.toArray(document.querySelectorAll("#toChoose")));
+	});
+	
+	it('input:radio+checkbox controls with no value should be set to "on" if relevant and reinstated', function(){
+		
+		//Arrange - Create and set a value on the input
+		var testFragment = "<input type='radio' name='test_1' value='is_employed'>\
+							<input type='radio' name='test_2' value=''>\
+							<input type='radio' name='test_3'>\
+							<input type='radio' name='test_4' value='is_student'>\
+							<input type='radio' name='test_5' value=''>\
+							<input type='radio' name='test_6'>";
+		addToSandbox(testFragment);	
+		
+		setChecked("input", true);
+		
+		//Act - Store all field data as a string
+		var szString = testSerialize();
+
+		var expectedStr = "test_1=is_employed&test_2=&test_3=on&test_4=is_student&test_5=&test_6=on";			//TODO: OFF?
+		expect(szString).toEqual(expectedStr);
+		
+		//Recreate the default state HTML
+		resetSandbox();
+		addToSandbox(testFragment);
+		
+		//Act - load the inputs
+		testDeserialize(expectedStr);
+
+		//Assert - all inputs should be selected
+		expect(AutoSave.toArray($("input:checked"))).toEqual(
+			AutoSave.toArray(document.querySelectorAll("input")));
+	});
+	
+	it('input:radio+checkbox controls should not become checked without the correct string matching their value', function(){
+		
+		//Arrange - Create and set a value on the input
+		var testFragment = "<input type='radio' name='test_1' value='is_employed'>\
+							<input type='radio' name='test_2' value=''>\
+							<input type='radio' name='test_3'>\
+							<input type='radio' name='test_4' value='is_student'>\
+							<input type='radio' name='test_5' value=''>\
+							<input type='radio' name='test_6'>";
+		addToSandbox(testFragment);	
+
+		//Act - load the inputs
+		testDeserialize("");
+
+		//Assert - nothing checked
+		expect(AutoSave.toArray($("input:selected"))).toEqual([]);
+		
+		//Assert - if it have a value, dsz string must match the value
+		testDeserialize("test_1=is_student&test_1=&test_1=on");
+		expect(AutoSave.toArray($("input:selected"))).toEqual([]);
+		testDeserialize("test_4=is_other&test_4=&test_4=on");
+		expect(AutoSave.toArray($("input:selected"))).toEqual([]);
+		
+		//Assert - if value is blank, dsz string must be blank too
+		testDeserialize("test_2=is_student&test_2=null&test_2=on");
+		expect(AutoSave.toArray($("input:selected"))).toEqual([]);
+		testDeserialize("test_5=is_student&test_5=null&test_5=on");
+		expect(AutoSave.toArray($("input:selected"))).toEqual([]);
+
+		//Assert - if value attribute is missing altogether, dsz string must have 'on' in it
+		testDeserialize("test_3=is_student&test_3=null&test_3=");
+		expect(AutoSave.toArray($("input:selected"))).toEqual([]);
+		testDeserialize("test_6=is_student&test_6=null&test_6=");
+		expect(AutoSave.toArray($("input:selected"))).toEqual([]);
+	});
+	
+	it('input text entry can handle special characters and unicode', function(){
+		
 		var testStr = "mailto:someone@example.com&subject='Dont forget %20 is used to represent spaces!.-_.!~*()'";
 		
 		//Make both the name and value have special characters
@@ -381,7 +508,7 @@ describe("AutoSaveJS", function() {
 		expect(elem.value).toEqual(testStr); //Should find original element and even the %20 should be as original
 	});
 
-	it('input_radio_entry_is_restored_with_radio_selection', function(){
+	it('input radio entry is restored with radio selection', function(){
 		
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<h3>Please state your gender:</h3>\
@@ -411,7 +538,7 @@ describe("AutoSaveJS", function() {
 		.toEqual([elem]);
 	});
 	
-	it('input_checkbox_entry_is_restored_with_checkbox_selection', function(){
+	it('input checkbox entry is restored with checkbox selection', function(){
 		
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<h3>Please choose your preferred musicians:</h3>\
@@ -1004,6 +1131,9 @@ describe("AutoSaveJS", function() {
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<div>\
 								<input type='text'>\
+								<select>\
+									<option value='x'>First</option><option value='y'>Second</option>\
+								</select>\
 								<textarea name=''></textarea>\
 								<input type='radio'></input>\
 							</div>";
@@ -1023,7 +1153,7 @@ describe("AutoSaveJS", function() {
 	it('input:radio controls with a name & key of 0 are serialized correctly', function(){ //And not skipped, like blanks and nulls
 		
 		//Arrange - Create and set a value on the input text box
-		var testFragment = "<input type='radio' name='0' value='0'></div>";
+		var testFragment = "<input type='radio' name='0' value='0'>";
 		addToSandbox(testFragment);	
 		
 		setChecked("input", true);
@@ -1038,7 +1168,7 @@ describe("AutoSaveJS", function() {
 	it('input:checkbox controls with a name & key of 0 are serialized correctly', function(){ //And not skipped, like blanks and nulls
 		
 		//Arrange - Create and set a value on the input text box
-		var testFragment = "<input type='checkbox' name='0' value='0'></div>";
+		var testFragment = "<input type='checkbox' name='0' value='0'>";
 		addToSandbox(testFragment);	
 		
 		setChecked("input", true);
@@ -1099,7 +1229,7 @@ describe("AutoSaveJS", function() {
 		expect(szString).toEqual(expectedStr);	
 	});
 	
-	it('select_multiple_options_with_no_name_attribute_should_use_inner_text_for_serialising',function(){ //TODO: As per spec #...
+	it('select multiple options with no name attribute should use inner text for serialising',function(){ //TODO: As per spec #...
 
 		//Arrange - Create and set a value on the input text box - check special characters preserved
 		var testFragment = "<select multiple name='frmNameEntry'>\
@@ -1117,8 +1247,8 @@ describe("AutoSaveJS", function() {
 		var expectedStr = "frmNameEntry=0&frmNameEntry=Green+%26+Black%2BPistachio"; //%2b->'+', %26->'&'
 		expect(szString).toEqual(expectedStr);
 	});
-			
-	it('spaces_are_converted_to_plus_symbol_on_serialising', function(){
+
+	it('spaces are converted to plus symbol on serialising', function(){
 	
 		//Arrange - Set some test fields
 		addToSandbox("<input name='frmNameEntry'>");
