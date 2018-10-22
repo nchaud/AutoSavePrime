@@ -1,4 +1,3 @@
-//todo: consistent open spacing
 //license etc.
 
 var AutoSave = function( rootControls, opts ){
@@ -558,13 +557,13 @@ var AutoSave = function( rootControls, opts ){
 			var rawUserInput = cb( szData );
 			
 			//See @FUN Semantics
-			if (rawUserInput === false) {
+			if ( rawUserInput === false ) {
 				
 				this.__sendLog( AutoSave.LOG_INFO, "User aborted the save in the onPreStore handler" );
 				this._saveStartFinally( false );
 				return; //Cancel the save
 			}
-			else if (rawUserInput === undefined) { 
+			else if ( rawUserInput === undefined ) { 
 			
 				//Do nothing - continue with the save
 			}
@@ -675,7 +674,7 @@ var AutoSave = function( rootControls, opts ){
 		}
 		else {
 			
-			throw new Error( "Unexpected type of parameter 'dataStore'");
+			throw new Error( "Unexpected type of parameter 'dataStore'" );
 		}
 	}
 	
@@ -747,7 +746,7 @@ var AutoSave = function( rootControls, opts ){
 			
 			//Only when invoked - i.e. do nothing
 
-			this.__sendLog( AutoSave.LOG_INFO, "Save trigger was disabled");
+			this.__sendLog( AutoSave.LOG_INFO, "Save trigger was disabled" );
 			return;
 		}
 		else if ( saveTrigger === undefined ) {
@@ -783,7 +782,7 @@ var AutoSave = function( rootControls, opts ){
 		}	
 		else{
 		
-			throw new Error( "Unexpected type for parameter 'autoSaveTrigger'");
+			throw new Error( "Unexpected type for parameter 'autoSaveTrigger'" );
 		}
 			
 		//Default strategy - on control leave, select change etc.
@@ -890,7 +889,6 @@ var AutoSave = function( rootControls, opts ){
 	
 	this._hookSingleControl = function ( child, hookOn ){
 
-		//TODO: What about whilst typing? Neither of these will fire ? Check jQuery list of all events to be sure.
 		if ( hookOn ) {
 			
 			//'change' event is primarily for checkboxes and radios for browsers - 'historical reasons'
@@ -937,6 +935,7 @@ var AutoSave = function( rootControls, opts ){
 		if ( typeof( rawUserInput ) == "string" ) {//selector
 		
 			var elemsNodeList = document.querySelectorAll( rawUserInput );
+			
 			elems = [];
 			for( var idx=0; idx < elemsNodeList.length; idx++ )
 				elems.push( elemsNodeList[ idx ] );
@@ -968,7 +967,7 @@ var AutoSave = function( rootControls, opts ){
 			
 			this._hookListeners( false, null );
 		}
-		catch(e){
+		catch( e ){
 			
 			this.__sendLog( AutoSave.LOG_WARN, "Error unhooking listeners", e );
 		}
@@ -1007,7 +1006,7 @@ var AutoSave = function( rootControls, opts ){
 				this.resetStore();
 			}
 		}
-		catch(e){
+		catch( e ){
 			
 			this.__sendLog( AutoSave.LOG_WARN, "Error resetting store", e );
 		}
@@ -1402,14 +1401,14 @@ AutoSave._serializeSingleControl = function( child, fieldData ){
 		
 			if ( child.checked ) {
 				
-				fieldData[0].push( nameKey );
-				fieldData[1].push( value );
+				fieldData[ 0 ].push( nameKey );
+				fieldData[ 1 ].push( value );
 			}
 		}
 		else{ //Implicitly an <input type=text|button|password|hidden...>
 		
-			fieldData[0].push( nameKey );
-			fieldData[1].push( value );
+			fieldData[ 0 ].push( nameKey );
+			fieldData[ 1 ].push( value );
 		}
 	}
 	else if ( child.nodeName == "SELECT" ){
@@ -1423,8 +1422,8 @@ AutoSave._serializeSingleControl = function( child, fieldData ){
 	
 		if ( child.type == "select-one" ){
 		
-			fieldData[0].push( nameKey );
-			fieldData[1].push( value );
+			fieldData[ 0 ].push( nameKey );
+			fieldData[ 1 ].push( value );
 		}
 		else { //Must be of type == 'select-multiple'
 		
@@ -1433,8 +1432,8 @@ AutoSave._serializeSingleControl = function( child, fieldData ){
 			
 				if ( sChildren[sIdx].selected ) {
 				
-					fieldData[0].push( nameKey );
-					fieldData[1].push( sChildren[ sIdx ].value );
+					fieldData[ 0 ].push( nameKey );
+					fieldData[ 1 ].push( sChildren[ sIdx ].value );
 				}
 			}
 		}
@@ -1448,8 +1447,8 @@ AutoSave._serializeSingleControl = function( child, fieldData ){
 			return;
 		}
 	
-		fieldData[0].push( nameKey );
-		fieldData[1].push( value );
+		fieldData[ 0 ].push( nameKey );
+		fieldData[ 1 ].push( value );
 	}
 	else {
 	
@@ -1488,6 +1487,7 @@ AutoSave._decodeFieldDataFromString = function _decodeFieldDataFromString( field
 	//Reconstruct a field data object from the string
 	var fieldData = [ [],[] ];
 	var pairs = fieldDataStr.split( "&" );
+	
 	for( var pairIdx in pairs ){
 		
 		var pair = pairs[ pairIdx ];
@@ -1574,17 +1574,6 @@ AutoSave._deserializeSingleControl = function( child, fieldData, clearEmpty ){
 	if ( child.nodeName == "INPUT" ){
 	
 	   if ( child.type == "radio" || child.type == "checkbox" ) {
-
-	   
-	   
-	   
-	   
-			//TODO: on string catered for? check !
-
-
-
-			
-	   
 	   
 			//For these, we need to check not only that the names exists but the value corresponds to this element.
 			//If it corresponds, we need to 
@@ -1853,7 +1842,7 @@ AutoSave.getExternalFormControls = function( elems ){
 		
 		if ( elem.nodeName == "FORM" ){
 			
-			var id = elem.getAttribute( "id" );			//TODO: Make get prop here and below ??
+			var id = elem.id;
 			if ( id ){
 				
 				formNames.push( id );
@@ -1869,7 +1858,7 @@ AutoSave.getExternalFormControls = function( elems ){
 				
 				if ( nElem.nodeName == "FORM" ){
 					
-					var id = nElem.getAttribute( "id" );
+					var id = nElem.id;
 					if ( id ){
 						
 						formNames.push( id );
@@ -2003,8 +1992,6 @@ AutoSave._styleNotificationElem = function _styleNotificationElem(elem){
 	s.padding = "3px 30px";
 	s.borderRadius = "2px";
 	s.color = "#484848";
-	
-	//TODO: Legacy border styles?
 }
 
 //IE doesnt support Object.assign so implement ourself. Assumes a shallow clone.
@@ -2012,7 +1999,7 @@ AutoSave.cloneObj = function cloneObject( obj ){
 	
 	let ret = {};
 	for(var key in obj){
-		ret[key] = obj[key];
+		ret[ key ] = obj[ key ];
 	}
 	return ret;
 }

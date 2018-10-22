@@ -570,7 +570,7 @@ describe("AutoSaveJS", function() {
 		.toEqual([elem1,elem2]);
 	});
 
-	it('autosave_and_reinstate_to_cookies_works', function(){ //etc same for endpoint etc.
+	it('autosave and reinstate to cookies works', function(){ //etc same for endpoint etc.
 	
 		var testFragment = "<input type='text' name='frmMusician'>";
 
@@ -1126,7 +1126,7 @@ describe("AutoSaveJS", function() {
     });
 	
 
-	it('input_controls_without_a_name_are_not_serialised', function(){ //so we don't end up with '=' being serialised !
+	it('input controls without a name are not serialised', function(){ //so we don't end up with '=' being serialised !
 
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<div>\
@@ -1262,7 +1262,7 @@ describe("AutoSaveJS", function() {
 		expect(szString).toEqual(expectedStr);
 	});
 
-	it('serialised_string_with_special_chars_are_encoded',function(){
+	it('serialised string with special chars are encoded',function(){
 	
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<input type='text' name='frmNameEntry'><input type='checkbox' name='frmColours' value='Blue'><input type='checkbox' name='frmColours' value='Red'>";
@@ -1279,7 +1279,7 @@ describe("AutoSaveJS", function() {
 		expect(fieldData).toEqual("frmNameEntry=mailto%3Asomeone%40example.com%26subject%3D'Dont+forget+%2520+is+used+to+represent+spaces!.-_.!~*()'&frmColours=Blue&frmColours=Red");
 	});
 		
-	it('autosave_does_not_serialise_controls_outside_of_parentElement', function(){
+	it('autosave does not serialise controls outside of parentElement', function(){
 
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<h3>Please choose your preferred musicians:</h3>\
@@ -2486,7 +2486,7 @@ describe("AutoSaveJS", function() {
 		};
 	});
 	
-	it('parentElement_parameter_need_not_be_a_form', function(){
+	it('parentElement parameter need not be a form', function(){
 	
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<h3>Please choose your preferred musicians:</h3>\
@@ -2506,7 +2506,7 @@ describe("AutoSaveJS", function() {
 		expect(sentDataValue).toEqual("frmMusician=JayZ&frmMusician=Sipa&Reason=Because+they+make+me+feel+good!");
 	});
 
-	it('parentElement_parameter_when_null_causes_whole_document_serialisation', function(){
+	it('parentElement parameter when null causes whole document serialisation', function(){
 	
 		//Arrange
 		var testFragment = "<h3>Please choose your preferred musicians:</h3>\
@@ -2527,7 +2527,7 @@ describe("AutoSaveJS", function() {
 		expect(sentDataValue).toEqual("frmMusician=JayZ&frmMusician=Sipa&Reason=Because+they+make+me+feel+good!");	
 	});
 
-	it('parentElement_parameter_when_missing_causes_whole_document_serialisation', function(){
+	it('parentElement parameter when missing causes whole document serialisation', function(){
 		
 		//Arrange
 		var testFragment = "<h3>Please choose your preferred musicians:</h3>\
@@ -2548,7 +2548,7 @@ describe("AutoSaveJS", function() {
 		expect(sentDataValue).toEqual("frmMusician=JayZ&frmMusician=Sipa&Reason=Because+they+make+me+feel+good!");
 	});
 
-	it('parentElement_parameter_can_be_an_empty_parameter_causing_no_serialisation', function(){
+	it('parentElement parameter can be an empty parameter causing no serialisation', function(){
 		
 		//Arrange
 		var testFragment = "<h3>Please choose your preferred musicians:</h3>\
@@ -2569,7 +2569,7 @@ describe("AutoSaveJS", function() {
 		expect(sentDataValue).toBeFalsy();
 	});
 		
-	it('parentElement_parameter_can_take_a_jQuery', function(){
+	it('parentElement parameter can take a jQuery instance', function(){
 		
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<h3>Please choose your preferred musicians:</h3>\
@@ -2593,7 +2593,7 @@ describe("AutoSaveJS", function() {
 		expect(sentDataValue).toEqual("frmMusician=JayZ&Reason=No+Reason");
 	});
 		
-	it('autosave_parentElement_parameter_can_take_an_array_like_object', function(){
+	it('autosave parentElement parameter can take an array like object', function(){
 		
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<h3>Please choose your preferred musicians:</h3>\
@@ -3126,7 +3126,7 @@ describe("AutoSaveJS", function() {
   
   describe('autosave trigger options', function(){
 		
-	it('autosave_trigger_of_interval_throws_error_if_seconds_accidentally_used', function(){
+	it('autosave trigger of interval throws error if seconds accidentally used', function(){
 		
 		expect(function(){
 			var aSave = createAutoSave(null,{
@@ -3138,7 +3138,7 @@ describe("AutoSaveJS", function() {
 		
 	});
 
-	it('autosave_trigger_of_interval_throws_error_if_its_non_numeric', function(){
+	it('autosave trigger of interval throws error if its non numeric', function(){
 		
 		expect(function(){
 			var aSave = createAutoSave(null,{
@@ -3160,7 +3160,7 @@ describe("AutoSaveJS", function() {
 			});
 		}).toThrowError("Unexpected parameter 'DebounceInterval' in autoSaveTrigger options object");
 		
-	});	
+	});		
 
 	
 	it('will throw an error if autoSaveTrigger object type is unrecognised', function(){
@@ -3199,7 +3199,7 @@ describe("AutoSaveJS", function() {
 	});
 	
 	
-	it('autosave_trigger_sends_data_on_radio_change', function(){
+	it('autosave trigger sends data on radio change', function(){
 		
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<input type='radio' name='frmMusician' value='JayZ'>JayZ</input>\
@@ -3225,7 +3225,7 @@ describe("AutoSaveJS", function() {
 		expect(szString).toEqual("frmMusician=Mozart");	
 	});
 
-	it('autosave_trigger_sends_data_on_checkbox_change', function(){
+	it('autosave trigger sends data on checkbox change', function(){
 		
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<input type='checkbox' name='frmMusician' value='JayZ'>JayZ</input>\
@@ -3252,7 +3252,7 @@ describe("AutoSaveJS", function() {
 		expect(szString).toEqual("frmMusician=JayZ&frmMusician=Mozart");	
 	});	
 
-	it('autosave_trigger_sends_data_on_textarea_input_and_change', function(){
+	it('autosave trigger sends data on textarea input and change', function(){
 		
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<textarea name='frmMusician'></textarea>";
@@ -3283,7 +3283,7 @@ describe("AutoSaveJS", function() {
 		expect(szString).toEqual("frmMusician=My+favourite+musician+is+Mozart+because+he+is+relaxing");
 	});	
 	
-	it('autosave_trigger_of_default_sends_data_on_select_changed', function(){
+	it('autosave trigger of default sends data on select changed', function(){
 
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<select name='frmMusician'><option value='Mozart'>M</option>\
@@ -3311,7 +3311,7 @@ describe("AutoSaveJS", function() {
 	
 	
 	//here, we're checking for correct implementation of input event and not just on-change event hooking
-	it('autosave_trigger_of_default_sends_data_whilst_typing_in_text_input', function(){ 
+	it('autosave trigger of default sends data whilst typing in text input', function(){ 
 
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<input type='text' name='frmMusician'>";
@@ -3353,7 +3353,7 @@ describe("AutoSaveJS", function() {
 	});
 	
 	
-	it('autosave_trigger_with_custom_debounce_interval_fires_event_at_right_time', function(){
+	it('autosave trigger with custom debounce interval fires event at right time', function(){
 
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<select name='frmMusician'><option value='Mozart'>M</option>\
@@ -3382,7 +3382,7 @@ describe("AutoSaveJS", function() {
 		expect(szString).toEqual("frmMusician=Mozart");
 	});
 
-	it('autosave_trigger_waits_for_interval_elapse_from_first_select_change_regardless_of_subsequent_changes', function(){
+	it('autosave trigger waits for interval elapse from first select change regardless of subsequent changes', function(){
 
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<select name='frmMusician'><option value='Mozart'>M</option>\
@@ -3413,7 +3413,7 @@ describe("AutoSaveJS", function() {
 		expect(szString).toEqual("frmMusician=JayZ");
 	});
 
-	it('save_event_only_fires_once_in_given_interval_even_after_multiple_updates', function(){
+	it('save event only fires once in given interval even after multiple updates', function(){
 	
 		//Arrange - Create and set a value on the input text box
 		var testFragment = "<select name='frmMusician'><option value='Mozart'>M</option>\
@@ -3865,6 +3865,7 @@ describe("AutoSaveJS", function() {
 	 // No Gung-ho rewrites ; backwards compatability are a core *feature* of this library
 	 // Never break backwards compatability in future versions : never-break-backwards-compat.com - compatpact.com
 	 // TODO: Google "Reading/writing to cookies with full unicode support" and ensure we cover too
+	 // TODO: Test all browsers on browser-stack
 	 // Have a diagram of the hooks and where functionality belongs (e.g. AutoSave.Load)
 	 // addEventListener / removeEventListener not supported by pre-IE8 - make it compatible there too!! (?)
 		// Adding support for older browsers via hooks - 
