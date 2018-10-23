@@ -15,6 +15,7 @@ var AutoSave = function( rootControls, opts ){
 	this.__invokeExtBound;			
 	this.__resetNotificationDisplayBound;
 	this.__handleDebouncedEventBound;
+	this.__onUnloadingBound;
 	
 	//Saving & Notifications
 	this.__minShowDuration;		//Minimum duration to show the 'Saving...' notification for
@@ -27,7 +28,6 @@ var AutoSave = function( rootControls, opts ){
 	this.__warnNoStore; 	//Will be true if a store was expected but wasn't present
 		
 	this.__clearEmptyValuesOnLoad; //When keys dont have a value in the data store (e.g....&name=&...), clear out those elements on load
-			//TODO: Notify before leaving page
 			//TODO: How handle changing option ?
 	
 	this._initialise = function( parentElement, opts ) {
@@ -50,39 +50,42 @@ var AutoSave = function( rootControls, opts ){
 			this.__resetNotificationDisplayBound = this._resetNotificationDisplay.bind( this );
 			this.__handleDebouncedEventBound = this._handleDebouncedEvent.bind( this );
 			this.__invokeExtBound = this.__sendLog.bind( this );
+			this.__onUnloadingBound = this._onUnloading.bind( this );
 			
 			AutoSave._ensureOptIn( opts, allowedOpts, "top level" );
 			
 			//Sequencing is important here :-
-			
+
 			//Mark that registration is happening
 			this._registerInitQueue( 1 );
-			
+
 			var seekExternalFormElements = AutoSave._parseExternalElemsArg( opts.seekExternalFormElements );
-						
+
 			this._updateRootControls( parentElement, seekExternalFormElements );
-			
+
 			//Do this after updating root controls as we require the names of the top-level forms
 			this._updateDataStore( opts.dataStore );
-			
+
 			//Do this after updating root controls as we hook need to hook listeners to them
 			this._updateAutoSaveStrategy( opts.autoSaveTrigger, seekExternalFormElements );
-			
+
 			//Load values into controls on start
 			this._updateLoadStrategy( opts.autoLoadTrigger );
-			
+
 			this._updateSaveNotification( opts.saveNotification );
-			
+
 			//Show warning banner if there's no storage
 			if ( this.__warnNoStore ) {
-				
+
 				//Lazy create banner state only if needed
 				this._updateNoStorageNotification( opts.noStorageNotification );
-				
+
 				//Toggle it
 				this._toggleNoStorageNotification( this.__warnNoStore );
 			}
-			
+
+			this._hookUnloadListener( true );
+
 			//Kick off init callback if everything else complete
 			this._registerInitQueue( -1 );
 		}
@@ -739,6 +742,15 @@ var AutoSave = function( rootControls, opts ){
 		 AutoSave._logToConsole.apply( this, args );
 	}
 	
+	this._onUnloading = function( event ){
+	
+	  //As user is about to leave page, just save any pending changes
+	  if ( this.__debounceTimeoutHandle ) {
+		  
+		  this._handleDebouncedEvent();
+	  }
+	}
+	
 	//This function sets up when to save the state
 	this._updateAutoSaveStrategy = function( saveTrigger, seekExternalFormElements ){
 		
@@ -746,13 +758,13 @@ var AutoSave = function( rootControls, opts ){
 			
 			//Only when invoked - i.e. do nothing
 
-			this.__sendLog( AutoSave.LOG_INFO, "Save trigger was disabled" );
+			this.__sendLog( AutoSave.LOG_INFO, "Auto-Save trigger was disabled" );
 			return;
 		}
 		else if ( saveTrigger === undefined ) {
 
 			this.__debounceInterval = AutoSave.DEFAULT_AUTOSAVE_INTERVAL;
-			this.__sendLog( AutoSave.LOG_INFO, "Save trigger was initialised with default interval", this.__debounceInterval );
+			this.__sendLog( AutoSave.LOG_INFO, "Auto-Save trigger was initialised with default interval", this.__debounceInterval );
 		}
 		else if ( typeof( saveTrigger ) == "object" ) {
 
@@ -772,7 +784,7 @@ var AutoSave = function( rootControls, opts ){
 				else {
 					
 					this.__debounceInterval = debounceInterval;
-					this.__sendLog( AutoSave.LOG_INFO, "Save trigger was initialised with custom interval", this.__debounceInterval );
+					this.__sendLog( AutoSave.LOG_INFO, "Auto-Save trigger was initialised with custom interval", this.__debounceInterval );
 				}
 			}
 			else{
@@ -870,6 +882,14 @@ var AutoSave = function( rootControls, opts ){
 		}
 	}
 
+	this._hookUnloadListener = function ( hookOn ){
+		
+		if ( hookOn )
+			window.addEventListener("beforeunload", this.__onUnloadingBound );
+		else
+			window.removeEventListener("beforeunload", this.__onUnloadingBound );
+	};
+	
 	this._hookListeners = function ( hookOn, seekExternalFormElements ){ 
 
 		this.__sendLog( AutoSave.LOG_DEBUG, 
@@ -966,6 +986,8 @@ var AutoSave = function( rootControls, opts ){
 		try {
 			
 			this._hookListeners( false, null );
+
+			this._hookUnloadListener( false );			
 		}
 		catch( e ){
 			
@@ -1079,7 +1101,7 @@ var AutoSave = function( rootControls, opts ){
 	AutoSave._ensureOptIn = function( optObj, allowedValues, optDesc ){
 		
 		//Only verify level of options, not base members
-		var optKeys = Object.keys( optObj ); //todo: x-browser support?
+		var optKeys = Object.keys( optObj );
 		
 		for( var idx in optKeys ) {
 			
