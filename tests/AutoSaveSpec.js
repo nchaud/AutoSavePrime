@@ -1824,7 +1824,100 @@ describe("AutoSaveJS", function() {
 		expect(console.warn).not.toHaveBeenCalledWith( "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?" );
 		expect(console.warn).toHaveBeenCalledWith('Warn Override Test');
 	});
-  
+
+	it('onLog callback option with object args gets invoked correctly', function(){
+	
+		var debugArgs=[], infoArgs=[], warnArgs=[], errorArgs=[];
+		
+		var defaultOpt = {
+			onLog:{
+				debug:function(){
+					debugArgs.push(AutoSave.toArray(arguments));
+				},
+				info:function(){
+					infoArgs.push(AutoSave.toArray(arguments));
+				},
+				warn:function(msg){
+					warnArgs.push(AutoSave.toArray(arguments));
+				},
+				error:function(){
+					errorArgs.push(AutoSave.toArray(arguments));
+				},
+				
+				ignorable_other:{} //should not complain about other keys
+			}
+		};
+		
+		createAutoSave("#NON_EXISTENT", defaultOpt);
+		
+		//Debug level messages should only be sent to correct handler
+		var debugMsg = "Hooking listeners. Seeking external controls for hooking: true";
+		expect(infoArgs.filter(function(x){return x[0]==debugMsg}).length).toEqual(0);
+		expect(debugArgs.filter(function(x){return x[0]==debugMsg}).length).toEqual(1);
+		expect(warnArgs.filter(function(x){return x[0]==debugMsg}).length).toEqual(0);
+		expect(errorArgs.filter(function(x){return x[0]==debugMsg}).length).toEqual(0);
+			
+		//Warn level messages should only be sent to correct handler
+		var warnMsg = "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?";
+		expect(infoArgs.filter(function(x){return x[0]==warnMsg}).length).toEqual(0);
+		expect(debugArgs.filter(function(x){return x[0]==warnMsg}).length).toEqual(0);
+		expect(warnArgs.filter(function(x){return x[0]==warnMsg}).length).toEqual(1);
+		expect(errorArgs.filter(function(x){return x[0]==warnMsg}).length).toEqual(0);
+			
+		//Info level messages should only be sent to correct handler
+		var infoMsg = "Auto-Save trigger was initialised with default interval";
+		expect(infoArgs.filter(function(x){return x[0]==infoMsg&&x[1]==3000}).length).toEqual(1);
+		expect(debugArgs.filter(function(x){return x[0]==infoMsg}).length).toEqual(0);
+		expect(warnArgs.filter(function(x){return x[0]==infoMsg}).length).toEqual(0);
+		expect(errorArgs.filter(function(x){return x[0]==infoMsg}).length).toEqual(0);
+	});
+
+
+	
+	it('onLog callback option object can override message', function(){
+	
+		//Watch the console for messages
+		var spy = spyOn( console, "warn" );
+				
+		var ctr = 0;
+		
+		var defaultOpt = {
+			onLog:{
+				warn:function(msg){
+					
+					if ( msg != "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?" )
+						return;
+					
+					warnArgs = AutoSave.toArray(arguments);
+					
+					if(ctr == 0)
+						return; //Leave as undefined, which shouldn't change anything
+					else if (ctr == 1)
+						return false; //Should cancel the logging altogther
+					else if (ctr == 2)
+						return "Warn Override Test";
+				},
+			}
+		};
+		
+		//Setting a value should trigger an auto-save which should log information msg about the same
+		createAutoSave("#NON_EXISTENT", defaultOpt);
+		expect(console.warn).toHaveBeenCalledWith( "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?" );
+		
+		spy.calls.reset();
+		
+		ctr = 1;
+		createAutoSave("#NON_EXISTENT", defaultOpt);
+		expect(console.warn).not.toHaveBeenCalledWith( "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?" );
+		
+		spy.calls.reset();
+		
+		ctr = 2;
+		createAutoSave("#NON_EXISTENT", defaultOpt);
+		expect(console.warn).not.toHaveBeenCalledWith( "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?" );
+		expect(console.warn).toHaveBeenCalledWith('Warn Override Test');
+	});
+
 	
 	it('custom autosave element gets set back to inline-display style', function(){
 

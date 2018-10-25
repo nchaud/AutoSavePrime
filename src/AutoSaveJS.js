@@ -701,18 +701,41 @@ var AutoSave = function( rootControls, opts ){
 		}
 	}
 	
-	this.__sendLog = function ( __variadic_args__ ){
+	this.__sendLog = function ( level, __variadic_args__ ){
 
 		 var cb = this.__callbacks.onLog;
 		 
 		 var args;
 		 
-		 if ( cb ) {
+		 if ( typeof cb != "undefined" ) {
 			 
-			 //Provide a first class array to the callback and so we can amend
-			 args = AutoSave.toArray( arguments );
+			 var funcToCall;
+			 var funcArgs;
+			 if ( typeof cb == "function" ){
+				 
+				 funcToCall = cb;
+				 funcArgs = arguments;
+			 }
+			 else if ( typeof cb == "object" ){
+				 
+				 funcToCall = cb[ level ];
+				 
+				 if ( !funcToCall ){
+					 
+					 //Match for this log level not found, skip the message, assume user doesnt want to log at this level
+					 //TODO: Do a demo for this
+					 
+					 return;
+				 }
+					 
+				 funcArgs = AutoSave.toArray( arguments, 1 ); //Excluding the level
+			 }
+			 else{
+				 
+				throw new Error( "Unexpected type of callback parameter 'dataStore'" );
+			 }
 		 
-			 var ret = cb.apply( this, args );
+			 var ret = funcToCall.apply( this, funcArgs );
 			 
 			 //See @FUN semantics
 			 if ( ret === false ) {
@@ -723,22 +746,22 @@ var AutoSave = function( rootControls, opts ){
 			 else if ( ret === undefined ){
 				 
 				 //continue
+				 args = arguments;
 			 }
 			 else {//could be string, object, anything user specifies take as-is
 				 
 				 //Preserve the level and treat array specially
 				 if ( ret && ret.length )
-					args = [ args[0] ].concat( ret );
+					args = [ level ].concat( ret );
 				 else
-					args = [ args[0], ret ];
+					args = [ level, ret ];
 			 }
 		 }
 		 else {
-			 
+			
 			 args = arguments;
 		 }
 		 
- 		 //TODO: Log Levels should correspond to popular logging libraries
 		 AutoSave._logToConsole.apply( this, args );
 	}
 	
@@ -1296,20 +1319,20 @@ var AutoSave = function( rootControls, opts ){
 		}
 	}
 
-	AutoSave.whenDocReady( this._initialise.bind( this, rootControls, opts ) );
+	//InvokeExtBound is not initialised yet so can't use __invokeExt
+	AutoSave.whenDocReady ( this._initialise.bind( this, rootControls, opts ) );
 };
 
 AutoSave.whenDocReady = function whenDocReady( funcToRun ){
 
+	//We can't log too prematurely as onLog handling will not be in place yet
 	if ( document.readyState == "complete" ){
 		
-		AutoSave.log( AutoSave.LOG_DEBUG, "Document is ready - beginning AutoSave initialisation sequence..." );
 		funcToRun();
+		AutoSave.log( AutoSave.LOG_DEBUG, "Document is ready - completed AutoSave initialisation sequence" );
 	}
 	else {
-		
-		AutoSave.log( AutoSave.LOG_DEBUG, "Document is not ready - polling until ready" );
-		
+				
 		//Keep looping until it's ready - compromise between code-size, x-browser compatability
 		var loadIntervalHandle = setInterval( function(){
 	
@@ -1317,8 +1340,9 @@ AutoSave.whenDocReady = function whenDocReady( funcToRun ){
 			
 				clearInterval( loadIntervalHandle );
 				
-				AutoSave.log( AutoSave.LOG_DEBUG, "Document now ready - beginning AutoSave initialisation sequence..." );
 				funcToRun();
+				
+				AutoSave.log( AutoSave.LOG_DEBUG, "Document was late initialised - completed AutoSave initialisation sequence" );
 			}
 		}, AutoSave.DEFAULT_LOAD_CHECK_INTERVAL );
 	}
@@ -2026,10 +2050,10 @@ AutoSave.cloneObj = function cloneObject( obj ){
 	return ret;
 }
 
-AutoSave.LOG_DEBUG = 100;
-AutoSave.LOG_INFO = 101;
-AutoSave.LOG_WARN = 102;
-AutoSave.LOG_ERROR = 103;
+AutoSave.LOG_DEBUG = "debug";
+AutoSave.LOG_INFO = "info";
+AutoSave.LOG_WARN = "warn";
+AutoSave.LOG_ERROR = "error";
 
 AutoSave.DEFAULT_LOAD_CHECK_INTERVAL      = 100;    	//Every 100 ms, check if it's loaded
 AutoSave.DEFAULT_AUTOSAVE_INTERVAL   	  = 3*1000; 	//By default, autosave every 3 seconds
