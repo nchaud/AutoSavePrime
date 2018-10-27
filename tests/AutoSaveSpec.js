@@ -3945,6 +3945,8 @@ describe("AutoSaveJS", function() {
 	// ensure ALL form control types are covered wrt triggering an event
 	// multiple input radio group
 	
+	//TODO: What to do wrt using local storage on different pages of same site?
+	
 	 // Without IDs, server-side or client-side auto-saving, jQuery-UI + CKEditor etc. tests,
 	 // Github-integrated tests
 	 // No Gung-ho rewrites ; backwards compatability are a core *feature* of this library
