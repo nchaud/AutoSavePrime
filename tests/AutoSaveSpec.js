@@ -324,6 +324,7 @@ describe("AutoSaveJS", function() {
 		expect($("[value='B']").prop("selected")).toEqual(false); //sanity check this should not be selected
 	});
 	
+	//As per whatwg spec 4.10.10, should use the element's text IDL attribute if no option specified
 	it('select entry with multiple selections without option values is restored',function(){
 		 
 		//Arrange - Create and set a value on the input text box - put None at bottom to ensure it's not working coincidentally !
@@ -354,7 +355,8 @@ describe("AutoSaveJS", function() {
 		expect($("#B").prop("selected")).toEqual(false); //sanity check this should not be selected
 	});
 	
-	it('select single options with no option values should still select correct option',function(){ //TODO: As per spec #...
+	//As per whatwg spec 4.10.10, should use the element's text IDL attribute if no option specified
+	it('select single options with no option values should still select correct option',function(){ 
 		
 		//Arrange - Create and set a value on the input text box - check special characters preserved
 		var testFragment = "<select name='frmNameEntry'>\
@@ -382,6 +384,7 @@ describe("AutoSaveJS", function() {
 			AutoSave.toArray(document.querySelectorAll("#toChoose")));
 	});
 	
+	//As per whatwg spec 4.10.10, should use the element's text IDL attribute if no option specified
 	it('select single options with no option values and optgroup should still select correct option',function(){
 		
 		//Arrange - Create and set a value on the input text box - check special characters preserved
@@ -412,6 +415,7 @@ describe("AutoSaveJS", function() {
 			AutoSave.toArray(document.querySelectorAll("#toChoose")));
 	});
 	
+	//As per whatwg spec #2.7.2.2, if radio has no value, should be "on", so ensure sz/dsz works in this case
 	it('input:radio+checkbox controls with no value should be set to "on" if relevant and reinstated', function(){
 		
 		//Arrange - Create and set a value on the input
@@ -428,7 +432,7 @@ describe("AutoSaveJS", function() {
 		//Act - Store all field data as a string
 		var szString = testSerialize();
 
-		var expectedStr = "test_1=is_employed&test_2=&test_3=on&test_4=is_student&test_5=&test_6=on";			//TODO: OFF?
+		var expectedStr = "test_1=is_employed&test_2=&test_3=on&test_4=is_student&test_5=&test_6=on";
 		expect(szString).toEqual(expectedStr);
 		
 		//Recreate the default state HTML
@@ -565,7 +569,7 @@ describe("AutoSaveJS", function() {
 		//Act - load the :input's from the string
 		testDeserialize(fieldData);
 
-		//Assert - exactly 2 selected and correct one -- TODO: Test cases
+		//Assert - exactly 2 selected and correct one
 		expect(AutoSave.toArray(document.querySelectorAll("input[type='checkbox']:checked")))
 		.toEqual([elem1,elem2]);
 	});
@@ -1228,8 +1232,9 @@ describe("AutoSaveJS", function() {
 		var expectedStr = "0=0";
 		expect(szString).toEqual(expectedStr);	
 	});
-	
-	it('select multiple options with no name attribute should use inner text for serialising',function(){ //TODO: As per spec #...
+
+	//As per whatwg spec 4.10.10, should use the element's text IDL attribute if no option specified	
+	it('select multiple options with no name attribute should use inner text for serialising',function(){
 
 		//Arrange - Create and set a value on the input text box - check special characters preserved
 		var testFragment = "<select multiple name='frmNameEntry'>\
@@ -1448,7 +1453,6 @@ describe("AutoSaveJS", function() {
 		var testFragment = "<form class='other'><div id='d1'>"+groupFragment+"</div></form>"+
 						   "<form class='some_other'><div id='d2'>"+groupFragment+"</div></form>";
 		
-		//TODO: For all errors like this one, have a FAQ page with examples
 		var errMsg = "There is already an AutoSave instance with the storage key of 'AutoSaveJS_'. See the documentation for solutions.";
 		
 		//Supply selector string
@@ -1473,7 +1477,6 @@ describe("AutoSaveJS", function() {
 		var testFragment = "<form name='group1' class='other'><div id='d1'>"+groupFragment+"</div></form>"+
 						   "<form name='group1' class='some_other'><div id='d2'>"+groupFragment+"</div></form>";
 		
-		//TODO: For all errors like this one, have a FAQ page with examples
 		var errMsg = "There is already an AutoSave instance with the storage key of 'AutoSaveJS_group1'. See the documentation for solutions.";
 		
 		//Supply selector string
@@ -1666,7 +1669,7 @@ describe("AutoSaveJS", function() {
 		var defaultOpt = {
 			onLog:function( level, msg ){
 				
-				if ( msg != 'Executing save: after element changed' )
+				if ( msg != 'Executing save: after element(s) changed' )
 					return; //Some other irrelevant log message
 				
 				expect( level ).toEqual( AutoSave.LOG_INFO );
@@ -1688,28 +1691,28 @@ describe("AutoSaveJS", function() {
 		//Setting a value should trigger an auto-save which should log information msg about the same
 		setValue("[name='musician']", "Mozart");
 		jasmine.clock().tick(60*1000);
-		expect(console.info).toHaveBeenCalledWith( 'Executing save: after element changed' );
+		expect(console.info).toHaveBeenCalledWith( 'Executing save: after element(s) changed' );
 		
 		spy.calls.reset();
 		
 		ctr = 1;
 		setValue("[name='musician']", "Beethoven");
 		jasmine.clock().tick(60*1000);
-		expect(console.info).not.toHaveBeenCalledWith( 'Executing save: after element changed' );
+		expect(console.info).not.toHaveBeenCalledWith( 'Executing save: after element(s) changed' );
 		
 		spy.calls.reset();
 		
 		ctr = 2;
 		setValue("[name='musician']", "Debussy");
 		jasmine.clock().tick(60*1000);
-		expect(console.info).not.toHaveBeenCalledWith( 'Executing save: after element changed' );
+		expect(console.info).not.toHaveBeenCalledWith( 'Executing save: after element(s) changed' );
 		
 		spy.calls.reset();
 		
 		ctr = 3;
 		setValue("[name='musician']", "Debussy");
 		jasmine.clock().tick(60*1000);
-		expect(console.info).not.toHaveBeenCalledWith( 'Executing save: after element changed' );
+		expect(console.info).not.toHaveBeenCalledWith( 'Executing save: after element(s) changed' );
 		expect(console.info).toHaveBeenCalledWith("Some", {obj:12345});
 	});
   
@@ -1743,7 +1746,7 @@ describe("AutoSaveJS", function() {
 				onLog:function( level, msg ){
 					
 					//There'll be a lot of log messages so avoid false negatives by checking our expected behaviour wrt particular messages
-					if ( msg == 'Executing save: after element changed' )
+					if ( msg == 'Executing save: after element(s) changed' )
 						throw new Exception("Log message appeared in wrong instance");
 					
 					if (msg == "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?"){
@@ -1764,7 +1767,7 @@ describe("AutoSaveJS", function() {
 					if ( msg == "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?" )
 						throw new Exception("Log message appeared in wrong instance");
 					
-					if ( msg == 'Executing save: after element changed' ){
+					if ( msg == 'Executing save: after element(s) changed' ){
 						
 						num2Called = true;
 						expect( level ).toEqual( AutoSave.LOG_INFO );
@@ -3932,29 +3935,18 @@ describe("AutoSaveJS", function() {
 	
 	//'PROGRAMATIC CHANGES HANDLING? DIFF FEATURE? V2?
 	// button serialisation! ALL other inputs covered? toggle button a reason to do button?
-	// "Some data was not saved. Are you sure you want to navigate away...?"
 
-	//for each event type, hook different events?
 	//Many of these in browser for browser-based integration tests OR send native key-press/mouse-moves
-	//allow intercepting autosave ? or just cancel on the pre-serialisation?
 	//Changes due to .Load() should not call .Save() 
-	//*** 'on' string if no name for checkbox/radio *** (as per spec?)
 	//ensure name is available on NPM - e.g. AutoSavePrime
 	// Unselected select remains unselected 
 	//check jQuery implementation of :input selector
-	// Check all options of all controls in MDN - e.g. select.multiselect
-	// If string selector provided for parent-element, should re-calculate on each invocation (how works on loading then?)
 	// ensure tests work across all versions of jQuery old and new - when supplied as the parameter        
 	// ensure ALL form control types are covered wrt triggering an event
 	// multiple input radio group
-	// Test with dynamically added or removed controls after serializing + before deserializing
-
 	
 	 // Without IDs, server-side or client-side auto-saving, jQuery-UI + CKEditor etc. tests,
-	 // Way to revert to local storage if no connectivity with my ajax service?
-	 // AutoSave.Serialize, AutoSave.Deserialize, AutoSave.FindControls all static 
 	 // Github-integrated tests
-	 // If [type='radio'] has no value attribute, chrome uses 'on'. Do? X-browser support?
 	 // No Gung-ho rewrites ; backwards compatability are a core *feature* of this library
 	 // Never break backwards compatability in future versions : never-break-backwards-compat.com - compatpact.com
 	 // TODO: Google "Reading/writing to cookies with full unicode support" and ensure we cover too
@@ -3964,7 +3956,6 @@ describe("AutoSaveJS", function() {
 		// Adding support for older browsers via hooks - 
 		// https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
 	 // Doesn't require jQuery, doesn't require a form, HTML5 form attribute support for inputs outside the form
-	 // Never write password fields to debug log
 	 // Documentation for how you would deal with multi-user scenario
 	 // perf test across browsers
 	 // d.ts file
@@ -3972,20 +3963,17 @@ describe("AutoSaveJS", function() {
 	 // How you would add a hook to ensure data only sent when form is validated
 	 // Following settings are mutable and can be changed, following are not and will throw on mutation
 	 // Intermittent connectivity
-	 // Saves data if they try navigate away
 	 // jQuery won't do this : $("body").serialize() - see GitHub discussion for why needs a form
 	 //	jQuery also wont respect HTML5 new form attribute
 	 // Dynamically added controls/panels, dynamically expanded etc. - add hooks?
 	 // NodeJS? Using document property :/ ...
 	 // Multi-user scenario? Timestamp each request?
 	// incorporate JSON2.js !!
-	// switch out sz/dsz app-wide using AutoSave.Serialize/Deserialize statics
 	//TODO: Document if custom path, domains etc are set, will not get cleared out
 	//TODO: What to do if cookie storage is running out?	 
 	 // As we're using event handlers, test if us throwing doesn't invoke the remaining handles. If so, try-catch and pipe to errorHandler 
 	 //(by default throws an Error with code)
 	 // Unhook events on elements removed from DOM (?)
-	 // TODO: Dont trigger another save if one already in progress? Queue/throttle it. We already throttle so can be done by user hooks?
 
 //FIRST PRIORITY FOR LIBRARY IS WORKING IN ALL SCENARIOS, OUT OF BOX - THEN ALLOW THEM TO TWEAK PARAMTERS FOR PERFORMANCE
 	 
@@ -4014,7 +4002,6 @@ describe("AutoSaveJS", function() {
 
   	 
 	 // incognito session? no cookies? (safari?)
-	 // datastorage method of local-storage else cookies
 	 // If panels are lazy-loaded? Basically, bunch of tests for dynamically loaded controls to append/splice on save/load
 	 // TODO: JSLint it.
 	 // When value cleared, should be sent to server - difference from a normal sz() and save() ajax call
@@ -4023,9 +4010,10 @@ describe("AutoSaveJS", function() {
 	 // Undocumented documentation. You can actually change most option parameters at run-time but take no liability for behaviour ! 
 								 // Behaviour *NOT* supported
 	 // IE7+, It's fast - performance tests... 
-	 //TODO: All hooks should be proper events and listenable to via 'addEventListener' etc. (?)
 	 
-			
+	//TODO: Do a demo for skipping log levels, wiring into winston/simple logging 
+		//TODO: For all errors like this one, have a FAQ page with examples
+
 	//TODO: Demo of calling store.resetStore() when page saved to server so doesn't auto-populate next time - if using cookies/local storage instead of ajax! **
 			
 	 //Have version, along with minified file has version at top. see ckEditor top.
@@ -4038,6 +4026,9 @@ describe("AutoSaveJS", function() {
 
 			//TODO: Example with loading and unloading of HTML content / dynamic content - e.g. flicking through tabs. jQuery UI tabs?
 
+			//Add document: If you specify the root set as ("#container form"), all form instances must be present before AutoSave created but 
+			//				contents of each form can change
+			//				Else you can just use the custom callback function every time if even the root set is dynamic.
 			//DOcument: Exceptions during initialisation will cause onInit to not be invoked
 	//TODO: Demo with diffing logic
 	 // As a cheap hosted-service plugin? Over SSL?

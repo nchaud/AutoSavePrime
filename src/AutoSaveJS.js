@@ -28,7 +28,6 @@ var AutoSave = function( rootControls, opts ){
 	this.__warnNoStore; 	//Will be true if a store was expected but wasn't present
 		
 	this.__clearEmptyValuesOnLoad; //When keys dont have a value in the data store (e.g....&name=&...), clear out those elements on load
-			//TODO: How handle changing option ?
 	
 	this._initialise = function( parentElement, opts ) {
 	
@@ -45,7 +44,8 @@ var AutoSave = function( rootControls, opts ){
 		try {
 			
 			//Set this very first as if there's an initialisation error, startup routine may dispose and may need to log
-			this.__callbacks = opts;		//TODO: Means it can be dynamic ?? But should be set explicitly for future compatability!
+			this.__callbacks = opts;		
+			//TODO: Means it can be dynamic ?? But should be set explicitly for future compatability! And other opts in general?
 
 			this.__resetNotificationDisplayBound = this._resetNotificationDisplay.bind( this );
 			this.__handleDebouncedEventBound = this._handleDebouncedEvent.bind( this );
@@ -723,7 +723,6 @@ var AutoSave = function( rootControls, opts ){
 				 if ( !funcToCall ){
 					 
 					 //Match for this log level not found, skip the message, assume user doesnt want to log at this level
-					 //TODO: Do a demo for this
 					 
 					 return;
 				 }
@@ -836,7 +835,6 @@ var AutoSave = function( rootControls, opts ){
 		if ( typeof( parentElement ) == "function" ){
 		
 			//Customise the set of controls used - calculated dynamically from user's function
-			//TODO: What about un-hooking/re-hooking listeners when this set changes?
 			this.__getRootControlsFunc = function() {
 			
 				var rawUserInput = parentElement();
@@ -870,11 +868,8 @@ var AutoSave = function( rootControls, opts ){
 		else {
 		
 			//Static - so calculate it just once beforehand and return the same set every time
-			//TODO: SHOULD BE DYNAMIC IF STRING (?) - other libs dont do that, they just need an always-present container
-			//but child set - e.g. "#multi-form-container form" - should work dynamically?
 			var elems = this._getControlsFromUserInput( parentElement );
 			
-			//Validation - TODO: Test if something an array and not a jQuery array or dom-like ?
 			//If user-supplied parameter didn't resolve to any elements, throw, as there will be nothing to listen to.
 			//Except if explicitly specified an empty [] so continue 
 			if ( !Array.isArray(parentElement) && elems.length == 0 ){
@@ -962,10 +957,10 @@ var AutoSave = function( rootControls, opts ){
 	this._handleDebouncedEvent = function() {
 		
 		this.__sendLog( AutoSave.LOG_DEBUG, "Handling debounced control input event" );
+		this.__sendLog( AutoSave.LOG_INFO, "Executing save: after element(s) changed" );
 		
 		this.__debounceTimeoutHandle = null;
 
-		this.__sendLog( AutoSave.LOG_INFO, "Executing save: after element changed" );
 		this._executeSave();
 	}
 	
@@ -1120,24 +1115,7 @@ var AutoSave = function( rootControls, opts ){
 		return fieldDataStr;
 	}
 	
-	//optObj must not be null
-	AutoSave._ensureOptIn = function( optObj, allowedValues, optDesc ){
-		
-		//Only verify level of options, not base members
-		var optKeys = Object.keys( optObj );
-		
-		for( var idx in optKeys ) {
-			
-			 var optKey = optKeys[ idx ];
-
-			 if ( allowedValues.indexOf( optKey ) == -1 ) {
-				
-				  throw new Error( "Unexpected parameter '" + optKey + "' in " + optDesc + " options object" );
-			 }
-		}
-	}
-
-	/* Additional 'classes'  - TODO: Best way whilst encapsulating ?*/
+	/* Additional 'classes' */
 	var _CookieStore = function( keyFunc ){
 		
 		AutoSave.log( AutoSave.LOG_INFO, "Using cookie storage as local store" );
@@ -1323,6 +1301,23 @@ var AutoSave = function( rootControls, opts ){
 	AutoSave.whenDocReady ( this._initialise.bind( this, rootControls, opts ) );
 };
 
+//optObj must not be null
+AutoSave._ensureOptIn = function( optObj, allowedValues, optDesc ){
+	
+	//Only verify level of options, not base members
+	var optKeys = Object.keys( optObj );
+	
+	for( var idx in optKeys ) {
+		
+		 var optKey = optKeys[ idx ];
+
+		 if ( allowedValues.indexOf( optKey ) == -1 ) {
+			
+			  throw new Error( "Unexpected parameter '" + optKey + "' in " + optDesc + " options object" );
+		 }
+	}
+}
+	
 AutoSave.whenDocReady = function whenDocReady( funcToRun ){
 
 	//We can't log too prematurely as onLog handling will not be in place yet
@@ -1646,14 +1641,7 @@ AutoSave._deserializeSingleControl = function( child, fieldData, clearEmpty ){
 					}
 				}
 			}
-			
-			
-		
-		
-		//TODO: Debug statements like debugSz(input, "Field was missing in dataset") => would then calc a meaning string from input IF debug enabled
-			
-			
-			
+
 			if ( foundField === true )
 				child.checked = true;
 			else if ( foundField === false && clearEmpty ) //Was of the form ...&fieldName=&...
@@ -2081,8 +2069,4 @@ AutoSave.__cachedCookiesAvailable;
 AutoSave.Version = "1.0.0";
 
 
-
-
-//TODO: Fix above so import-able as a re-nameable module - test?
-
-
+//TODO: Fix above so import-able as a re-nameable module + best way for inner 'classes' ?- test?
