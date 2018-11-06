@@ -1,5 +1,7 @@
 describe("AutoSaveJS", function() {
 
+	_defaultCookieKey = "AutoSaveJS_MOCK/PATH/1";
+	
 	_allCurrAutoSaves = [];
 	_noOpLoad = function( key, loadCompleted){ loadCompleted() };
 	_noOpSave = function( key, data, saveCompleted){ saveCompleted() };
@@ -38,7 +40,7 @@ describe("AutoSaveJS", function() {
 	function getBrowserCookie( key ){
 
 		if ( !key )
-			key = "AutoSaveJS_";
+			key = _defaultCookieKey;
 	
 		//From MDN
 		var regex = new RegExp("(?:(?:^|.*;)\\s*" + 
@@ -211,6 +213,9 @@ describe("AutoSaveJS", function() {
 		resetSandbox();
 
 		jasmine.clock().install();
+		
+		//Simulate URL path
+		AutoSave.getUrlPath = function(){ return "MOCK/PATH/1"; };
 	})
 
 	afterEach(function(){
@@ -901,7 +906,9 @@ describe("AutoSaveJS", function() {
 		expect($selectOption.prop("selected")).toEqual(true);
 	});
 	
-	it('_INTEGRATION_TEST_: uses local storage by default if available otherwise cookies', function(){ //x-browser test
+	it('_INTEGRATION_TEST_: uses local storage by default if available otherwise cookies', function(){ //TODO: x-browser test
+		
+		//TODO: Make isLocalStorageAvailable a helper just like .getUrlPath, mock it out and break this into 2 tests
 		
 		var isLocalStorageAvailable = AutoSave.isLocalStorageAvailable; //Should save to cookies instead
 		
@@ -919,7 +926,7 @@ describe("AutoSaveJS", function() {
 		//Trigger it manually for this test
 		aSave.save();
 		
-		var valSaved = getLocalStorageElseCookie("AutoSaveJS_");
+		var valSaved = getLocalStorageElseCookie(_defaultCookieKey);
 			
 		expect( valSaved ).toEqual( "fullName=John+Wayne&description=~Green%40fields~" );
 	});
@@ -946,15 +953,58 @@ describe("AutoSaveJS", function() {
 		getOne("input").val("John Wayne");
 		getOne("textarea").val("~Green@ways~");
 
-		expect(getBrowserCookie("AutoSaveJS_")).toBeFalsy(); //Sanity check
+		expect(getBrowserCookie()).toBeFalsy(); //Sanity check
 		
 		//Trigger it manually for this test
 		aSave.save();
 		
-		expect(localStorage.getItem("AutoSaveJS_")).toBeFalsy(); //Must not end up in localStorage
+		expect(localStorage.getItem("AutoSaveJS_MOCK/PATH/1")).toBeFalsy(); //Must not end up in localStorage
 		
-		expect(getBrowserCookie("AutoSaveJS_")).toEqual( "fullName=John+Wayne&description=~Green%40ways~" );
+		expect(getBrowserCookie()).toEqual( "fullName=John+Wayne&description=~Green%40ways~" );
 	})
+
+	it('works across multi-page on the same domain by uniquely identifying storage key based on path', function(){
+				
+		//Arrange - Create and set a value on the input text box
+		var testFragment = "<input name='fullName'>\
+							<textarea name='description'></textarea>";
+		addToSandbox(testFragment);
+		
+		var aSave = createAutoSave();
+
+		getOne("input").val("John Wayne");
+		getOne("textarea").val("~Green@fields~");
+		
+		aSave.save();
+		
+		expect( localStorage.getItem("AutoSaveJS_MOCK/PATH/1") ).toEqual( "fullName=John+Wayne&description=~Green%40fields~" );
+		aSave.dispose();
+
+		//Mock out (again) the location path temporarily to simulate another page
+		var original = AutoSave.getUrlPath;
+		try {
+
+			//Assume we're on a different page now
+			AutoSave.getUrlPath = function(){ return "MOCK/PATH/2"; };
+			var aSave2 = createAutoSave(null, null, false);
+
+			getOne("input").val("Bill Wagner");
+			getOne("textarea").val("Blue days");
+			
+			aSave2.save();
+			expect( localStorage.getItem("AutoSaveJS_MOCK/PATH/2") ).toEqual( "fullName=Bill+Wagner&description=Blue+days" );
+			aSave2.dispose();
+		}finally{
+			
+			AutoSave.getUrlPath = original;
+		}
+		
+		//Now load the original auto-save and expect the inputs to be restored
+		var aSave = createAutoSave(null, null, false);
+		
+		expect(getOne("input").val()).toEqual("John Wayne");
+		expect(getOne("textarea").val()).toEqual("~Green@fields~");
+	});
 
 	it('can set a custom static string as the local storage key postfix', function(){
 		
@@ -977,7 +1027,7 @@ describe("AutoSaveJS", function() {
 		//Trigger it manually for this test
 		aSave.save();
 		
-		expect( localStorage.getItem("AutoSaveJS_225758493995") ).toEqual( "fullName=John+Wayne&description=~Green%40fields~" );
+		expect( localStorage.getItem("AutoSaveJS_MOCK/PATH/1_225758493995") ).toEqual( "fullName=John+Wayne&description=~Green%40fields~" );
 	});
 	
 	it('can set a custom static string as the cookie key postfix', function(){
@@ -1002,9 +1052,8 @@ describe("AutoSaveJS", function() {
 		//Trigger it manually for this test
 		aSave.save();
 		
-		expect( getBrowserCookie("AutoSaveJS_225758493995") ).toEqual( "fullName=Jill+Wayne&description=~Blue%40cows~" );
+		expect( getBrowserCookie(_defaultCookieKey+"_225758493995") ).toEqual( "fullName=Jill+Wayne&description=~Blue%40cows~" );
 	});
-	
 	
 	it('can set a custom function as the local storage key provider', function(){
 		
@@ -1024,7 +1073,7 @@ describe("AutoSaveJS", function() {
 		//Trigger it manually for this test
 		aSave.save();
 		
-		expect( localStorage.getItem("AutoSaveJS_12345") ).toEqual( "fullName=Wayne+Stein" );		
+		expect( localStorage.getItem("AutoSaveJS_MOCK/PATH/1_12345") ).toEqual( "fullName=Wayne+Stein" );		
 	});
 	
 	it('can set a custom function as the cookie key provider', function(){
@@ -1046,7 +1095,7 @@ describe("AutoSaveJS", function() {
 		//Trigger it manually for this test
 		aSave.save();
 		
-		expect( getBrowserCookie("AutoSaveJS_12345") ).toEqual( "fullName=John+Blaine" );
+		expect( getBrowserCookie(_defaultCookieKey+"_12345") ).toEqual( "fullName=John+Blaine" );
 		
 	});
 	
@@ -1453,7 +1502,7 @@ describe("AutoSaveJS", function() {
 		var testFragment = "<form class='other'><div id='d1'>"+groupFragment+"</div></form>"+
 						   "<form class='some_other'><div id='d2'>"+groupFragment+"</div></form>";
 		
-		var errMsg = "There is already an AutoSave instance with the storage key of 'AutoSaveJS_'. See the documentation for solutions.";
+		var errMsg = "There is already an AutoSave instance with the storage key of 'AutoSaveJS_MOCK/PATH/1'. See the documentation for solutions.";
 		
 		//Supply selector string
 		expect(function(){
@@ -1477,7 +1526,7 @@ describe("AutoSaveJS", function() {
 		var testFragment = "<form name='group1' class='other'><div id='d1'>"+groupFragment+"</div></form>"+
 						   "<form name='group1' class='some_other'><div id='d2'>"+groupFragment+"</div></form>";
 		
-		var errMsg = "There is already an AutoSave instance with the storage key of 'AutoSaveJS_group1'. See the documentation for solutions.";
+		var errMsg = "There is already an AutoSave instance with the storage key of 'AutoSaveJS_MOCK/PATH/1_group1'. See the documentation for solutions.";
 		
 		//Supply selector string
 		expect(function(){
@@ -1508,11 +1557,11 @@ describe("AutoSaveJS", function() {
 
 		expect(function(){
 			var inst3 = createAutoSave("[name='some']", null, false);
-		}).toThrowError("There is already an AutoSave instance with the storage key of 'AutoSaveJS_some'. See the documentation for solutions.");
+		}).toThrowError("There is already an AutoSave instance with the storage key of 'AutoSaveJS_MOCK/PATH/1_some'. See the documentation for solutions.");
 		
 		expect(function(){
 			var inst4 = createAutoSave(".some_other", null, false);
-		}).toThrowError("There is already an AutoSave instance with the storage key of 'AutoSaveJS_'. See the documentation for solutions.");
+		}).toThrowError("There is already an AutoSave instance with the storage key of 'AutoSaveJS_MOCK/PATH/1'. See the documentation for solutions.");
 
 		//Dispose first, should be able to create new
 		inst1.dispose();
@@ -1532,7 +1581,7 @@ describe("AutoSaveJS", function() {
 		var testFragment = "<div class='other'><div id='d1'>"+groupFragment+"</div></div>"+
 						   "<div class='some_other'><div id='d2'>"+groupFragment+"</div></div>";
 		
-		var errMsg = "There is already an AutoSave instance with the storage key of 'AutoSaveJS_'. See the documentation for solutions.";
+		var errMsg = "There is already an AutoSave instance with the storage key of 'AutoSaveJS_MOCK/PATH/1'. See the documentation for solutions.";
 		
 		//Supply selector string
 		expect(function(){
@@ -1599,13 +1648,13 @@ describe("AutoSaveJS", function() {
 		//Wait for auto-save to kick in and save
 		jasmine.clock().tick(60*1000);
 
-		expect(getBrowserCookie("AutoSaveJS_")).toEqual("Reason=So+Good");
-		expect(getBrowserCookie("AutoSaveJS_myCustomKey")).toEqual("Cause=Just+Cause");
+		expect(getBrowserCookie(_defaultCookieKey)).toEqual("Reason=So+Good");
+		expect(getBrowserCookie(_defaultCookieKey+"_myCustomKey")).toEqual("Cause=Just+Cause");
 		
 		AutoSave.resetAll();
 
-		expect(getBrowserCookie("AutoSaveJS_")).toBeFalsy();
-		expect(getBrowserCookie("AutoSaveJS_myCustomKey")).toBeFalsy();
+		expect(getBrowserCookie(_defaultCookieKey)).toBeFalsy();
+		expect(getBrowserCookie(_defaultCookieKey+"_myCustomKey")).toBeFalsy();
 		
 		aSave1.dispose( true );
 		aSave2.dispose( true );
@@ -1631,13 +1680,13 @@ describe("AutoSaveJS", function() {
 		//Wait for auto-save to kick in and save
 		jasmine.clock().tick(60*1000);
 
-		expect(getLocalStorageElseCookie("AutoSaveJS_")).toEqual("Reason=So+Good");
-		expect(getLocalStorageElseCookie("AutoSaveJS_myCustomKey")).toEqual("Cause=Just+Cause");
+		expect(getLocalStorageElseCookie("AutoSaveJS_MOCK/PATH/1")).toEqual("Reason=So+Good");
+		expect(getLocalStorageElseCookie("AutoSaveJS_MOCK/PATH/1_myCustomKey")).toEqual("Cause=Just+Cause");
 		
 		AutoSave.resetAll();
 
-		expect(getLocalStorageElseCookie("AutoSaveJS_")).toBeFalsy();
-		expect(getLocalStorageElseCookie("AutoSaveJS_myCustomKey")).toBeFalsy();
+		expect(getLocalStorageElseCookie("AutoSaveJS_MOCK/PATH/1")).toBeFalsy();
+		expect(getLocalStorageElseCookie("AutoSaveJS_MOCK/PATH/1_myCustomKey")).toBeFalsy();
 
 		aSave1.dispose( true );
 		aSave2.dispose( true );
@@ -2767,7 +2816,10 @@ describe("AutoSaveJS", function() {
 
 		//Should contain cookie prefix, expiry time etc.
 		expect(szString)
-		.toEqual("AutoSaveJS_=frmNameEntry=Nash&frmGenderEntry=&frmAddressEntry=&frmAgeEntry=10; expires=Fri, 31 Dec 9999 23:59:59 GMT; ");
+		.toEqual(
+			encodeURIComponent(_defaultCookieKey)+
+			"=frmNameEntry=Nash&frmGenderEntry=&frmAddressEntry=&frmAgeEntry=10; expires=Fri, 31 Dec 9999 23:59:59 GMT; "
+		);
 	});
 	
 	it('onPreStore hook contains sz string only if storage is local storage', function(){
@@ -3047,25 +3099,25 @@ describe("AutoSaveJS", function() {
 		});
 		
 		//Sanity - Ensure first time round the cookie is populated correctly
-		document.cookie = "AutoSaveJS_ = RESET; expires=Sat, 23 Mar 2050 00:00:00;";
+		document.cookie = encodeURIComponent(_defaultCookieKey)+" = RESET; expires=Sat, 23 Mar 2050 00:00:00;";
 		aSave.save();
 		var cookieValue = getBrowserCookie();
 		expect( cookieValue ).toEqual("frmNameEntry=Jonathan+%2F+Nash&frmGenderEntry=&frmAddressEntry=&frmAgeEntry=10");
 		
 		//On second invocation, should get nothing serialised
-		document.cookie = "AutoSaveJS_ = RESET; expires=Sat, 23 Mar 2050 00:00:00;";
+		document.cookie = encodeURIComponent(_defaultCookieKey)+" = RESET; expires=Sat, 23 Mar 2050 00:00:00;";
 		aSave.save();
 		var cookieValue = getBrowserCookie();
 		expect( cookieValue ).toBeFalsy();
 	
 		//On third invocation, should get cancelled out and preserve existing one
-		document.cookie = "AutoSaveJS_ = RESET;";
+		document.cookie = encodeURIComponent(_defaultCookieKey)+" = RESET;";
 		aSave.save();
 		var cookieValue = getBrowserCookie();
 		expect( cookieValue ).toEqual("RESET"); //i.e. unchanged
 		
 		//On fourth invocation, should get changed altogether
-		document.cookie = "AutoSaveJS_ = RESET; expires=Sat, 23 Mar 2050 00:00:00;";
+		document.cookie = encodeURIComponent(_defaultCookieKey)+" = RESET; expires=Sat, 23 Mar 2050 00:00:00;";
 		aSave.save();
 		var cookieValue = getBrowserCookie();
 		expect( cookieValue ).toEqual("frmNameEntry=Jonathan+%2F+Oscar&frmGenderEntry=&frmAddressEntry=&frmAgeEntry=10");
@@ -3105,27 +3157,27 @@ describe("AutoSaveJS", function() {
 		});
 		
 		//Sanity - Ensure first time round the cookie is populated correctly
-		localStorage.setItem("AutoSaveJS_", "RESET");
+		localStorage.setItem("AutoSaveJS_MOCK/PATH/1", "RESET");
 		aSave.save();
-		var dataValue = localStorage.getItem("AutoSaveJS_");
+		var dataValue = localStorage.getItem("AutoSaveJS_MOCK/PATH/1");
 		expect( dataValue ).toEqual("frmNameEntry=Jonathan+%2F+Nash&frmGenderEntry=&frmAddressEntry=&frmAgeEntry=10");
 		
 		//On second invocation, should get nothing serialised
-		localStorage.setItem("AutoSaveJS_", "RESET");
+		localStorage.setItem("AutoSaveJS_MOCK/PATH/1", "RESET");
 		aSave.save();
-		var dataValue = localStorage.getItem("AutoSaveJS_");
+		var dataValue = localStorage.getItem("AutoSaveJS_MOCK/PATH/1");
 		expect( dataValue ).toBeFalsy();
 	
 		//On third invocation, should get cancelled out and preserve existing one
-		localStorage.setItem("AutoSaveJS_", "RESET");
+		localStorage.setItem("AutoSaveJS_MOCK/PATH/1", "RESET");
 		aSave.save();
-		var dataValue = localStorage.getItem("AutoSaveJS_");
+		var dataValue = localStorage.getItem("AutoSaveJS_MOCK/PATH/1");
 		expect( dataValue ).toEqual("RESET"); //i.e. unchanged
 		
 		//On fourth invocation, should get changed altogether
-		localStorage.setItem("AutoSaveJS_", "RESET");
+		localStorage.setItem("AutoSaveJS_MOCK/PATH/1", "RESET");
 		aSave.save();
-		var dataValue = localStorage.getItem("AutoSaveJS_");
+		var dataValue = localStorage.getItem("AutoSaveJS_MOCK/PATH/1");
 		expect( dataValue ).toEqual("frmNameEntry=Jonathan+%2F+Oscar&frmGenderEntry=&frmAddressEntry=&frmAgeEntry=10");
 
 	});
@@ -3944,8 +3996,13 @@ describe("AutoSaveJS", function() {
 	// ensure tests work across all versions of jQuery old and new - when supplied as the parameter        
 	// ensure ALL form control types are covered wrt triggering an event
 	// multiple input radio group
-	
+
+
+	//TODO: ***
 	//TODO: What to do wrt using local storage on different pages of same site?
+	//TODO: ***
+
+
 	
 	 // Without IDs, server-side or client-side auto-saving, jQuery-UI + CKEditor etc. tests,
 	 // Github-integrated tests
@@ -3962,14 +4019,11 @@ describe("AutoSaveJS", function() {
 	 // perf test across browsers
 	 // d.ts file
 	 // Retain focus when serialising/deserialising
-	 // How you would add a hook to ensure data only sent when form is validated
 	 // Following settings are mutable and can be changed, following are not and will throw on mutation
-	 // Intermittent connectivity
 	 // jQuery won't do this : $("body").serialize() - see GitHub discussion for why needs a form
 	 //	jQuery also wont respect HTML5 new form attribute
 	 // Dynamically added controls/panels, dynamically expanded etc. - add hooks?
 	 // NodeJS? Using document property :/ ...
-	 // Multi-user scenario? Timestamp each request?
 	// incorporate JSON2.js !!
 	//TODO: Document if custom path, domains etc are set, will not get cleared out
 	//TODO: What to do if cookie storage is running out?	 
@@ -3986,22 +4040,15 @@ describe("AutoSaveJS", function() {
 
 
 /** DEMO / DOCS **/
-	 // Demo - regular interval saving, custom events
-	 // Demo - how to customise string with metadata by hooking into preSend, postLoad
 //TODO: Demo for custom hook where load can be delayed
 	 // Demo for doing control diff to send only changes or using angular is-pristine flag
-	//Demo where can cancel a serialisation where validation fails
-//TODO: Demo showing its use for undo-semantics
 //TODO: Demo for initial load value
 	 // Documentation - if you want to cache the controls used, store the onPreSerialize value, change parentElement?
 	 // Demo - send on regular interval by autoSaveTrigger: null and call save() myself every X seconds
-//TODO: Demo showing versioning of serialisation so old ones can be discarded
-//TODO: Demo showing multiple identical forms/divs in 1 page
 //TODO: Docs - "Not overly-strict on checking etc., trust your overrides. E.g. uniqueness of key in keyFunc"
 //TODO: Docs - Wrt multiple instances, 1-1 relation between AutoSave and data-store key. Identical items? Need multiple ASJ's.
 	 //demo where some controls loaded on demand
 	//'hook can be used for inspection without modifying' - no return value
-
   	 
 	 // incognito session? no cookies? (safari?)
 	 // If panels are lazy-loaded? Basically, bunch of tests for dynamically loaded controls to append/splice on save/load
@@ -4014,8 +4061,9 @@ describe("AutoSaveJS", function() {
 	 // IE7+, It's fast - performance tests... 
 	 
 	//TODO: Do a demo for skipping log levels, wiring into winston/simple logging 
-		//TODO: For all errors like this one, have a FAQ page with examples
-
+		//TODO: For all errors like this one, have a FAQ page with examples. IF you get "...", do...
+	//TODO: Bower
+	//TODO: Package.json
 	//TODO: Demo of calling store.resetStore() when page saved to server so doesn't auto-populate next time - if using cookies/local storage instead of ajax! **
 			
 	 //Have version, along with minified file has version at top. see ckEditor top.
@@ -4025,6 +4073,10 @@ describe("AutoSaveJS", function() {
 		//Demo using hooks to show a 'loading...' and 'saving...' indicator
 		//Add to NPM/Bower etc.
 			//TODO: What if like $(":input") and input added late?
+			
+			//TOOD: Test renaming AutoSave to another lib when importing?
+			
+			//TODO: Test with local storage and cookies disabled
 
 			//TODO: Example with loading and unloading of HTML content / dynamic content - e.g. flicking through tabs. jQuery UI tabs?
 

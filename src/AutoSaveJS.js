@@ -5,7 +5,7 @@
 * Licensed under the MIT license.
 */
 
-// Begin cross-module compatability
+// Module-loader compatability prelude
 (function (root, definition) {
     if (typeof define === 'function' && define.amd) {
         define(definition);
@@ -25,11 +25,11 @@
 		this.__getRootControlsFunc 	= undefined; //Never null after init | Function invoked will return an array of top-level controls requested by user
 		this.__debounceInterval 	= undefined;
 		this.__debounceTimeoutHandle= undefined;
-		this.__dataStoreKeyFunc 	= undefined; 	//Never null after init
+		this.__dataStoreKeyFunc 	= undefined; //Never null after init
 		this.__onInitialiseInvoked	= undefined;
 		this.__pendingInitRoutines	= 0;
 
-		//Bound functions
+		//Cached, bound functions
 		this.__invokeExtBound		= undefined;
 		this.__resetNotificationDisplayBound 		= undefined;
 		this.__handleDebouncedEventBound 	 		= undefined;
@@ -44,7 +44,6 @@
 		this.__isPendingSave		= undefined;
 		this.__autoToggleState		= undefined; 	//Null => interval not elapsed, true => auto toggle will run, false => interval elapsed + toggle will not run
 		this.__warnNoStore			= undefined; 	//Will be true if a store was expected but wasn't present
-			
 		this.__clearEmptyValuesOnLoad				= undefined; //When keys dont have a value in the data store (e.g....&name=&...), clear out those elements on load
 		
 		//InvokeExtBound is not initialised yet so can't use __invokeExt
@@ -121,14 +120,14 @@
 	};
 
 	//Runs a save on-demand
-	AutoSave.prototype.save = function() {
+	AutoSave.prototype.save = function(){
 
 		this.__sendLog( AutoSave.LOG_INFO, "Executing save : explicitly triggered" );
 		this._executeSave();
 	};
 	
 	//Forces a full load of supplied data
-	AutoSave.prototype.load = function() {
+	AutoSave.prototype.load = function(){
 				
 		var cb = null; //Callback
 
@@ -146,7 +145,7 @@
 				this.__sendLog( AutoSave.LOG_INFO, "User aborted the load in the onPreLoad handler" );
 				return; //Cancel the load
 			}
-			else if ( rawUserInput === undefined ) { 
+			else if ( rawUserInput === undefined || rawUserInput === true ) { 
 				
 				//Do nothing - continue with the load
 			}
@@ -236,7 +235,7 @@
 		}
 	};
 	
-	AutoSave.prototype.resetStore = function() {
+	AutoSave.prototype.resetStore = function(){
 		
 		var clearCallback = function(){};
 		
@@ -281,7 +280,7 @@
 				this._registerInitQueue( -1 );
 				return; //Cancel the load
 			}
-			else if ( rawUserInput === undefined ) { 
+			else if ( rawUserInput === undefined || rawUserInput === true ) { 
 				
 				//Do nothing - continue with the load
 			}
@@ -354,7 +353,7 @@
 				this.__sendLog( AutoSave.LOG_INFO, "User aborted toggle no-storage bar" );
 				return; //Cancel toggling it
 			}
-			else if ( rawUserInput === undefined ) { 
+			else if ( rawUserInput === undefined || rawUserInput === true) { 
 			
 				//Do nothing - continue with toggling as normal
 			}
@@ -392,7 +391,7 @@
 				this.__sendLog( AutoSave.LOG_INFO, "User aborted toggle save bar" );
 				return; //Cancel toggling it
 			}
-			else if ( rawUserInput === undefined ) { 
+			else if ( rawUserInput === undefined || rawUserInput === true) { 
 			
 				//Do nothing - continue with toggling as normal
 			}
@@ -423,7 +422,7 @@
 		}
 	};
 	
-	AutoSave.prototype._resetNotificationDisplay = function() {
+	AutoSave.prototype._resetNotificationDisplay = function(){
 		
 		if ( this.__autoToggleState == true ){
 			
@@ -523,7 +522,7 @@
 		}
 	};
 	
-	AutoSave.prototype._updateSaveNotification = function ( saveNotificationOpts ){
+	AutoSave.prototype._updateSaveNotification = function( saveNotificationOpts ){
 
 		var renderOpts = AutoSave.cloneObj( AutoSave.DEFAULT_AUTOSAVE_SHOW ); //clone for modifications
 					
@@ -594,11 +593,12 @@
 		}
 	};
 
-	AutoSave.prototype._executeSave = function() {
+	AutoSave.prototype._executeSave = function(){
 	
 		if ( this.__saveInProgress ){
 			
-			this.__sendLog( AutoSave.LOG_WARN, "Save was postponed as one already in progress. (Did you remember to invoke the saveComplete callback?)" );
+			this.__sendLog( AutoSave.LOG_WARN, 
+			"Save was postponed as one already in progress. (Did you remember to invoke the saveComplete callback?)" );
 			
 			this.__isPendingSave = true;
 			
@@ -618,18 +618,18 @@
 			this.__sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPreSerialize" );
 			var rawUserInput = cb( controlsArr );
 
-			//See @FUN Semantics
-			if (rawUserInput === false) {
+			//See @FUNC Semantics
+			if ( rawUserInput === false ) {
 
 				this.__sendLog( AutoSave.LOG_INFO, "User aborted the save in the onPreSerialize handler" );
 				this._saveStartFinally( false );
 				return; //Cancel the save
 			}
-			else if (rawUserInput === undefined) { 
+			else if ( rawUserInput === undefined || rawUserInput === true ) { 
 			
 				//Do nothing - continue with the save
 			}
-			else if (rawUserInput === null) { //User override
+			else if ( rawUserInput === null ) { //User override
 			
 				//Treat as empty - blank out user controls
 				this.__sendLog( AutoSave.LOG_WARN, "User specified an empty override payload for save in the onPreSerialize handler" );
@@ -665,7 +665,7 @@
 				this._saveStartFinally( false );
 				return; //Cancel the save
 			}
-			else if ( rawUserInput === undefined ) { 
+			else if ( rawUserInput === undefined || rawUserInput === true ) { 
 			
 				//Do nothing - continue with the save
 			}
@@ -681,7 +681,7 @@
 		this.__theStore.save( szData, this._onSaveCompleted.bind(this) );
 	};
 
-	AutoSave.prototype._onSaveCompleted = function() {
+	AutoSave.prototype._onSaveCompleted = function(){
 
 		//Inspection hook for what was sent - should be invoked asychronously after return from store
 		var cb = this.__callbacks.onPostStore;
@@ -797,13 +797,13 @@
 		}
 	};
 	
-	AutoSave.prototype.__sendLog = function ( level, __variadic_args__ ){
+	AutoSave.prototype.__sendLog = function( level, __variadic_args__ ){
 
 		 var cb = this.__callbacks.onLog;
 		 
 		 var args;
 		 
-		 if ( typeof cb != "undefined" ) {
+		 if ( cb ) {
 			 
 			 var funcToCall;
 			 var funcArgs;
@@ -838,7 +838,7 @@
 				 //Abort
 				 return;
 			 }
-			 else if ( ret === undefined ){
+			 else if ( ret === undefined || ret === true ){
 				 
 				 //continue
 				 args = arguments;
@@ -996,7 +996,7 @@
 		}
 	};
 
-	AutoSave.prototype._hookUnloadListener = function ( hookOn ){
+	AutoSave.prototype._hookUnloadListener = function( hookOn ){
 		
 		if ( hookOn )
 			window.addEventListener("beforeunload", this.__onUnloadingBound );
@@ -1004,7 +1004,7 @@
 			window.removeEventListener("beforeunload", this.__onUnloadingBound );
 	};
 	
-	AutoSave.prototype._hookListeners = function ( hookOn, seekExternalFormElements ){ 
+	AutoSave.prototype._hookListeners = function( hookOn, seekExternalFormElements ){ 
 
 		this.__sendLog( AutoSave.LOG_DEBUG, 
 						( hookOn?"Hooking":"Unhooking")+
@@ -1021,7 +1021,7 @@
 		}
 	};
 	
-	AutoSave.prototype._hookSingleControl = function ( child, hookOn ){
+	AutoSave.prototype._hookSingleControl = function( child, hookOn ){
 
 		if ( hookOn ) {
 			
@@ -1037,8 +1037,8 @@
 		}
 	};
 	
-	//Standard name for event handler -- TODO: Still works?
-	AutoSave.prototype.handleEvent = function ( ev ){
+	//Standard name for event handler
+	AutoSave.prototype.handleEvent = function( ev ){
 		
 		this.__sendLog( AutoSave.LOG_DEBUG, "Handling raw control input event", ev );
 		
@@ -1122,6 +1122,9 @@
 		
 	//Returns the serialized string in the standard format(?) - 
 	//Must return a string instance - even if empty - as callback hooks assume it
+	
+	//TODO: make into a static?
+	
 	AutoSave.prototype.serialize = function( rootControlsArr ){
 		
 		var fieldData = [[],[]];
@@ -1206,7 +1209,7 @@
 		this.__currStoreKeyFunc = keyFunc;
 	}
 		
-	_LocalStore.prototype.load = function ( loadCompleted ){
+	_LocalStore.prototype.load = function( loadCompleted ){
 
 		var key = this.__currStoreKeyFunc();
 
@@ -1215,7 +1218,7 @@
 		loadCompleted( data );
 	};
 		
-	_LocalStore.prototype.save = function ( data, saveCompleted ) {
+	_LocalStore.prototype.save = function( data, saveCompleted ) {
 
 		//AutoSaveJS-specific prefix
 		var key = this.__currStoreKeyFunc();
@@ -1335,7 +1338,7 @@
 		}
 	};
 		
-	AutoSave.whenDocReady = function whenDocReady( funcToRun ){
+	AutoSave.whenDocReady = function( funcToRun ){
 
 		//We can't log too prematurely as onLog handling will not be in place yet
 		if ( document.readyState == "complete" ){
@@ -1362,12 +1365,15 @@
 
 	AutoSave._getKeyFunc = function( parentElems, rawUserOption ){
 		
+		//Create a prefix so we can uniquely identify storage by AutoSaveJS and for this particular page
+		var mandatedPrefix = AutoSave.DEFAULT_KEY_PREFIX + AutoSave.getUrlPath();
+		
 		//User-supplied option takes precedence - we dont validate uniqueness etc. but trust what they're doing
 		if ( rawUserOption !== undefined ){
 		
 			if ( typeof( rawUserOption ) == "string" ){
 				
-				var fullKey = AutoSave.DEFAULT_KEY_PREFIX + rawUserOption;
+				var fullKey = mandatedPrefix + "_" + rawUserOption;
 				
 				AutoSave.log( AutoSave.LOG_INFO, "Using static provided value for datastore key", fullKey );
 		
@@ -1383,7 +1389,7 @@
 				return function(){
 					
 					//Dynamically recalc every time
-					var val = AutoSave.DEFAULT_KEY_PREFIX + rawUserOption();
+					var val = mandatedPrefix + "_" + rawUserOption();
 
 					AutoSave.log( AutoSave.LOG_DEBUG, "Calculated dynamic datastore key to use", val );
 					
@@ -1413,11 +1419,11 @@
 			//Non-form element or form without name, default the key
 			if ( keyValue ){
 				
-				keyValue = AutoSave.DEFAULT_KEY_PREFIX + keyValue;
+				keyValue = mandatedPrefix + "_" + keyValue;
 			}
 			else{
 				
-				keyValue = AutoSave.DEFAULT_KEY_PREFIX;
+				keyValue = mandatedPrefix;
 			}
 			
 			AutoSave.log( AutoSave.LOG_INFO, "Using calculated value for datastore key", keyValue );
@@ -1518,7 +1524,7 @@
 		}
 	};
 
-	AutoSave._encodeFieldDataToString = function _encodeFieldDataToString( fieldData ){
+	AutoSave._encodeFieldDataToString = function( fieldData ){
 			
 		var fieldDataStr = "";
 		for( var fieldIdx in fieldData[ 0 ] ){
@@ -1537,7 +1543,7 @@
 		return fieldDataStr;
 	};
 
-	AutoSave._decodeFieldDataFromString = function _decodeFieldDataFromString( fieldDataStr ){
+	AutoSave._decodeFieldDataFromString = function( fieldDataStr ){
 		
 		fieldDataStr = fieldDataStr.replace( /\+/g,"%20" );
 		
@@ -1566,7 +1572,7 @@
 		return fieldData;
 	};
 
-	AutoSave.addSerialisedValue = function addSerialisedValue( szString, key, value ){
+	AutoSave.addSerialisedValue = function( szString, key, value ){
 		
 		if ( !key ) {
 			
@@ -1596,7 +1602,7 @@
 	};
 
 	//Will ALWAYS return a non-null array
-	AutoSave.getSerialisedValues = function getSerialisedValues( szString, key ){
+	AutoSave.getSerialisedValues = function( szString, key ){
 		
 		if ( !key ) {
 			
@@ -1731,7 +1737,7 @@
 		}
 	};
 
-	AutoSave._parseExternalElemsArg = function _parseExternalElemsArg( seekExternalFormElements ){
+	AutoSave._parseExternalElemsArg = function( seekExternalFormElements ){
 		
 		//Default hook external controls to true
 		if ( seekExternalFormElements === undefined )
@@ -1747,7 +1753,7 @@
 
 	//From MDN - @https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API#Feature-detecting_localStorage
 	//Even though local storage is supported in browsers AutoSaveJS supports, still need to check for Safari
-	AutoSave.isLocalStorageAvailable = function isLocalStorageAvailable() {
+	AutoSave.isLocalStorageAvailable = function() {
 		
 		if ( AutoSave.__cachedLocalStorageAvailable === undefined ) {
 		
@@ -1785,7 +1791,7 @@
 	};
 
 	//From Modernizr
-	AutoSave.isCookieStorageAvailable = function isCookieStorageAvailable(){
+	AutoSave.isCookieStorageAvailable = function(){
 		
 		if ( AutoSave.__cachedCookiesAvailable === undefined ) {
 		
@@ -1935,7 +1941,7 @@
 		return externalElems;
 	};
 
-	AutoSave.getCtor = function ( constructor , __variadic_args__ ){
+	AutoSave.getCtor = function( constructor , __variadic_args__ ){
 		
 		var currArgs = AutoSave.toArray( arguments, 1 ); //Bypass constructor argument
 		
@@ -1947,7 +1953,7 @@
 		};
 	};
 
-	AutoSave.toArray = function ( arrayLike, skipStartEntries ){
+	AutoSave.toArray = function( arrayLike, skipStartEntries ){
 		
 		var currArgs = [];
 		
@@ -1960,7 +1966,7 @@
 		return currArgs;
 	};
 
-	AutoSave._logToConsole = function ( logLevel, __variadic_args__ ){
+	AutoSave._logToConsole = function( logLevel, __variadic_args__ ){
 
 		var args = AutoSave.toArray( arguments, 1 ); //Skip logLevel
 
@@ -1982,7 +1988,7 @@
 	};
 
 	//Exactly 1 of renderOpts.msg or entireHtml must be non-null
-	AutoSave._createNotification = function _createNotification( renderOpts, entireHtml ){
+	AutoSave._createNotification = function( renderOpts, entireHtml ){
 		
 		var elem;
 		if ( entireHtml ) {
@@ -2028,7 +2034,7 @@
 		return elem;
 	};
 
-	AutoSave._styleNotificationElem = function _styleNotificationElem(elem){
+	AutoSave._styleNotificationElem = function(elem){
 		
 		var s = elem.style;
 		
@@ -2042,7 +2048,7 @@
 	};
 
 	//IE doesnt support Object.assign so implement ourself. Assumes a shallow clone.
-	AutoSave.cloneObj = function cloneObject( obj ){
+	AutoSave.cloneObj = function( obj ){
 		
 		var ret = {};
 		for(var key in obj){
@@ -2050,6 +2056,11 @@
 		}
 		return ret;
 	};
+	
+	AutoSave.getUrlPath = function(){
+		
+		return window.location.pathname;
+	}
 
 	AutoSave.LOG_DEBUG	= "debug";
 	AutoSave.LOG_INFO	= "info";
@@ -2079,7 +2090,7 @@
 	AutoSave.__defaultListenOpts = { passive:true, capture:true };	//Let browser know we only listen passively so it can optimise
 	AutoSave.__cachedLocalStorageAvailable	= undefined;
 	AutoSave.__cachedCookiesAvailable		= undefined;
-	AutoSave.Version						= "1.0.0";
+	AutoSave.version						= "1.0.0";
 
 	return AutoSave;
 })); //End of cross-module compatability
