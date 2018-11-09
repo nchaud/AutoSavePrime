@@ -597,7 +597,7 @@ describe("AutoSaveJS", function() {
 			
 			aSave.save(); //Should save to cookie
 			
-			aSave.dispose(); //Should NOT clear local storage
+			aSave.dispose(false); //Should NOT clear local storage
 		}
 		
 		//In 'another' session, load it
@@ -978,7 +978,7 @@ describe("AutoSaveJS", function() {
 		aSave.save();
 		
 		expect( localStorage.getItem("AutoSaveJS_MOCK/PATH/1") ).toEqual( "fullName=John+Wayne&description=~Green%40fields~" );
-		aSave.dispose();
+		aSave.dispose( false ); //Keep the storage
 
 		//Mock out (again) the location path temporarily to simulate another page
 		var original = AutoSave.getUrlPath;
@@ -993,7 +993,7 @@ describe("AutoSaveJS", function() {
 			
 			aSave2.save();
 			expect( localStorage.getItem("AutoSaveJS_MOCK/PATH/2") ).toEqual( "fullName=Bill+Wagner&description=Blue+days" );
-			aSave2.dispose();
+			aSave2.dispose( false ); //Keep the storage
 		}finally{
 			
 			AutoSave.getUrlPath = original;
@@ -1428,8 +1428,8 @@ describe("AutoSaveJS", function() {
 
 		jasmine.clock().tick(60*1000); //Let the auto-save debounce elapse
 		
-		inst1.dispose();
-		inst2.dispose();
+		inst1.dispose(false);
+		inst2.dispose(false);
 				
 		//Recreate the default state HTML
 		resetSandbox();
@@ -1764,7 +1764,31 @@ describe("AutoSaveJS", function() {
 		expect(console.info).not.toHaveBeenCalledWith( 'Executing save: after element(s) changed' );
 		expect(console.info).toHaveBeenCalledWith("Some", {obj:12345});
 	});
-  
+
+	it('onLog handler set to false will disable all logging', function(){
+		
+		//Arrange - Create and set a value on the input text box
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox(testFragment);
+		
+		//Watch the console for messages
+		var spy = spyOn( console, "info" );
+				
+		var defaultOpt = {
+			onLog:function(){return false}
+		};
+		
+		var autoSave = createAutoSave(null, defaultOpt);
+		
+		//Setting a value should trigger an auto-save which should log information msg about the same
+		setValue("[name='musician']", "Mozart");
+		jasmine.clock().tick(60*1000);
+		expect(console.info).not.toHaveBeenCalled();
+	});
+
+	
 	it('onLog callback option behaviour is correct - debug level will revert to \'log\' if debug not available', function(){
 
 		var level = console.debug ? "debug" : "info";
@@ -1923,8 +1947,6 @@ describe("AutoSaveJS", function() {
 		expect(warnArgs.filter(function(x){return x[0]==infoMsg}).length).toEqual(0);
 		expect(errorArgs.filter(function(x){return x[0]==infoMsg}).length).toEqual(0);
 	});
-
-
 	
 	it('onLog callback option object can override message', function(){
 	

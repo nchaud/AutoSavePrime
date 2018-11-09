@@ -181,9 +181,17 @@
 			this.__sendLog( AutoSave.LOG_WARN, "Error unhooking listeners", e );
 		}
 
-		//Free this key to be re-used by another AutoSave instance
-		try {
+		//Clear any pending saves
+		if ( this.__debounceTimeoutHandle ) {
 			
+			clearTimeout( this.__debounceTimeoutHandle );
+			this.__debounceTimeoutHandle = null;
+		}
+
+		//We always clear the key as this instance is now useless and another instance may want to attach to this root control set
+		//Otherwise, if someone disposes this instances but decides to keep the data, they cant do anything with it
+		try {
+				
 			if ( this.__dataStoreKeyFunc ) {
 				
 				var key = this.__dataStoreKeyFunc();
@@ -197,22 +205,16 @@
 		}
 		catch( e ){
 			
-			this.__sendLog( AutoSave.LOG_WARN, "Error freeing key", e );
+			this.__sendLog( AutoSave.LOG_WARN, "Error resetting store", e );
 		}
-
-		//Clear any pending saves
-		if ( this.__debounceTimeoutHandle ) {
-			
-			clearTimeout( this.__debounceTimeoutHandle );
-			this.__debounceTimeoutHandle = null;
-		}
-		
-		//We don't clear the store by default
+	
+		//We clear the store by default
 		try {
 
-			if ( deleteDataStore === true ){
+			if ( deleteDataStore !== false ){
 				
-				this.resetStore();
+				//Empty what's in the store currently
+				this.resetStore();	
 			}
 		}
 		catch( e ){
@@ -711,20 +713,20 @@
 		if ( dataStore === undefined ){
 			
 			if ( hasLocalStorage )
-				this.__theStore = new _LocalStore( this.__dataStoreKeyFunc );
+				this.__theStore = new _LocalStore( this.__dataStoreKeyFunc, this.__invokeExtBound );
 			else if ( hasCookieStorage )
-				this.__theStore = new _CookieStore( this.__dataStoreKeyFunc );
+				this.__theStore = new _CookieStore( this.__dataStoreKeyFunc, this.__invokeExtBound );
 			else {
 				
 				this.__warnNoStore = true;
-				this.__theStore = new _NoStore();
+				this.__theStore = new _NoStore( this.__invokeExtBound );
 			}
 		}
 		//If expicitly null, don't load or store anywhere
 		else if ( dataStore === null ){
 
 			//Do nothing
-			this.__theStore = new _NoStore();
+			this.__theStore = new _NoStore( this.__invokeExtBound );
 		}
 		else if ( typeof( dataStore ) == "object" ){ // Url-based / custom
 			
@@ -741,26 +743,26 @@
 				//Take user's preference into account first
 				if ( hasCookieStorage && dataStore.preferCookies === true ) {
 					
-					this.__theStore = new _CookieStore( this.__dataStoreKeyFunc );
+					this.__theStore = new _CookieStore( this.__dataStoreKeyFunc, this.__invokeExtBound );
 				}
 				else if ( hasLocalStorage ) {
 					
-					this.__theStore = new _LocalStore( this.__dataStoreKeyFunc );
+					this.__theStore = new _LocalStore( this.__dataStoreKeyFunc, this.__invokeExtBound );
 				}
 				else if ( hasCookieStorage ) {
 					
-					this.__theStore = new _CookieStore( this.__dataStoreKeyFunc );
+					this.__theStore = new _CookieStore( this.__dataStoreKeyFunc, this.__invokeExtBound );
 				}
 				else {
 					
 					this.__warnNoStore = true;
-					this.__theStore = new _NoStore();
+					this.__theStore = new _NoStore( this.__invokeExtBound );
 				}
 			}
 			else if ( dataStore.load === null && dataStore.save === null ) {
 				
 				//User explicitly does not want to load from anywhere
-				this.__theStore = new _NoStore();
+				this.__theStore = new _NoStore( this.__invokeExtBound );
 			}
 			else if ( typeof( dataStore.load ) != "function" || typeof( dataStore.save ) != "function" ) {
 
@@ -768,7 +770,10 @@
 			}
 			else {
 				
-				this.__theStore = this.__invokeExt( AutoSave.getCtor ( _CustomStore, this.__dataStoreKeyFunc, dataStore.save, dataStore.load ) );
+				this.__theStore = 
+					this.__invokeExt( 
+						AutoSave.getCtor ( 
+							_CustomStore, this.__dataStoreKeyFunc, dataStore.save, dataStore.load, this.__invokeExtBound ) );
 			}
 		}
 		else {
@@ -1140,13 +1145,14 @@
 	};
 	
 	/* Additional 'classes' */
-	function _CookieStore( keyFunc ){
+	function _CookieStore( keyFunc, logSink ){
 		
-		AutoSave.log( AutoSave.LOG_INFO, "Using cookie storage as local store" );
+		this._logSink = logSink;
+		this._logSink( AutoSave.LOG_INFO, "Using cookie storage as local store" );
 		
 		if ( !navigator.cookieEnabled ){
 			
-			AutoSave.log( AutoSave.LOG_WARN, "Cookie Store requested but cookies not enabled." );
+			this._logSink( AutoSave.LOG_WARN, "Cookie Store requested but cookies not enabled." );
 		}
 
 		this.__currStoreKeyFunc = keyFunc;
@@ -1192,7 +1198,7 @@
 
 		var cookieParamsStr = AutoSave._buildFullCookieStr( key, data, { neverExpire: true} );
 		
-		AutoSave.log( AutoSave.LOG_DEBUG, "Created cookie params string", cookieParamsStr );
+		this._logSink( AutoSave.LOG_DEBUG, "Created cookie params string", cookieParamsStr );
 		
 		return cookieParamsStr;
 	};
@@ -1202,9 +1208,10 @@
 		return this.save( null, clearCompleted );
 	};
 
-	function _LocalStore( keyFunc ){
+	function _LocalStore( keyFunc, logSink ){
 		
-		AutoSave.log( AutoSave.LOG_INFO, "Using Browser Local Storage as local store" );
+		this._logSink = logSink;
+		this._logSink( AutoSave.LOG_INFO, "Using Browser Local Storage as local store" );
 		
 		this.__currStoreKeyFunc = keyFunc;
 	}
@@ -1251,9 +1258,10 @@
 		return this.save( null, clearCompleted );
 	};
 
-	function _NoStore( ){
+	function _NoStore( logSink ){
 		
-		AutoSave.log( AutoSave.LOG_INFO, "Using a no-op data store" );
+		this._logSink = logSink;
+		this._logSink( AutoSave.LOG_INFO, "Using a no-op data store" );
 	}
 	
 	_NoStore.prototype.load = function( loadCompleted ){
@@ -1277,9 +1285,11 @@
 	};
 	
 	//Assumes save and load parameters are valid functions
-	function _CustomStore( keyFunc, userSaveFunc, userLoadFunc ){
+	function _CustomStore( keyFunc, userSaveFunc, userLoadFunc, logSink ){
 		
-		AutoSave.log( AutoSave.LOG_INFO, "Using a custom store as the local store" );
+		this._logSink = logSink;
+		
+		this._logSink( AutoSave.LOG_INFO, "Using a custom store as the local store" );
 		
 		if ( userLoadFunc.length != 2 ) {
 			
@@ -1344,7 +1354,6 @@
 		if ( document.readyState == "complete" ){
 			
 			funcToRun();
-			AutoSave.log( AutoSave.LOG_DEBUG, "Document is ready - completed AutoSave initialisation sequence" );
 		}
 		else {
 					
