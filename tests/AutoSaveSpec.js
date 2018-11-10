@@ -4015,20 +4015,11 @@ describe("AutoSaveJS", function() {
 	//ensure name is available on NPM - e.g. AutoSavePrime
 	// Unselected select remains unselected 
 	//check jQuery implementation of :input selector
-	// ensure tests work across all versions of jQuery old and new - when supplied as the parameter        
-	// ensure ALL form control types are covered wrt triggering an event
 	// multiple input radio group
 
-
-	//TODO: ***
-	//TODO: What to do wrt using local storage on different pages of same site?
-	//TODO: ***
-
-
-	
+		//Demo using multiple instances on same domain
 	 // Without IDs, server-side or client-side auto-saving, jQuery-UI + CKEditor etc. tests,
 	 // Github-integrated tests
-	 // No Gung-ho rewrites ; backwards compatability are a core *feature* of this library
 	 // Never break backwards compatability in future versions : never-break-backwards-compat.com - compatpact.com
 	 // TODO: Google "Reading/writing to cookies with full unicode support" and ensure we cover too
 	 // TODO: Test all browsers on browser-stack
@@ -4036,8 +4027,6 @@ describe("AutoSaveJS", function() {
 	 // addEventListener / removeEventListener not supported by pre-IE8 - make it compatible there too!! (?)
 		// Adding support for older browsers via hooks - 
 		// https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
-	 // Doesn't require jQuery, doesn't require a form, HTML5 form attribute support for inputs outside the form
-	 // Documentation for how you would deal with multi-user scenario
 	 // perf test across browsers
 	 // d.ts file
 	 // Retain focus when serialising/deserialising
@@ -4071,7 +4060,7 @@ describe("AutoSaveJS", function() {
 //TODO: Docs - Wrt multiple instances, 1-1 relation between AutoSave and data-store key. Identical items? Need multiple ASJ's.
 	 //demo where some controls loaded on demand
 	//'hook can be used for inspection without modifying' - no return value
-  	 
+		
 	 // incognito session? no cookies? (safari?)
 	 // If panels are lazy-loaded? Basically, bunch of tests for dynamically loaded controls to append/splice on save/load
 	 // TODO: JSLint it.
