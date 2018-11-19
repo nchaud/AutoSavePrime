@@ -4010,6 +4010,8 @@ describe("AutoSaveJS", function() {
 	//'PROGRAMATIC CHANGES HANDLING? DIFF FEATURE? V2?
 	// button serialisation! ALL other inputs covered? toggle button a reason to do button?
 
+	//TODO: If logging not available initially and only available after a while?
+	
 	//Many of these in browser for browser-based integration tests OR send native key-press/mouse-moves
 	//Changes due to .Load() should not call .Save() 
 	//ensure name is available on NPM - e.g. AutoSavePrime
@@ -4020,7 +4022,7 @@ describe("AutoSaveJS", function() {
 		//Demo using multiple instances on same domain
 	 // Without IDs, server-side or client-side auto-saving, jQuery-UI + CKEditor etc. tests,
 	 // Github-integrated tests
-	 // Never break backwards compatability in future versions : never-break-backwards-compat.com - compatpact.com
+
 	 // TODO: Google "Reading/writing to cookies with full unicode support" and ensure we cover too
 	 // TODO: Test all browsers on browser-stack
 	 // Have a diagram of the hooks and where functionality belongs (e.g. AutoSave.Load)
@@ -4045,7 +4047,6 @@ describe("AutoSaveJS", function() {
 //FIRST PRIORITY FOR LIBRARY IS WORKING IN ALL SCENARIOS, OUT OF BOX - THEN ALLOW THEM TO TWEAK PARAMTERS FOR PERFORMANCE
 	 
 //TODO: Localisation
-//TODO: get control values just for controls that've changed?
 //TODO: test dispose() causes no more save invocations
 //TODO: If any errors, pipe them somewhere...? Catch errors in callback functions?
 
@@ -4059,7 +4060,6 @@ describe("AutoSaveJS", function() {
 //TODO: Docs - "Not overly-strict on checking etc., trust your overrides. E.g. uniqueness of key in keyFunc"
 //TODO: Docs - Wrt multiple instances, 1-1 relation between AutoSave and data-store key. Identical items? Need multiple ASJ's.
 	 //demo where some controls loaded on demand
-	//'hook can be used for inspection without modifying' - no return value
 		
 	 // incognito session? no cookies? (safari?)
 	 // If panels are lazy-loaded? Basically, bunch of tests for dynamically loaded controls to append/splice on save/load
@@ -4083,23 +4083,15 @@ describe("AutoSaveJS", function() {
 		//Link to perf test vs jquery Serialize/Deserialize
 		//Demo using hooks to show a 'loading...' and 'saving...' indicator
 		//Add to NPM/Bower etc.
-			//TODO: What if like $(":input") and input added late?
-			
-			//TOOD: Test renaming AutoSave to another lib when importing?
-			
-			//TODO: Test with local storage and cookies disabled
 
-			//TODO: Example with loading and unloading of HTML content / dynamic content - e.g. flicking through tabs. jQuery UI tabs?
+		//TOOD: Test renaming AutoSave to another lib when importing?
+		//TODO: Test with local storage and cookies disabled
+		//TODO: Example with loading and unloading of HTML content / dynamic content - e.g. flicking through tabs. jQuery UI tabs?
 
-			//Add document: If you specify the root set as ("#container form"), all form instances must be present before AutoSave created but 
-			//				contents of each form can change
-			//				Else you can just use the custom callback function every time if even the root set is dynamic.
-			//DOcument: Exceptions during initialisation will cause onInit to not be invoked
 	//TODO: Demo with diffing logic
 	 // As a cheap hosted-service plugin? Over SSL?
 	 // WP plugin wrapper? Give "Free" to top theme authors
 	 // Create fiddle - starter code for server-side
-	//TODO: All log messages should be constants (so they can be selectively customised on the onLog if needed by user)
 			 
   });
 });

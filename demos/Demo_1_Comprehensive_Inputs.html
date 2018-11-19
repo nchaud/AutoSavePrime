@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+  "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+  <title>AutoSaveJS Demos | Comprehensive Inputs</title>
+
+  <script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
+
+  <script type="text/javascript" src="../lib/jquery-3.1.1.js"></script>
+  <script type="text/javascript" src="../src/AutoSaveJS.js"></script>
+</head>
+
+<body>
+
+	<h3>AutoSaveJS Feedback Form </h3>
+
+	<div style="width:50%">
+	
+		<div class="alert alert-info" role="alert">
+		  <b>Note:</b> This form will autosave as you go !
+		  
+		  <button>Slide toggle off</button>
+		</div>
+		
+		<label for="basic-url">Please enter your name</label>
+		<div class="input-group">
+		  <span class="input-group-addon" id="basic-addon1">@</span>
+		  <input type="text" name='name' class="form-control" placeholder="asdf is fine too">
+		</div>
+
+		<br />
+		
+		<label for="basic-url">Please select your status</label>
+		<div class="input-group">
+		  
+		  <div>
+			<label>XXX...</label>
+			<input type='radio' name='status' value='single'>Single
+		  </div>
+		  
+		  <div>
+		  <input type='radio' name='status' value='married'>Married
+		  </div>
+		  
+		  <div>
+		  <input type='radio' name='status' value='divorced'>Divorced
+		  </div>
+
+		  <div>
+		  <input type='radio' name='status' value='divorced & remarried'>Divorced &amp; Remarried
+		  </div>
+
+		  <div>
+		  <input type='radio' name='status' value='divorced,remarried & divorced'>Divorced, Remarried &amp; Divorced
+		  </div>
+
+		  <div>
+		  <input type='radio' name='status' value='divorced,remarried,divorced&remarried'>Divorced, Remarried, Divorced &amp; Remarried
+		  </div>
+
+		  <div>
+		  <input type='radio' name='status' value='other'>Don't ask</input>
+		  </div>
+		</div>
+
+		<br />
+		
+		<label for="basic-url">Please select your age group</label>
+		<div class="input-group">
+		  <select class="form-control" name='age_group'>
+			<option disabled selected></option>
+			<option value='15-25'>15-25</option>
+			<option value='26-32'>26-32</option>
+			<option value='33-39'>33-39</option>
+			<option value='40-58'>40-58</option>
+			<option value='59+'>59+</option>
+		  </select>
+		</div>
+
+		<br />
+
+		<div class="input-group">
+		  <span class="input-group-addon">$</span>
+		  <input type="text" class="form-control" aria-label="Amount (to the nearest dollar)">
+		  <span class="input-group-addon">.00</span>
+		</div>
+
+		<label for="basic-url">Your vanity URL</label>
+		<div class="input-group">
+		  <span class="input-group-addon" id="basic-addon3">https://example.com/users/</span>
+		  <input type="text" class="form-control" id="basic-url" aria-describedby="basic-addon3">
+		</div>
+
+		<button>Submit</button>		
+		
+	</div>
+
+</body>
+</html>

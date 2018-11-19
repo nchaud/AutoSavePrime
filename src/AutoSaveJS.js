@@ -1,8 +1,8 @@
 /*
 * AutoSaveJS - https://github.com/nchaud/AutoSaveJS
-*
+* Version: 1.0.0
 * Copyright (c) 2018 Numaan Chaudhry
-* Licensed under the MIT license.
+* Licensed under the MIT license
 */
 
 // Module-loader compatability prelude
@@ -16,7 +16,7 @@
     }
 }(this, function () {
 
-	"use strict";
+	"use strict";			//TODO: CONFORM TO THIS !!!
 
 	function AutoSave( rootControls, opts ){
 
@@ -46,7 +46,7 @@
 		this.__warnNoStore			= undefined; 	//Will be true if a store was expected but wasn't present
 		this.__clearEmptyValuesOnLoad				= undefined; //When keys dont have a value in the data store (e.g....&name=&...), clear out those elements on load
 		
-		//InvokeExtBound is not initialised yet so can't use __invokeExt
+		//InvokeExtBound is not initialised yet so can't use _invokeExt
 		AutoSave.whenDocReady ( this._initialise.bind( this, rootControls, opts ) );		
 	}
 	
@@ -70,7 +70,7 @@
 
 			this.__resetNotificationDisplayBound = this._resetNotificationDisplay.bind( this );
 			this.__handleDebouncedEventBound = this._handleDebouncedEvent.bind( this );
-			this.__invokeExtBound = this.__sendLog.bind( this );
+			this.__invokeExtBound = this._sendLog.bind( this );
 			this.__onUnloadingBound = this._onUnloading.bind( this );
 			
 			AutoSave._ensureOptIn( opts, allowedOpts, "top level" );
@@ -122,7 +122,7 @@
 	//Runs a save on-demand
 	AutoSave.prototype.save = function(){
 
-		this.__sendLog( AutoSave.LOG_INFO, "Executing save : explicitly triggered" );
+		this._sendLog( AutoSave.LOG_INFO, "Executing save : explicitly triggered" );
 		this._executeSave();
 	};
 	
@@ -136,13 +136,13 @@
 		
 		if ( cb ) {
 			
-			this.__sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPreLoad" );
+			this._sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPreLoad" );
 			var rawUserInput = cb();
 		
 			//See @FUN Semantics
 			if ( rawUserInput === false ) {
 				
-				this.__sendLog( AutoSave.LOG_INFO, "User aborted the load in the onPreLoad handler" );
+				this._sendLog( AutoSave.LOG_INFO, "User aborted the load in the onPreLoad handler" );
 				return; //Cancel the load
 			}
 			else if ( rawUserInput === undefined || rawUserInput === true ) { 
@@ -152,8 +152,8 @@
 			else  //Assume it's a custom override
 			{
 				//We already have the data, run callback
-				this.__sendLog( AutoSave.LOG_INFO, "User supplied custom payload for loading in the onPreLoad handler" );
-				this.__sendLog( AutoSave.LOG_DEBUG, "Custom payload", rawUserInput );
+				this._sendLog( AutoSave.LOG_INFO, "User supplied custom payload for loading in the onPreLoad handler" );
+				this._sendLog( AutoSave.LOG_DEBUG, "Custom payload", rawUserInput );
 				this._loadCallbackHandler( rawUserInput );
 				
 				return;
@@ -178,7 +178,7 @@
 		}
 		catch( e ){
 			
-			this.__sendLog( AutoSave.LOG_WARN, "Error unhooking listeners", e );
+			this._sendLog( AutoSave.LOG_WARN, "Error unhooking listeners", e );
 		}
 
 		//Clear any pending saves
@@ -205,7 +205,7 @@
 		}
 		catch( e ){
 			
-			this.__sendLog( AutoSave.LOG_WARN, "Error resetting store", e );
+			this._sendLog( AutoSave.LOG_WARN, "Error resetting store", e );
 		}
 	
 		//We clear the store by default
@@ -219,7 +219,7 @@
 		}
 		catch( e ){
 			
-			this.__sendLog( AutoSave.LOG_WARN, "Error resetting store", e );
+			this._sendLog( AutoSave.LOG_WARN, "Error resetting store", e );
 		}
 		
 		//Remove the "Saving..." html element from DOM
@@ -251,7 +251,7 @@
 		if ( autoLoadTrigger === null ) {
 			
 			//User does not want to auto-load
-			this.__sendLog( AutoSave.LOG_DEBUG, "User requested no auto-load. Skipping..." );
+			this._sendLog( AutoSave.LOG_DEBUG, "User requested no auto-load. Skipping..." );
 			return;
 		}
 		else if ( autoLoadTrigger === undefined ){
@@ -271,14 +271,14 @@
 		
 		if ( cb ) {
 			
-			this.__sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPostLoad" );
+			this._sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPostLoad" );
 			
 			var rawUserInput = cb( szData );
 		
 			//See @FUN Semantics
 			if ( rawUserInput === false ) {
 				
-				this.__sendLog( AutoSave.LOG_INFO, "User aborted the load in the onPostLoad handler" );
+				this._sendLog( AutoSave.LOG_INFO, "User aborted the load in the onPostLoad handler" );
 				this._registerInitQueue( -1 );
 				return; //Cancel the load
 			}
@@ -288,8 +288,8 @@
 			}
 			else  //Assume it's a custom override - even if null
 			{
-				this.__sendLog( AutoSave.LOG_INFO, "User overwrote loading payload with custom one for loading in the onPostLoad handler" );
-				this.__sendLog( AutoSave.LOG_DEBUG, "Custom load payload", rawUserInput );
+				this._sendLog( AutoSave.LOG_INFO, "User overwrote loading payload with custom one for loading in the onPostLoad handler" );
+				this._sendLog( AutoSave.LOG_DEBUG, "Custom load payload", rawUserInput );
 				szData = rawUserInput;
 			}
 		}
@@ -299,7 +299,7 @@
 		cb = this.__callbacks.onPostDeserialize;
 		if ( cb ) {
 			
-			this.__sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPostDeserialize" );
+			this._sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPostDeserialize" );
 			cb();
 		}
 		
@@ -318,7 +318,7 @@
 			var cb = this.__callbacks.onInitialised;
 			if (cb) {
 				
-				this.__sendLog( AutoSave.LOG_DEBUG, "Invoking callback onInitialised" );
+				this._sendLog( AutoSave.LOG_DEBUG, "Invoking callback onInitialised" );
 				cb();
 			}
 		}
@@ -352,7 +352,7 @@
 			//See @FUN Semantics
 			if ( rawUserInput === false ) {
 
-				this.__sendLog( AutoSave.LOG_INFO, "User aborted toggle no-storage bar" );
+				this._sendLog( AutoSave.LOG_INFO, "User aborted toggle no-storage bar" );
 				return; //Cancel toggling it
 			}
 			else if ( rawUserInput === undefined || rawUserInput === true) { 
@@ -390,7 +390,7 @@
 			//See @FUN Semantics
 			if ( rawUserInput === false ) {
 
-				this.__sendLog( AutoSave.LOG_INFO, "User aborted toggle save bar" );
+				this._sendLog( AutoSave.LOG_INFO, "User aborted toggle save bar" );
 				return; //Cancel toggling it
 			}
 			else if ( rawUserInput === undefined || rawUserInput === true) { 
@@ -440,7 +440,7 @@
 		
 		if ( !currElement ) {
 
-			this.__sendLog( AutoSave.LOG_DEBUG, "No element found to toggle notification element visibility. Notification will not show/hide." );
+			this._sendLog( AutoSave.LOG_DEBUG, "No element found to toggle notification element visibility. Notification will not show/hide." );
 			return;
 			//else User probably cleared out showing notification through setting opts.saveNotification=null/opts.noStoreNotification=null
 		}
@@ -459,7 +459,7 @@
 		if ( noStorageNotification === null ) {
 			
 			//Implies dont show notification
-			this.__sendLog( AutoSave.LOG_DEBUG, "User requested no storage-warning notification bar. Skipping creation..." );
+			this._sendLog( AutoSave.LOG_DEBUG, "User requested no storage-warning notification bar. Skipping creation..." );
 			this.__currWarnStorageNotificationElement = null;
 		}
 		else if ( noStorageNotification === undefined ){
@@ -488,7 +488,7 @@
 					else {
 						
 						this.__warnMsgShowDuration = showDuration;
-						this.__sendLog( AutoSave.LOG_INFO, "Warning notification duration initialised with custom interval", 
+						this._sendLog( AutoSave.LOG_INFO, "Warning notification duration initialised with custom interval", 
 							this.__warnMsgShowDuration);
 					}
 				}
@@ -508,13 +508,13 @@
 			if ( msg ) {
 				
 				renderOpts.msg = msg;
-				this.__sendLog( AutoSave.LOG_DEBUG, "Warn Storage Notification bar with customised msg created." );
+				this._sendLog( AutoSave.LOG_DEBUG, "Warn Storage Notification bar with customised msg created." );
 				this.__currWarnStorageNotificationElement = AutoSave._createNotification( renderOpts, null );
 			}
 			else if ( template ){
 				
 				renderOpts.msg = null;
-				this.__sendLog( AutoSave.LOG_DEBUG, "Warn Storage Notification bar with customised template created." );
+				this._sendLog( AutoSave.LOG_DEBUG, "Warn Storage Notification bar with customised template created." );
 				this.__currWarnStorageNotificationElement = AutoSave._createNotification( renderOpts, template );
 			} else {
 				
@@ -531,7 +531,7 @@
 		if ( saveNotificationOpts === null ) {
 			
 			//Implies dont show notification
-			this.__sendLog( AutoSave.LOG_DEBUG, "User requested no saving notification bar. Skipping creation..." );
+			this._sendLog( AutoSave.LOG_DEBUG, "User requested no saving notification bar. Skipping creation..." );
 			this.__currSaveNotificationElement = null;
 		}
 		else if ( saveNotificationOpts === undefined ){
@@ -560,7 +560,7 @@
 					else {
 						
 						this.__minShowDuration = minShowDuration;
-						this.__sendLog( AutoSave.LOG_INFO, "Saving Min duration initialised with custom interval", this.__minShowDuration);
+						this._sendLog( AutoSave.LOG_INFO, "Saving Min duration initialised with custom interval", this.__minShowDuration);
 					}
 				}
 				else{
@@ -579,13 +579,13 @@
 			if ( msg ) {
 				
 				renderOpts.msg = msg;
-				this.__sendLog( AutoSave.LOG_DEBUG, "Saving Notification bar with customised msg created." );
+				this._sendLog( AutoSave.LOG_DEBUG, "Saving Notification bar with customised msg created." );
 				this.__currSaveNotificationElement = AutoSave._createNotification( renderOpts, null );
 			}
 			else if ( template ){
 				
 				renderOpts.msg = null;
-				this.__sendLog( AutoSave.LOG_DEBUG, "Saving Notification bar with customised template created." );
+				this._sendLog( AutoSave.LOG_DEBUG, "Saving Notification bar with customised template created." );
 				this.__currSaveNotificationElement = AutoSave._createNotification( renderOpts, template );
 			} else {
 				
@@ -599,7 +599,7 @@
 	
 		if ( this.__saveInProgress ){
 			
-			this.__sendLog( AutoSave.LOG_WARN, 
+			this._sendLog( AutoSave.LOG_WARN, 
 			"Save was postponed as one already in progress. (Did you remember to invoke the saveComplete callback?)" );
 			
 			this.__isPendingSave = true;
@@ -617,13 +617,13 @@
 		
 		if ( cb ) {
 			
-			this.__sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPreSerialize" );
+			this._sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPreSerialize" );
 			var rawUserInput = cb( controlsArr );
 
 			//See @FUNC Semantics
 			if ( rawUserInput === false ) {
 
-				this.__sendLog( AutoSave.LOG_INFO, "User aborted the save in the onPreSerialize handler" );
+				this._sendLog( AutoSave.LOG_INFO, "User aborted the save in the onPreSerialize handler" );
 				this._saveStartFinally( false );
 				return; //Cancel the save
 			}
@@ -634,14 +634,14 @@
 			else if ( rawUserInput === null ) { //User override
 			
 				//Treat as empty - blank out user controls
-				this.__sendLog( AutoSave.LOG_WARN, "User specified an empty override payload for save in the onPreSerialize handler" );
+				this._sendLog( AutoSave.LOG_WARN, "User specified an empty override payload for save in the onPreSerialize handler" );
 				controlsArr = [];
 			}
 			else {
 			
 				//Expect a valid definition of controls
-				this.__sendLog( AutoSave.LOG_INFO, "User overwrote saving payload with custom one in the onPreSerialize handler" );
-				this.__sendLog( AutoSave.LOG_DEBUG, "Custom save payload in onPreSerialize handler", rawUserInput );
+				this._sendLog( AutoSave.LOG_INFO, "User overwrote saving payload with custom one in the onPreSerialize handler" );
+				this._sendLog( AutoSave.LOG_DEBUG, "Custom save payload in onPreSerialize handler", rawUserInput );
 				controlsArr = this._getControlsFromUserInput( rawUserInput );
 			}
 		}
@@ -657,13 +657,13 @@
 
 		if ( cb ) {
 			
-			this.__sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPreStore" );
+			this._sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPreStore" );
 			var rawUserInput = cb( szData );
 			
 			//See @FUN Semantics
 			if ( rawUserInput === false ) {
 				
-				this.__sendLog( AutoSave.LOG_INFO, "User aborted the save in the onPreStore handler" );
+				this._sendLog( AutoSave.LOG_INFO, "User aborted the save in the onPreStore handler" );
 				this._saveStartFinally( false );
 				return; //Cancel the save
 			}
@@ -674,8 +674,8 @@
 			else { 
 			
 				//User input is a valid override string - null implies clearing out local storage
-				this.__sendLog( AutoSave.LOG_INFO, "User overwrote saving payload with custom one in the onPreStore handler" );
-				this.__sendLog( AutoSave.LOG_DEBUG, "Custom save payload in onPreStore handler", rawUserInput );
+				this._sendLog( AutoSave.LOG_INFO, "User overwrote saving payload with custom one in the onPreStore handler" );
+				this._sendLog( AutoSave.LOG_DEBUG, "Custom save payload in onPreStore handler", rawUserInput );
 				szData = rawUserInput;
 			}
 		}
@@ -690,7 +690,7 @@
 		
 		if ( cb ){
 			
-			this.__sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPostStore" );
+			this._sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPostStore" );
 			cb();
 		}
 		
@@ -703,11 +703,11 @@
 		var hasLocalStorage = AutoSave.isLocalStorageAvailable();
 		var hasCookieStorage = AutoSave.isCookieStorageAvailable();
 		
-		this.__sendLog( AutoSave.LOG_DEBUG, "Has Local Storage: ", hasLocalStorage, ", Has Cookie Storage: ", hasCookieStorage );
+		this._sendLog( AutoSave.LOG_DEBUG, "Has Local Storage: ", hasLocalStorage, ", Has Cookie Storage: ", hasCookieStorage );
 		
 		var elems = this.__getRootControlsFunc();
 		
-		this.__dataStoreKeyFunc = this.__invokeExt( AutoSave._getKeyFunc, elems, !dataStore ? undefined : dataStore.key );
+		this.__dataStoreKeyFunc = this._invokeExt( AutoSave._getKeyFunc, elems, !dataStore ? undefined : dataStore.key );
 			
 		//If not set at all, default it 
 		if ( dataStore === undefined ){
@@ -771,7 +771,7 @@
 			else {
 				
 				this.__theStore = 
-					this.__invokeExt( 
+					this._invokeExt( 
 						AutoSave.getCtor ( 
 							_CustomStore, this.__dataStoreKeyFunc, dataStore.save, dataStore.load, this.__invokeExtBound ) );
 			}
@@ -782,7 +782,7 @@
 		}
 	};
 	
-	AutoSave.prototype.__invokeExt = function( funcToRun, __variadic_args__ ){
+	AutoSave.prototype._invokeExt = function( funcToRun, __variadic_args__ ){
 	
 		//Temporary redirect the AutoSave.log call while invoking external callers so logging knows our context
 		//and hence our callbacks
@@ -802,7 +802,7 @@
 		}
 	};
 	
-	AutoSave.prototype.__sendLog = function( level, __variadic_args__ ){
+	AutoSave.prototype._sendLog = function( level, __variadic_args__ ){
 
 		 var cb = this.__callbacks.onLog;
 		 
@@ -881,13 +881,13 @@
 			
 			//Only when invoked - i.e. do nothing
 
-			this.__sendLog( AutoSave.LOG_INFO, "Auto-Save trigger was disabled" );
+			this._sendLog( AutoSave.LOG_INFO, "Auto-Save trigger was disabled" );
 			return;
 		}
 		else if ( saveTrigger === undefined ) {
 
 			this.__debounceInterval = AutoSave.DEFAULT_AUTOSAVE_INTERVAL;
-			this.__sendLog( AutoSave.LOG_INFO, "Auto-Save trigger was initialised with default interval", this.__debounceInterval );
+			this._sendLog( AutoSave.LOG_INFO, "Auto-Save trigger was initialised with default interval", this.__debounceInterval );
 		}
 		else if ( typeof( saveTrigger ) == "object" ) {
 
@@ -907,7 +907,7 @@
 				else {
 					
 					this.__debounceInterval = debounceInterval;
-					this.__sendLog( AutoSave.LOG_INFO, "Auto-Save trigger was initialised with custom interval", this.__debounceInterval );
+					this._sendLog( AutoSave.LOG_INFO, "Auto-Save trigger was initialised with custom interval", this.__debounceInterval );
 				}
 			}
 			else{
@@ -928,7 +928,7 @@
 	
 		if ( !parentElement ) { //Both undefined (so they neednt specify) and null (so they can skip over to set opts)
 		
-			this.__sendLog( AutoSave.LOG_DEBUG, "No parent element specified - will use whole document" );
+			this._sendLog( AutoSave.LOG_DEBUG, "No parent element specified - will use whole document" );
 			
 			parentElement = document.body;
 		}
@@ -942,19 +942,19 @@
 				
 				if ( !rawUserInput ){
 					
-					this.__sendLog( AutoSave.LOG_INFO, "User specified custom function returned empty set of elements" );
+					this._sendLog( AutoSave.LOG_INFO, "User specified custom function returned empty set of elements" );
 					return []; //Always standardise to an array
 				}
 				else{
 					
 					var elems = this._getControlsFromUserInput( rawUserInput );
 					
-					this.__sendLog( AutoSave.LOG_INFO, "Extracted "+elems.length+" root level controls from user specified input" );
+					this._sendLog( AutoSave.LOG_INFO, "Extracted "+elems.length+" root level controls from user specified input" );
 					
 					if ( seekExternalFormElements ){
 						
-						var externalElems = this.__invokeExt( AutoSave.getExternalFormControls, elems );
-						this.__sendLog( AutoSave.LOG_INFO, "Found "+externalElems.length+" external form-linked controls" );
+						var externalElems = this._invokeExt( AutoSave.getExternalFormControls, elems );
+						this._sendLog( AutoSave.LOG_INFO, "Found "+externalElems.length+" external form-linked controls" );
 						
 						for( var idx = 0; idx < externalElems.length; idx++ ){
 							
@@ -975,18 +975,18 @@
 			//Except if explicitly specified an empty [] so continue 
 			if ( !Array.isArray(parentElement) && elems.length == 0 ){
 				
-				this.__sendLog( AutoSave.LOG_WARN, "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?" );
+				this._sendLog( AutoSave.LOG_WARN, "RootControls parameter resolved to zero elements - maybe your selector(s) werent right?" );
 			}
 			else{
 				
-				this.__sendLog( AutoSave.LOG_INFO, "Extracted "+elems.length+" root level controls" );
+				this._sendLog( AutoSave.LOG_INFO, "Extracted "+elems.length+" root level controls" );
 			}
 		
 			//Find all elements that use a 'form=...' attribute explicitly and assume they're outside the root control set so capture them
 			if ( seekExternalFormElements ) {
 				
-				var externalElems = this.__invokeExt( AutoSave.getExternalFormControls, elems );
-				this.__sendLog( AutoSave.LOG_INFO, "Found "+externalElems.length+" external form-linked controls" );
+				var externalElems = this._invokeExt( AutoSave.getExternalFormControls, elems );
+				this._sendLog( AutoSave.LOG_INFO, "Found "+externalElems.length+" external form-linked controls" );
 				
 				for( var idx = 0; idx < externalElems.length; idx++ ){
 					
@@ -1011,7 +1011,7 @@
 	
 	AutoSave.prototype._hookListeners = function( hookOn, seekExternalFormElements ){ 
 
-		this.__sendLog( AutoSave.LOG_DEBUG, 
+		this._sendLog( AutoSave.LOG_DEBUG, 
 						( hookOn?"Hooking":"Unhooking")+
 						" listeners. Seeking external controls for hooking: "+seekExternalFormElements );
 		
@@ -1045,7 +1045,7 @@
 	//Standard name for event handler
 	AutoSave.prototype.handleEvent = function( ev ){
 		
-		this.__sendLog( AutoSave.LOG_DEBUG, "Handling raw control input event", ev );
+		this._sendLog( AutoSave.LOG_DEBUG, "Handling raw control input event", ev );
 		
 		//If already have a timer running, return
 		if ( this.__debounceTimeoutHandle ){
@@ -1058,8 +1058,8 @@
 		
 	AutoSave.prototype._handleDebouncedEvent = function() {
 		
-		this.__sendLog( AutoSave.LOG_DEBUG, "Handling debounced control input event" );
-		this.__sendLog( AutoSave.LOG_INFO, "Executing save: after element(s) changed" );
+		this._sendLog( AutoSave.LOG_DEBUG, "Handling debounced control input event" );
+		this._sendLog( AutoSave.LOG_INFO, "Executing save: after element(s) changed" );
 		
 		this.__debounceTimeoutHandle = null;
 
@@ -1115,13 +1115,13 @@
 		//controlsArr is never null by post-condition of _updateRootControls
 		var controlsArr = this.__getRootControlsFunc();
 		
-		var fieldData = this.__invokeExt( AutoSave._decodeFieldDataFromString,  fieldDataStr );
+		var fieldData = this._invokeExt( AutoSave._decodeFieldDataFromString,  fieldDataStr );
 		
 		for( var idx = 0; idx < controlsArr.length ; idx++ ) {
 
 			var child = controlsArr[ idx ];
 			
-			this.__invokeExt( AutoSave._deserializeSingleControl, child, fieldData, clearEmpty );
+			this._invokeExt( AutoSave._deserializeSingleControl, child, fieldData, clearEmpty );
 		}
 	};
 		
@@ -1136,10 +1136,10 @@
 		
 		for( var idx=0 ; idx<rootControlsArr.length ; ++idx ) {
 		
-			this.__invokeExt( AutoSave._serializeSingleControl, rootControlsArr[ idx ], fieldData );
+			this._invokeExt( AutoSave._serializeSingleControl, rootControlsArr[ idx ], fieldData );
 		}
 		
-		var fieldDataStr = this.__invokeExt( AutoSave._encodeFieldDataToString, fieldData );
+		var fieldDataStr = this._invokeExt( AutoSave._encodeFieldDataToString, fieldData );
 		
 		return fieldDataStr;
 	};
