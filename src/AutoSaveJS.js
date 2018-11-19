@@ -2050,10 +2050,11 @@
 		s.position = "fixed";
 		s.top = "5px";
 		s.left = "50%"; //Needs to be used in conjunction with margin-left
-		s.border = "1px solid #adabab";
-		s.padding = "3px 30px";
-		s.borderRadius = "2px";
+		s.border = "1px solid #aba8a8";
+		s.padding = "1px 30px";
+		s.borderRadius = "4px";
 		s.color = "#484848";
+		s.fontSize = "0.8em";
 	};
 
 	//IE doesnt support Object.assign so implement ourself. Assumes a shallow clone.
@@ -2083,7 +2084,7 @@
 		duration: 	500,
 		msg: 		"Saving...",
 		type: 		"saving",
-		bg: 		"#ecebeb",
+		bg: 		"#f2f9ff",
 		marginLeft:	"-20px"
 	};
 	AutoSave.DEFAULT_AUTOSAVE_WARN = {

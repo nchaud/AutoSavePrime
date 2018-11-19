@@ -1,41 +1,58 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
   "http://www.w3.org/TR/html4/loose.dtd">
+  
+<!-- Beware: This markup is purely to demonstrate AutoSave behaviour so it's far from perfect! -->
+
 <html>
 <head>
   <title>AutoSaveJS Demos | Comprehensive Inputs</title>
 
-  <script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
   <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
 
   <script type="text/javascript" src="../lib/jquery-3.1.1.js"></script>
+  <script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
   <script type="text/javascript" src="../src/AutoSaveJS.js"></script>
+  
+  <script>
+	var autoSave = new AutoSave();
+	
+	var disableAutoSave = function(sender){
+	
+		autoSave.dispose();
+		sender.disabled = true;
+		sender.style.color = 'lightgray';
+		$('#autosave_enabled').slideUp();
+	};
+  </script>
+  
 </head>
 
-<body>
+<body style="padding:30px">
 
-	<h3>AutoSaveJS Feedback Form </h3>
-
-	<div style="width:50%">
+	<div class = 'panel panel-info'>
+		<div class = 'panel-heading'>Your Marketing Preferences</div>
 	
-		<div class="alert alert-info" role="alert">
-		  <b>Note:</b> This form will autosave as you go !
+		<div class = 'panel-body'>
+	
+		<div class="alert alert-success" style='text-align:center' id='autosave_enabled'>
+		  <b>Note:</b> This form will autosave as you go - hit F5 at any time!
 		  
-		  <button>Slide toggle off</button>
+		  <button id='disable_autosave' onclick='disableAutoSave(this)' style='margin-left:20px'>
+			Disable AutoSave
+		  </button>
 		</div>
 		
-		<label for="basic-url">Please enter your name</label>
 		<div class="input-group">
-		  <span class="input-group-addon" id="basic-addon1">@</span>
+			<label>Please enter your name :-</label>
 		  <input type="text" name='name' class="form-control" placeholder="asdf is fine too">
 		</div>
 
 		<br />
 		
-		<label for="basic-url">Please select your status</label>
+		<label>Please select your status :-</label>
 		<div class="input-group">
 		  
 		  <div>
-			<label>XXX...</label>
 			<input type='radio' name='status' value='single'>Single
 		  </div>
 		  
@@ -66,7 +83,7 @@
 
 		<br />
 		
-		<label for="basic-url">Please select your age group</label>
+		<label>Please select your age group :-</label>
 		<div class="input-group">
 		  <select class="form-control" name='age_group'>
 			<option disabled selected></option>
@@ -79,22 +96,46 @@
 		</div>
 
 		<br />
-
+		
+		<label for="basic-url">Please select which ads we can show you :-</label>
 		<div class="input-group">
-		  <span class="input-group-addon">$</span>
-		  <input type="text" class="form-control" aria-label="Amount (to the nearest dollar)">
-		  <span class="input-group-addon">.00</span>
+		  <div>
+			<input type='checkbox' name='adType' value='fashion'>Fashion
+		  </div>
+
+		  <div>
+		  <input type='checkbox' name='adType' value='more_fashion'>More Fashion
+		  </div>
+		  
+		  <div>
+		  <input type='checkbox' name='adType' value='tech'>Techmology
+		  </div>
+		  
+		  <div>
+		  <input type='checkbox' name='adType' value='beds'>Extortionately priced beds &amp; sofas
+		  </div>
+
+		  <div>
+		  <input type='checkbox' name='adType' value='find_nearest'>Find-Your-Nearest-_____ startups
+		  </div>
+
+		  <div>
+		  <input type='checkbox' name='adType' value='flights'>Even Cheaper Flights
+		  </div>
+
+		  <div>
+		  <input type='checkbox' name='adType' value='noShow' disabled>Don't Show Ads
+		  </div>
 		</div>
 
-		<label for="basic-url">Your vanity URL</label>
-		<div class="input-group">
-		  <span class="input-group-addon" id="basic-addon3">https://example.com/users/</span>
-		  <input type="text" class="form-control" id="basic-url" aria-describedby="basic-addon3">
-		</div>
+		<br />
 
-		<button>Submit</button>		
+		<div>
+			<label>Please describe your frustration with spam email :-</label>
+			<textarea name='frustration' style='width:100%'></textarea>
+		</div>
 		
 	</div>
-
+	</div>
 </body>
 </html>
