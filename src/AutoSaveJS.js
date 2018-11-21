@@ -244,7 +244,61 @@
 		this.__theStore.resetStore( clearCallback );
 	};
 
+	AutoSave.prototype.getCurrentValue = function(){
+		
+		var ret = this._internalGetCurrentValue();
+		
+		if (ret === false) //Cancelled, user expects a string not a boolean
+			return null;
+		else
+			return ret;
+	}
+
 	/** End Public Api **/
+	
+	//Returns false if cancelled
+	AutoSave.prototype._internalGetCurrentValue = function(){
+
+		//Get controls to serialize - guaranteed to be an array
+		var controlsArr = this.__getRootControlsFunc();
+		
+		//Serialize all control values
+		var cb = this.__callbacks.onPreSerialize;
+		
+		if ( cb ) {
+			
+			this._sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPreSerialize" );
+			var rawUserInput = cb( controlsArr );
+
+			//See @FUNC Semantics
+			if ( rawUserInput === false ) {
+
+				this._sendLog( AutoSave.LOG_INFO, "User aborted fetching current-value in the onPreSerialize handler" );
+				return false;
+			}
+			else if ( rawUserInput === undefined || rawUserInput === true ) { 
+			
+				//Do nothing - continue with the save
+			}
+			else if ( rawUserInput === null ) { //User override
+			
+				//Treat as empty - blank out user controls
+				this._sendLog( AutoSave.LOG_WARN, "User specified an empty override payload in the onPreSerialize handler" );
+				controlsArr = [];
+			}
+			else {
+			
+				//Expect a valid definition of controls
+				this._sendLog( AutoSave.LOG_INFO, "User overwrote current-value payload with custom one in the onPreSerialize handler" );
+				this._sendLog( AutoSave.LOG_DEBUG, "Custom current-value payload in onPreSerialize handler", rawUserInput );
+				controlsArr = this._getControlsFromUserInput( rawUserInput );
+			}
+		}
+		
+		var szData = this.serialize( controlsArr );
+
+		return szData;	
+	}
 	
 	AutoSave.prototype._updateLoadStrategy = function( autoLoadTrigger ) {
 						
@@ -609,51 +663,21 @@
 		
 		this._saveStartFinally( true );
 	
-		//Get controls to serialize - guaranteed to be an array
-		var controlsArr = this.__getRootControlsFunc();
+		var szData = this._internalGetCurrentValue();
 		
-		//Serialize all control values
-		var cb = this.__callbacks.onPreSerialize;
-		
-		if ( cb ) {
-			
-			this._sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPreSerialize" );
-			var rawUserInput = cb( controlsArr );
+		if (szData === false){
 
-			//See @FUNC Semantics
-			if ( rawUserInput === false ) {
-
-				this._sendLog( AutoSave.LOG_INFO, "User aborted the save in the onPreSerialize handler" );
-				this._saveStartFinally( false );
-				return; //Cancel the save
-			}
-			else if ( rawUserInput === undefined || rawUserInput === true ) { 
-			
-				//Do nothing - continue with the save
-			}
-			else if ( rawUserInput === null ) { //User override
-			
-				//Treat as empty - blank out user controls
-				this._sendLog( AutoSave.LOG_WARN, "User specified an empty override payload for save in the onPreSerialize handler" );
-				controlsArr = [];
-			}
-			else {
-			
-				//Expect a valid definition of controls
-				this._sendLog( AutoSave.LOG_INFO, "User overwrote saving payload with custom one in the onPreSerialize handler" );
-				this._sendLog( AutoSave.LOG_DEBUG, "Custom save payload in onPreSerialize handler", rawUserInput );
-				controlsArr = this._getControlsFromUserInput( rawUserInput );
-			}
+			this._sendLog( AutoSave.LOG_INFO, "User aborted the save in the onPreSerialize handler" );
+			this._saveStartFinally( false );
+			return; //Cancel the save
 		}
-		
-		var szData = this.serialize( controlsArr );
 		
 		//Mould it to output-specific format before passing it to onPreStore hook
 		//So, for example, cookies can be modified
 		szData = this.__theStore.mouldForOutput( szData );
 		
 		//Hook before saving to store
-		cb = this.__callbacks.onPreStore;
+		var cb = this.__callbacks.onPreStore;
 
 		if ( cb ) {
 			
@@ -1185,8 +1209,12 @@
 			
 			data = AutoSave._buildFullCookieStr( key, "", { expireNow: true} );
 		}
+		else{
+
+			//We know data has been moulded to a cookie format already
+			data = AutoSave._buildFullCookieStr( key, data, { dataIsFullCookie: true} );
+		}
 		
-		//We know data has been moulded to a cookie format already so save straight down
 		document.cookie = data;
 		
 		saveCompleted();
@@ -1196,7 +1224,8 @@
 		
 		var key = this.__currStoreKeyFunc();
 
-		var cookieParamsStr = AutoSave._buildFullCookieStr( key, data, { neverExpire: true} );
+		//Dont send a key down as we dont want to prefix the initial key "AutoSaveJS_=" yey
+		var cookieParamsStr = AutoSave._buildFullCookieStr( null, data, { neverExpire: true} );
 		
 		this._logSink( AutoSave.LOG_DEBUG, "Created cookie params string", cookieParamsStr );
 		
@@ -1829,30 +1858,41 @@
 
 	AutoSave._buildFullCookieStr = function( key, data, opts ) {
 		
-		if ( !key ){
+		// if ( !key ){
 			
-			throw new Error( "No key specified for saving to cookie" );
-		}
+			// throw new Error( "No key specified for saving to cookie" );
+		// }
+		
+		
+		//TODO: TEST: This kind of error below should bubble up through the error log channel
+		
 		
 		//This regex is from MDN - @https://developer.mozilla.org/en-US/docs/Web/API/Document/cookie/Simple_document.cookie_framework
-		if ( /^(?:expires|max\-age|path|domain|secure)$/i.test( key ) ) {
+		if (key && /^(?:expires|max\-age|path|domain|secure)$/i.test( key ) ) {
 
 			throw new Error( "Parameters to cookie must not be specified as part of the key (e.g. path=, domain= etc.)" );
 		}
 		
 		opts = opts || {};
 		
-		var never = opts.neverExpire;
-		var now = opts.expireNow;
-
-		var encodedKey = encodeURIComponent( key );
-		var cookieParamsStr = encodedKey + "=" + data + "; ";
+		var encodedKey;
+		if (key)
+			encodedKey = encodeURIComponent( key )+"=";
+		else
+			encodedKey = "";
 		
-		//Never expires
-		if ( never )
-			cookieParamsStr += "expires=Fri, 31 Dec 9999 23:59:59 GMT; ";
-		else if ( now )
-			cookieParamsStr += "expires=Sat, 23 Mar 1889 23:59:59 GMT; ";
+		var cookieParamsStr = encodedKey + data;
+		
+		if (!opts.dataIsFullCookie) {
+
+			cookieParamsStr	+= "; ";
+			
+			//Never expires
+			if ( opts.neverExpire )
+				cookieParamsStr += "expires=Fri, 31 Dec 9999 23:59:59 GMT; ";
+			else if ( opts.expireNow )
+				cookieParamsStr += "expires=Sat, 23 Mar 1889 23:59:59 GMT; ";
+		}
 		
 		return cookieParamsStr;
 	};

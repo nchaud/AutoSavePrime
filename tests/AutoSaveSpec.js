@@ -906,6 +906,8 @@ describe("AutoSaveJS", function() {
 		expect($selectOption.prop("selected")).toEqual(true);
 	});
 	
+	
+	//TODO?
 	it('_INTEGRATION_TEST_: uses local storage by default if available otherwise cookies', function(){ //TODO: x-browser test
 		
 		//TODO: Make isLocalStorageAvailable a helper just like .getUrlPath, mock it out and break this into 2 tests
@@ -1004,6 +1006,69 @@ describe("AutoSaveJS", function() {
 		
 		expect(getOne("input").val()).toEqual("John Wayne");
 		expect(getOne("textarea").val()).toEqual("~Green@fields~");
+	});
+
+	it('getCurrentValue serialises and returns a string representing the inputs', function(){
+		
+		//Arrange - Create and set a value on the input text box
+		var testFragment = "<input name='fullName'>\
+							<textarea name='description'></textarea>";
+		addToSandbox(testFragment);
+		
+		var aSave = createAutoSave();
+
+		getOne("input").val("John Wayne");
+		getOne("textarea").val("~Green@fields~");	
+
+		expect(aSave.getCurrentValue()).toEqual("fullName=John+Wayne&description=~Green%40fields~");
+	});
+	
+	it('getCurrentValue serialises and returns a string without cookie specific data if using cookies', function(){
+		
+		//Arrange - Create and set a value on the input text box
+		var testFragment = "<input name='fullName'>\
+							<textarea name='description'></textarea>";
+		addToSandbox(testFragment);
+		
+		var aSave = createAutoSave(null,{
+			dataStore: {
+				preferCookies: true
+			}
+		});
+
+		getOne("input").val("John Wayne");
+		getOne("textarea").val("~Green@fields~");	
+
+		//Sanity - not stored in local storage yet
+		expect(getBrowserCookie()).toBeFalsy();
+		
+		//getCurrentValue() should not have extra cookie params
+		expect(aSave.getCurrentValue()).toEqual("fullName=John+Wayne&description=~Green%40fields~");
+	});
+
+	it('getCurrentValue does not interrupt a pending save', function(){
+		
+		//Arrange - Create and set a value on the input text box
+		var testFragment = "<input name='fullName'>\
+							<textarea name='description'></textarea>";
+		addToSandbox(testFragment);
+		
+		var aSave = createAutoSave();
+
+		setValue("input", "John Wayne");
+		setValue("textarea", "~Green@fields~");	
+
+		//Sanity - not stored in local storage yet
+		expect( localStorage.getItem("AutoSaveJS_MOCK/PATH/1") ).toBeFalsy();
+		
+		expect(aSave.getCurrentValue()).toEqual("fullName=John+Wayne&description=~Green%40fields~");
+		
+		//Still should not be stored in local storage yet
+		expect( localStorage.getItem("AutoSaveJS_MOCK/PATH/1") ).toBeFalsy();
+		
+		jasmine.clock().tick(60*1000); //Let the auto-save debounce elapse to ensure the pending save still happens
+		
+		expect( localStorage.getItem("AutoSaveJS_MOCK/PATH/1") ).toEqual("fullName=John+Wayne&description=~Green%40fields~");
 	});
 
 	it('can set a custom static string as the local storage key postfix', function(){
@@ -2818,29 +2883,28 @@ describe("AutoSaveJS", function() {
 	});	
 	
 	it('onPreStore hook contains cookie string if storage is cookie', function(){
-		
+
 		setValue("[name='frmNameEntry']", "Nash");
 		setValue("[name='frmAgeEntry']",  10);
-		
+
 		var szString;
 		var aSave = createAutoSave(null,{
 			autoSaveTrigger: null, //Control it manually for the purpose of this test
 			dataStore:{
-				preferCookies: true	//NOTE: Switch to cookies here
+				preferCookies: true	//NOTE: We switch to cookies here
 			},
 			onPreStore: function(stringValue){
 				
 				szString = stringValue;
 			}
 		});
-		
+
 		aSave.save();
 
 		//Should contain cookie prefix, expiry time etc.
 		expect(szString)
 		.toEqual(
-			encodeURIComponent(_defaultCookieKey)+
-			"=frmNameEntry=Nash&frmGenderEntry=&frmAddressEntry=&frmAgeEntry=10; expires=Fri, 31 Dec 9999 23:59:59 GMT; "
+			"frmNameEntry=Nash&frmGenderEntry=&frmAddressEntry=&frmAgeEntry=10; expires=Fri, 31 Dec 9999 23:59:59 GMT; "
 		);
 	});
 	

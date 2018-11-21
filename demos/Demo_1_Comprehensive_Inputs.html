@@ -14,6 +14,8 @@
   <script type="text/javascript" src="../src/AutoSaveJS.js"></script>
   
   <script>
+	
+	//No overrides required here
 	var autoSave = new AutoSave();
 	
 	var disableAutoSave = function(sender){
@@ -23,6 +25,18 @@
 		sender.style.color = 'lightgray';
 		$('#autosave_enabled').slideUp();
 	};
+	
+	var submitFeedback = function(sender){
+	
+		//Make sure all data is up to date
+		autoSave.save();
+		
+		//Clear all data for next user
+		autoSave.resetStore();
+		
+		sender.disabled = true;
+		var confirmation = "<h3>Thank you. [Now when you refresh, the data is cleared locally]</h3>";
+	}
   </script>
   
 </head>
@@ -135,6 +149,7 @@
 			<textarea name='frustration' style='width:100%'></textarea>
 		</div>
 		
+		<button type='submit' onclick='submitFeedback()'>Submit</button>
 	</div>
 	</div>
 </body>
