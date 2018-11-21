@@ -28,14 +28,24 @@
 	
 	var submitFeedback = function(sender){
 	
-		//Make sure all data is up to date
-		autoSave.save();
+		//Get the string representing the current value across all the controls
+		var data = autoSave.getCurrentValue();
 		
-		//Clear all data for next user
+		//Send it off to your server
+		//var oReq = new XMLHttpRequest()
+		//oReq.open("POST", "www.example.com/api/feedback");
+		//oReq.send(data);
+		
+		//Clear all local data for next user for when they refresh
 		autoSave.resetStore();
-		
+				
 		sender.disabled = true;
-		var confirmation = "<h3>Thank you. [Now when you refresh, the data is cleared locally]</h3>";
+		var confirmation = "<h3>Thank you. (Now when you refresh, the data is cleared locally)</h3>";
+		
+		var div = document.createElement("div");
+		div.innerHTML = confirmation;
+		
+		document.querySelector(".panel-body").appendChild(div);
 	}
   </script>
   
@@ -149,7 +159,7 @@
 			<textarea name='frustration' style='width:100%'></textarea>
 		</div>
 		
-		<button type='submit' onclick='submitFeedback()'>Submit</button>
+		<button type='submit' onclick='submitFeedback(this)'>Submit</button>
 	</div>
 	</div>
 </body>
