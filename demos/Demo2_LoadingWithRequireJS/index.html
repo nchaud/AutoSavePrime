@@ -1,0 +1,46 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+  "http://www.w3.org/TR/html4/loose.dtd">
+  
+<!-- Beware: This markup is purely to demonstrate AutoSave behaviour so it's far from perfect! -->
+
+<html>
+<head>
+  <title>AutoSaveJS Demos | Loading With RequireJS</title>
+
+  <link rel="stylesheet" href="../../lib/bootstrap/css/bootstrap.min.css">
+
+  <script type="text/javascript" src="../../lib/jquery-3.1.1.js"></script>
+  <script type="text/javascript" src="../../lib/bootstrap/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="require.js"></script>
+  
+  <script>
+	
+	requirejs.config({
+		baseUrl:'../../src'
+	});
+
+	require(['autosavejs'],
+		function(AutoSave){
+		
+			//Loaded as a 1st class module - get the version
+			var version = AutoSave.version;
+			
+			document.querySelector("#autosave_version").innerHTML = "Loaded AutoSaveJS - Version: "+version;
+		}
+	);
+
+  </script>
+  
+</head>
+
+<body style="padding:30px">
+
+	<div class = 'panel panel-info'>
+		<div class = 'panel-heading'>RequireJS Load Test</div>
+	
+		<div class = 'panel-body'>
+			<h4 id='autosave_version'>Loading... </h4>
+		</div>
+	</div>
+</body>
+</html>

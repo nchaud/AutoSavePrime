@@ -5,20 +5,20 @@
 * Licensed under the MIT license
 */
 
-// Module-loader compatability prelude
-(function (root, definition) {
+// X-module-loader compatability prelude
+(function (root, factory) {
     if (typeof define === 'function' && define.amd) {
-        define(definition);
+        define(["autosave"], factory);
     } else if (typeof module === 'object' && module.exports) {
-        module.exports = definition();
+        module.exports = factory(require("autosave"));
     } else {
-        root.AutoSave = definition();
+        root.AutoSave = factory(root.autosave);
     }
 }(this, function () {
 
 	"use strict";			//TODO: CONFORM TO THIS !!!
 
-	function AutoSave( rootControls, opts ){
+	function AutoSave( scope, opts ){
 
 		this.__callbacks 			= undefined;
 		this.__theStore 			= undefined;
@@ -47,10 +47,10 @@
 		this.__clearEmptyValuesOnLoad				= undefined; //When keys dont have a value in the data store (e.g....&name=&...), clear out those elements on load
 		
 		//InvokeExtBound is not initialised yet so can't use _invokeExt
-		AutoSave.whenDocReady ( this._initialise.bind( this, rootControls, opts ) );		
+		AutoSave.whenDocReady ( this._initialise.bind( this, scope, opts ) );		
 	}
 	
-	AutoSave.prototype._initialise = function( parentElement, opts ) {
+	AutoSave.prototype._initialise = function( scope, opts ) {
 	
 		opts = opts || {};
 
@@ -82,7 +82,7 @@
 
 			var seekExternalFormElements = AutoSave._parseExternalElemsArg( opts.seekExternalFormElements );
 
-			this._updateRootControls( parentElement, seekExternalFormElements );
+			this._updateRootControls( scope, seekExternalFormElements );
 
 			//Do this after updating root controls as we require the names of the top-level forms
 			this._updateDataStore( opts.dataStore );
