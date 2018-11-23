@@ -295,7 +295,7 @@
 			}
 		}
 		
-		var szData = this.serialize( controlsArr );
+		var szData = this._invokeExt( AutoSave.serialize, controlsArr );
 
 		return szData;	
 	}
@@ -347,8 +347,12 @@
 				szData = rawUserInput;
 			}
 		}
-		
-		this.deserialize( szData, this.__clearEmptyValuesOnLoad );
+
+		//Find all children
+		//controlsArr is never null by post-condition of _updateRootControls
+		var controlsArr = this.__getRootControlsFunc();
+
+		this._invokeExt( AutoSave.deserialize, controlsArr, szData, this.__clearEmptyValuesOnLoad);
 
 		cb = this.__callbacks.onPostDeserialize;
 		if ( cb ) {
@@ -1124,50 +1128,6 @@
 		return elems;
 	};
 	
-	AutoSave.prototype.deserialize = function( fieldDataStr, clearEmpty ){
-		
-		if ( !fieldDataStr )
-			return; //Nothing to do
-
-		//By default, we clear elements with empty values in the dataset. This is so
-		//	- Reset behaviour can be mimic'd so all fields are cleared
-		//	- Concurrent screen editing behaviour is as expected - i.e. incase another user clears a field
-		if ( clearEmpty === undefined )
-			clearEmpty = true;
-			
-		//Find all children
-		//controlsArr is never null by post-condition of _updateRootControls
-		var controlsArr = this.__getRootControlsFunc();
-		
-		var fieldData = this._invokeExt( AutoSave._decodeFieldDataFromString,  fieldDataStr );
-		
-		for( var idx = 0; idx < controlsArr.length ; idx++ ) {
-
-			var child = controlsArr[ idx ];
-			
-			this._invokeExt( AutoSave._deserializeSingleControl, child, fieldData, clearEmpty );
-		}
-	};
-		
-	//Returns the serialized string in the standard format(?) - 
-	//Must return a string instance - even if empty - as callback hooks assume it
-	
-	//TODO: make into a static?
-	
-	AutoSave.prototype.serialize = function( rootControlsArr ){
-		
-		var fieldData = [[],[]];
-		
-		for( var idx=0 ; idx<rootControlsArr.length ; ++idx ) {
-		
-			this._invokeExt( AutoSave._serializeSingleControl, rootControlsArr[ idx ], fieldData );
-		}
-		
-		var fieldDataStr = this._invokeExt( AutoSave._encodeFieldDataToString, fieldData );
-		
-		return fieldDataStr;
-	};
-	
 	/* Additional 'classes' */
 	function _CookieStore( keyFunc, logSink ){
 		
@@ -1376,7 +1336,7 @@
 			 }
 		}
 	};
-		
+	
 	AutoSave.whenDocReady = function( funcToRun ){
 
 		//We can't log too prematurely as onLog handling will not be in place yet
@@ -1482,6 +1442,45 @@
 			};
 		}
 	};
+	
+	
+	AutoSave.deserialize = function( controlsArr, fieldDataStr, clearEmpty ){
+		
+		if ( !fieldDataStr )
+			return; //Nothing to do
+
+		//By default, we clear elements with empty values in the dataset. This is so
+		//	- Reset behaviour can be mimic'd so all fields are cleared
+		//	- Concurrent screen editing behaviour is as expected - i.e. incase another user clears a field
+		if ( clearEmpty === undefined )
+			clearEmpty = true;
+		
+		var fieldData = AutoSave._decodeFieldDataFromString( fieldDataStr );
+		
+		for( var idx = 0; idx < controlsArr.length ; idx++ ) {
+
+			var child = controlsArr[ idx ];
+			
+			AutoSave._deserializeSingleControl( child, fieldData, clearEmpty );
+		}
+	};
+		
+	//Returns the serialized string in the standard format(?) - 
+	//Must return a string instance - even if empty - as callback hooks assume it
+	AutoSave.serialize = function( rootControlsArr ){
+		
+		var fieldData = [[],[]];
+		
+		for( var idx=0 ; idx<rootControlsArr.length ; ++idx ) {
+		
+			AutoSave._serializeSingleControl( rootControlsArr[ idx ], fieldData );
+		}
+		
+		var fieldDataStr = AutoSave._encodeFieldDataToString( fieldData );
+		
+		return fieldDataStr;
+	};
+	
 
 	//Looks at a single control and it's children and returns an array of serialised object strings
 	AutoSave._serializeSingleControl = function( child, fieldData ){
