@@ -65,8 +65,7 @@
 		try {
 			
 			//Set this very first as if there's an initialisation error, startup routine may dispose and may need to log
-			this.__callbacks = opts;		
-			//TODO: Means it can be dynamic ?? But should be set explicitly for future compatability! And other opts in general?
+			this.__callbacks = opts;
 
 			this.__resetNotificationDisplayBound = this._resetNotificationDisplay.bind( this );
 			this.__handleDebouncedEventBound = this._handleDebouncedEvent.bind( this );
@@ -1164,6 +1163,11 @@
 		
 		var key = this.__currStoreKeyFunc();
 		
+		 if ( !key ){
+			
+			 throw new Error( "No key specified for saving to cookie" );
+		 }
+		
 		//Could be specified in the preStoreHook or the resetStore() to clear it out
 		if ( data === null ){
 			
@@ -1857,13 +1861,9 @@
 
 	AutoSave._buildFullCookieStr = function( key, data, opts ) {
 		
-		// if ( !key ){
-			
-			// throw new Error( "No key specified for saving to cookie" );
-		// }
 		
 		
-		//TODO: TEST: This kind of error below should bubble up through the error log channel
+		//TODO: TEST: This kind of error below should bubble up through the error log channel as it's event-triggered
 		
 		
 		//This regex is from MDN - @https://developer.mozilla.org/en-US/docs/Web/API/Document/cookie/Simple_document.cookie_framework

@@ -4071,24 +4071,18 @@ describe("AutoSaveJS", function() {
 		expect( onInitialised ).toBe( true );
 	});
 	
-	//'PROGRAMATIC CHANGES HANDLING? DIFF FEATURE? V2?
-	// button serialisation! ALL other inputs covered? toggle button a reason to do button?
-
 	//TODO: If logging not available initially and only available after a while?
 	
 	//Many of these in browser for browser-based integration tests OR send native key-press/mouse-moves
-	//Changes due to .Load() should not call .Save() 
 	//ensure name is available on NPM - e.g. AutoSavePrime
 	// Unselected select remains unselected 
 	//check jQuery implementation of :input selector
-	// multiple input radio group
 
-		//Demo using multiple instances on same domain
-	 // Without IDs, server-side or client-side auto-saving, jQuery-UI + CKEditor etc. tests,
+	// Without IDs, server-side or client-side auto-saving, jQuery-UI + CKEditor etc. tests,
 	 // Github-integrated tests
 
+	 //TODO: test on all browsers and state compatability - browserstack ?
 	 // TODO: Google "Reading/writing to cookies with full unicode support" and ensure we cover too
-	 // TODO: Test all browsers on browser-stack
 	 // Have a diagram of the hooks and where functionality belongs (e.g. AutoSave.Load)
 	 // addEventListener / removeEventListener not supported by pre-IE8 - make it compatible there too!! (?)
 		// Adding support for older browsers via hooks - 
