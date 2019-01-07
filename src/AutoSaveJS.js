@@ -1,7 +1,7 @@
 /*
 * AutoSaveJS - https://github.com/nchaud/AutoSaveJS
 * Version: 1.0.0
-* Copyright (c) 2018 Numaan Chaudhry
+* Copyright (c) 2019 Numaan Chaudhry
 * Licensed under the MIT license
 */
 
@@ -28,6 +28,7 @@
 		this.__dataStoreKeyFunc 	= undefined; //Never null after init
 		this.__onInitialiseInvoked	= undefined;
 		this.__pendingInitRoutines	= 0;
+		this.__pendingInitComplete  = false;
 
 		//Cached, bound functions
 		this.__invokeExtBound		= undefined;
@@ -64,6 +65,8 @@
 		
 		try {
 			
+			this.__isUserInvoked = true;
+		
 			//Set this very first as if there's an initialisation error, startup routine may dispose and may need to log
 			this.__callbacks = opts;
 
@@ -101,7 +104,7 @@
 				this._updateNoStorageNotification( opts.noStorageNotification );
 
 				//Toggle it
-				this._toggleNoStorageNotification( this.__warnNoStore );
+				this._toggleNoStorageNotification( true );
 			}
 
 			this._hookUnloadListener( true );
@@ -112,62 +115,131 @@
 		catch ( e ) {
 						
 			//Clean up listeners, free up keys allocated etc.
-			this.dispose();				
+			this._internalDispose();				
 			
 			throw e;
+		}
+		finally {
+			
+			this.__isUserInvoked = false;
 		}
 	};
 
 	//Runs a save on-demand
 	AutoSave.prototype.save = function(){
-
-		this._sendLog( AutoSave.LOG_INFO, "Executing save : explicitly triggered" );
-		this._executeSave();
+		
+		try {
+			
+			this.__isUserInvoked = true;
+			
+			this._sendLog( AutoSave.LOG_INFO, "Executing save : explicitly triggered" );
+			this._executeSave();
+		} finally {
+			
+			this.__isUserInvoked = false;
+		}
 	};
 	
 	//Forces a full load of supplied data
+	//Will bubble exceptions to caller
 	AutoSave.prototype.load = function(){
-				
-		var cb = null; //Callback
 
-		//Load string value from control
-		cb = this.__callbacks.onPreLoad;
-		
-		if ( cb ) {
+		try {
 			
-			this._sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPreLoad" );
-			var rawUserInput = cb();
+			this.__isUserInvoked = true;
 		
-			//See @FUN Semantics
-			if ( rawUserInput === false ) {
-				
-				this._sendLog( AutoSave.LOG_INFO, "User aborted the load in the onPreLoad handler" );
-				return; //Cancel the load
-			}
-			else if ( rawUserInput === undefined || rawUserInput === true ) { 
-				
-				//Do nothing - continue with the load
-			}
-			else  //Assume it's a custom override
-			{
-				//We already have the data, run callback
-				this._sendLog( AutoSave.LOG_INFO, "User supplied custom payload for loading in the onPreLoad handler" );
-				this._sendLog( AutoSave.LOG_DEBUG, "Custom payload", rawUserInput );
-				this._loadCallbackHandler( rawUserInput );
-				
-				return;
-			}
-		}
-		
-		//May execute asynchronously - e.g. fetching from service
-		this._registerInitQueue( 1 );
-		this.__theStore.load( this._loadCallbackHandler.bind( this ) );
-	};
+			var cb = null; //Callback
 
+			//Load string value from control
+			cb = this.__callbacks.onPreLoad;
+			
+			if ( cb ) {
+				
+				this._sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPreLoad" );
+				var rawUserInput = cb();
+			
+				//See @FUN Semantics
+				if ( rawUserInput === false ) {
+					
+					this._sendLog( AutoSave.LOG_INFO, "User aborted the load in the onPreLoad handler" );
+					return; //Cancel the load
+				}
+				else if ( rawUserInput === undefined || rawUserInput === true ) { 
+					
+					//Do nothing - continue with the load
+				}
+				else  //Assume it's a custom override
+				{
+					//We already have the data, run callback
+					this._sendLog( AutoSave.LOG_INFO, "User supplied custom payload for loading in the onPreLoad handler" );
+					this._sendLog( AutoSave.LOG_DEBUG, "Custom payload", rawUserInput );
+					this._loadCallbackHandler( rawUserInput );
+					
+					return;
+				}
+			}
+			
+			//May execute asynchronously - e.g. fetching from service
+			this._registerInitQueue( 1 );
+			this.__theStore.load( this._pipeErrorsIfAsync.bind( this, this._loadCallbackHandler.bind( this )) );
+		} finally {
+			
+			this.__isUserInvoked = false;
+		}
+	};
+	
+	AutoSave.prototype.dispose = function( deleteDataStore ) {
+
+		try {
+			
+			this.__isUserInvoked = true;
+			
+			this._internalDispose( deleteDataStore );
+		} finally {
+		
+			this.__isUserInvoked = false;
+		}			
+	}
+	
 	//Clears up this instance.
 	//Parameter 'deleteDataStore' : To remove all data stored with this AutoSave instance too
-	AutoSave.prototype.dispose = function( deleteDataStore ) {
+	
+	AutoSave.prototype.resetStore = function(){
 		
+		try {
+			
+			this.__isUserInvoked = true;
+			
+			var clearCallback = function(){};			
+			this.__theStore.resetStore( clearCallback );
+		} finally {
+		
+			this.__isUserInvoked = false;
+		}
+	};
+
+	AutoSave.prototype.getCurrentValue = function(){
+		
+		try {
+			
+			this.__isUserInvoked = true;
+			
+			var ret = this._internalGetCurrentValue();
+			
+			if (ret === false) //Cancelled, user expects a string not a boolean
+				return null;
+			else
+				return ret;
+		} finally {
+		
+			this.__isUserInvoked = false;
+		}
+	}
+
+	/** End Public Api **/
+	
+	AutoSave.prototype._internalDispose = function( deleteDataStore ) {
+	
 		//Detach listeners
 		try {
 			
@@ -236,25 +308,6 @@
 		}
 	};
 	
-	AutoSave.prototype.resetStore = function(){
-		
-		var clearCallback = function(){};
-		
-		this.__theStore.resetStore( clearCallback );
-	};
-
-	AutoSave.prototype.getCurrentValue = function(){
-		
-		var ret = this._internalGetCurrentValue();
-		
-		if (ret === false) //Cancelled, user expects a string not a boolean
-			return null;
-		else
-			return ret;
-	}
-
-	/** End Public Api **/
-	
 	//Returns false if cancelled
 	AutoSave.prototype._internalGetCurrentValue = function(){
 
@@ -318,8 +371,25 @@
 		}
 	};
 	
-	AutoSave.prototype._loadCallbackHandler = function( szData ) {
+	AutoSave.prototype._pipeErrorsIfAsync = function( target, __variadic_args__ ) {
+		
+		try {
+			
+			var targetArgs = AutoSave.toArray( arguments, 1 );
+			target.apply( this, targetArgs );
+		}
+		catch( e ){
+			
+			//If we know it's async and user isn't in callback, pipe, else throw so user can handle
+			if ( !this.__isUserInvoked )
+				this._sendLog( AutoSave.LOG_ERROR, e.toString(), e);
+			else
+				throw e;
+		}
+	}
 	
+	AutoSave.prototype._loadCallbackHandler = function( szData ) {
+
 		var cb = this.__callbacks.onPostLoad;
 		
 		if ( cb ) {
@@ -367,22 +437,27 @@
 	//May even be after an async call later etc.
 	AutoSave.prototype._registerInitQueue = function( numOfRoutines ){
 		
+		//load() can be called multiple times but ensure we only invoke initialise callback once
+		if ( this.__pendingInitComplete )
+			return;
+		
 		this.__pendingInitRoutines += numOfRoutines;
 		
 		//Call the initialisation callback once after the load step
 		if ( this.__pendingInitRoutines == 0 ) {
 			
 			var cb = this.__callbacks.onInitialised;
-			if (cb) {
+			if ( cb ) {
 				
+				this.__pendingInitComplete = true;
 				this._sendLog( AutoSave.LOG_DEBUG, "Invoking callback onInitialised" );
 				cb();
 			}
 		}
 	};
 	
-	
-	//AlWAYS called before and after a save is invoked
+	//AlWAYS called before and after a save is invoked.
+	//Needs to be robust as will be invoked (with toggleOn=false) in error situations to restore good state.
 	AutoSave.prototype._saveStartFinally = function( toggleOn ){
 		
 		this._toggleSavingNotification( toggleOn );
@@ -429,9 +504,10 @@
 		else{
 		
 			this._toggleSaveElementVisibility( this.__currWarnStorageNotificationElement, true );
-			
+
 			//Switch off after a specific time
-			setTimeout( this._toggleNoStorageNotification.bind( this, false ), 
+			setTimeout( 
+						this._pipeErrorsIfAsync.bind( this, this._toggleNoStorageNotification.bind( this, false ) ), 
 						this.__warnMsgShowDuration );
 		}
 	};
@@ -652,76 +728,91 @@
 		}
 	};
 
+	//Will bubble exceptions to caller
 	AutoSave.prototype._executeSave = function(){
 	
 		if ( this.__saveInProgress ){
 			
-			this._sendLog( AutoSave.LOG_WARN, 
-			"Save was postponed as one already in progress. (Did you remember to invoke the saveComplete callback?)" );
+			this._sendLog( AutoSave.LOG_DEBUG, 
+				"Save was postponed as one already in progress (If unexpected, did you remember to invoke the saveComplete callback?)" );
 			
 			this.__isPendingSave = true;
 			
 			return;
 		}
 		
-		this._saveStartFinally( true );
-	
-		var szData = this._internalGetCurrentValue();
-		
-		if (szData === false){
-
-			this._sendLog( AutoSave.LOG_INFO, "User aborted the save in the onPreSerialize handler" );
-			this._saveStartFinally( false );
-			return; //Cancel the save
-		}
-		
-		//Mould it to output-specific format before passing it to onPreStore hook
-		//So, for example, cookies can be modified
-		szData = this.__theStore.mouldForOutput( szData );
-		
-		//Hook before saving to store
-		var cb = this.__callbacks.onPreStore;
-
-		if ( cb ) {
+		try {
 			
-			this._sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPreStore" );
-			var rawUserInput = cb( szData );
+			this._saveStartFinally( true );
+		
+			var szData = this._internalGetCurrentValue();
 			
-			//See @FUN Semantics
-			if ( rawUserInput === false ) {
-				
-				this._sendLog( AutoSave.LOG_INFO, "User aborted the save in the onPreStore handler" );
+			if (szData === false){
+
+				this._sendLog( AutoSave.LOG_INFO, "User aborted the save in the onPreSerialize handler" );
 				this._saveStartFinally( false );
 				return; //Cancel the save
 			}
-			else if ( rawUserInput === undefined || rawUserInput === true ) { 
 			
-				//Do nothing - continue with the save
-			}
-			else { 
+			//Mould it to output-specific format before passing it to onPreStore hook
+			//So, for example, cookies can be modified
+			szData = this.__theStore.mouldForOutput( szData );
 			
-				//User input is a valid override string - null implies clearing out local storage
-				this._sendLog( AutoSave.LOG_INFO, "User overwrote saving payload with custom one in the onPreStore handler" );
-				this._sendLog( AutoSave.LOG_DEBUG, "Custom save payload in onPreStore handler", rawUserInput );
-				szData = rawUserInput;
+			//Hook before saving to store
+			var cb = this.__callbacks.onPreStore;
+
+			if ( cb ) {
+				
+				this._sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPreStore" );
+				var rawUserInput = cb( szData );
+				
+				//See @FUN Semantics
+				if ( rawUserInput === false ) {
+					
+					this._sendLog( AutoSave.LOG_INFO, "User aborted the save in the onPreStore handler" );
+					this._saveStartFinally( false );
+					return; //Cancel the save
+				}
+				else if ( rawUserInput === undefined || rawUserInput === true ) { 
+				
+					//Do nothing - continue with the save
+				}
+				else { 
+				
+					//User input is a valid override string - null implies clearing out local storage
+					this._sendLog( AutoSave.LOG_INFO, "User overwrote saving payload with custom one in the onPreStore handler" );
+					this._sendLog( AutoSave.LOG_DEBUG, "Custom save payload in onPreStore handler", rawUserInput );
+					szData = rawUserInput;
+				}
 			}
+			
+			this.__theStore.save( szData, this._onSaveCompleted.bind(this) );
 		}
-		
-		this.__theStore.save( szData, this._onSaveCompleted.bind(this) );
+		catch( e ) {
+			
+			//Reset state to subsequent saves will work
+			this._saveStartFinally( false );
+			throw e;
+		}
 	};
 
 	AutoSave.prototype._onSaveCompleted = function(){
 
-		//Inspection hook for what was sent - should be invoked asychronously after return from store
-		var cb = this.__callbacks.onPostStore;
-		
-		if ( cb ){
+		try {
 			
-			this._sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPostStore" );
-			cb();
+			//Inspection hook for what was sent - should be invoked asychronously after return from store
+			var cb = this.__callbacks.onPostStore;
+			
+			if ( cb ){
+				
+				this._sendLog( AutoSave.LOG_DEBUG, "Invoking callback onPostStore" );
+				cb();
+			}
 		}
-		
-		this._saveStartFinally( false );
+		finally {
+			
+			this._saveStartFinally( false );
+		}
 	};
 	
 	//This function sets up where to save the data
@@ -851,7 +942,6 @@
 				 if ( !funcToCall ){
 					 
 					 //Match for this log level not found, skip the message, assume user doesnt want to log at this level
-					 
 					 return;
 				 }
 					 
@@ -875,7 +965,7 @@
 				 //continue
 				 args = arguments;
 			 }
-			 else {//could be string, object, anything user specifies take as-is
+			 else { //could be string, object, anything user specifies take as-is
 				 
 				 //Preserve the level and treat array specially
 				 if ( ret && ret.length )
@@ -1089,8 +1179,8 @@
 		this._sendLog( AutoSave.LOG_INFO, "Executing save: after element(s) changed" );
 		
 		this.__debounceTimeoutHandle = null;
-
-		this._executeSave();
+		
+		this._pipeErrorsIfAsync.call( this, this._executeSave );
 	};
 	
 	//Parameter should NOT be falsy here - should be handled beforehand by caller based on context
@@ -1861,15 +1951,10 @@
 
 	AutoSave._buildFullCookieStr = function( key, data, opts ) {
 		
-		
-		
-		//TODO: TEST: This kind of error below should bubble up through the error log channel as it's event-triggered
-		
-		
 		//This regex is from MDN - @https://developer.mozilla.org/en-US/docs/Web/API/Document/cookie/Simple_document.cookie_framework
-		if (key && /^(?:expires|max\-age|path|domain|secure)$/i.test( key ) ) {
+		if (key && /(?:expires|max\-age|path|domain|secure)/i.test( key ) ) {
 
-			throw new Error( "Parameters to cookie must not be specified as part of the key (e.g. path=, domain= etc.)" );
+			throw new Error( "Parameters to cookies(expires, path, domain etc.) must not be specified as part of the key" );
 		}
 		
 		opts = opts || {};
@@ -1888,7 +1973,7 @@
 			
 			//Never expires
 			if ( opts.neverExpire )
-				cookieParamsStr += "expires=Fri, 31 Dec 9999 23:59:59 GMT; ";
+				cookieParamsStr += "expires=Fri, 31 Dec 2100 23:59:59 GMT; ";
 			else if ( opts.expireNow )
 				cookieParamsStr += "expires=Sat, 23 Mar 1889 23:59:59 GMT; ";
 		}

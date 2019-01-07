@@ -1,6 +1,6 @@
 describe("AutoSaveJS", function() {
 
-	_defaultCookieKey = "AutoSaveJS_MOCK/PATH/1";
+	_defaultCookieKey = "AutoSaveJS_MOCK/URL/1";
 	
 	_allCurrAutoSaves = [];
 	_noOpLoad = function( key, loadCompleted){ loadCompleted() };
@@ -215,7 +215,7 @@ describe("AutoSaveJS", function() {
 		jasmine.clock().install();
 		
 		//Simulate URL path
-		AutoSave.getUrlPath = function(){ return "MOCK/PATH/1"; };
+		AutoSave.getUrlPath = function(){ return "MOCK/URL/1"; };
 	})
 
 	afterEach(function(){
@@ -960,7 +960,7 @@ describe("AutoSaveJS", function() {
 		//Trigger it manually for this test
 		aSave.save();
 		
-		expect(localStorage.getItem("AutoSaveJS_MOCK/PATH/1")).toBeFalsy(); //Must not end up in localStorage
+		expect(localStorage.getItem("AutoSaveJS_MOCK/URL/1")).toBeFalsy(); //Must not end up in localStorage
 		
 		expect(getBrowserCookie()).toEqual( "fullName=John+Wayne&description=~Green%40ways~" );
 	})
@@ -979,7 +979,7 @@ describe("AutoSaveJS", function() {
 		
 		aSave.save();
 		
-		expect( localStorage.getItem("AutoSaveJS_MOCK/PATH/1") ).toEqual( "fullName=John+Wayne&description=~Green%40fields~" );
+		expect( localStorage.getItem("AutoSaveJS_MOCK/URL/1") ).toEqual( "fullName=John+Wayne&description=~Green%40fields~" );
 		aSave.dispose( false ); //Keep the storage
 
 		//Mock out (again) the location path temporarily to simulate another page
@@ -987,14 +987,14 @@ describe("AutoSaveJS", function() {
 		try {
 
 			//Assume we're on a different page now
-			AutoSave.getUrlPath = function(){ return "MOCK/PATH/2"; };
+			AutoSave.getUrlPath = function(){ return "MOCK/URL/2"; };
 			var aSave2 = createAutoSave(null, null, false);
 
 			getOne("input").val("Bill Wagner");
 			getOne("textarea").val("Blue days");
 			
 			aSave2.save();
-			expect( localStorage.getItem("AutoSaveJS_MOCK/PATH/2") ).toEqual( "fullName=Bill+Wagner&description=Blue+days" );
+			expect( localStorage.getItem("AutoSaveJS_MOCK/URL/2") ).toEqual( "fullName=Bill+Wagner&description=Blue+days" );
 			aSave2.dispose( false ); //Keep the storage
 		}finally{
 			
@@ -1059,16 +1059,16 @@ describe("AutoSaveJS", function() {
 		setValue("textarea", "~Green@fields~");	
 
 		//Sanity - not stored in local storage yet
-		expect( localStorage.getItem("AutoSaveJS_MOCK/PATH/1") ).toBeFalsy();
+		expect( localStorage.getItem("AutoSaveJS_MOCK/URL/1") ).toBeFalsy();
 		
 		expect(aSave.getCurrentValue()).toEqual("fullName=John+Wayne&description=~Green%40fields~");
 		
 		//Still should not be stored in local storage yet
-		expect( localStorage.getItem("AutoSaveJS_MOCK/PATH/1") ).toBeFalsy();
+		expect( localStorage.getItem("AutoSaveJS_MOCK/URL/1") ).toBeFalsy();
 		
 		jasmine.clock().tick(60*1000); //Let the auto-save debounce elapse to ensure the pending save still happens
 		
-		expect( localStorage.getItem("AutoSaveJS_MOCK/PATH/1") ).toEqual("fullName=John+Wayne&description=~Green%40fields~");
+		expect( localStorage.getItem("AutoSaveJS_MOCK/URL/1") ).toEqual("fullName=John+Wayne&description=~Green%40fields~");
 	});
 
 	it('can set a custom static string as the local storage key postfix', function(){
@@ -1092,7 +1092,7 @@ describe("AutoSaveJS", function() {
 		//Trigger it manually for this test
 		aSave.save();
 		
-		expect( localStorage.getItem("AutoSaveJS_MOCK/PATH/1_225758493995") ).toEqual( "fullName=John+Wayne&description=~Green%40fields~" );
+		expect( localStorage.getItem("AutoSaveJS_MOCK/URL/1_225758493995") ).toEqual( "fullName=John+Wayne&description=~Green%40fields~" );
 	});
 	
 	it('can set a custom static string as the cookie key postfix', function(){
@@ -1138,7 +1138,7 @@ describe("AutoSaveJS", function() {
 		//Trigger it manually for this test
 		aSave.save();
 		
-		expect( localStorage.getItem("AutoSaveJS_MOCK/PATH/1_12345") ).toEqual( "fullName=Wayne+Stein" );		
+		expect( localStorage.getItem("AutoSaveJS_MOCK/URL/1_12345") ).toEqual( "fullName=Wayne+Stein" );		
 	});
 	
 	it('can set a custom function as the cookie key provider', function(){
@@ -1567,7 +1567,7 @@ describe("AutoSaveJS", function() {
 		var testFragment = "<form class='other'><div id='d1'>"+groupFragment+"</div></form>"+
 						   "<form class='some_other'><div id='d2'>"+groupFragment+"</div></form>";
 		
-		var errMsg = "There is already an AutoSave instance with the storage key of 'AutoSaveJS_MOCK/PATH/1'. See the documentation for solutions.";
+		var errMsg = "There is already an AutoSave instance with the storage key of 'AutoSaveJS_MOCK/URL/1'. See the documentation for solutions.";
 		
 		//Supply selector string
 		expect(function(){
@@ -1591,7 +1591,7 @@ describe("AutoSaveJS", function() {
 		var testFragment = "<form name='group1' class='other'><div id='d1'>"+groupFragment+"</div></form>"+
 						   "<form name='group1' class='some_other'><div id='d2'>"+groupFragment+"</div></form>";
 		
-		var errMsg = "There is already an AutoSave instance with the storage key of 'AutoSaveJS_MOCK/PATH/1_group1'. See the documentation for solutions.";
+		var errMsg = "There is already an AutoSave instance with the storage key of 'AutoSaveJS_MOCK/URL/1_group1'. See the documentation for solutions.";
 		
 		//Supply selector string
 		expect(function(){
@@ -1622,11 +1622,11 @@ describe("AutoSaveJS", function() {
 
 		expect(function(){
 			var inst3 = createAutoSave("[name='some']", null, false);
-		}).toThrowError("There is already an AutoSave instance with the storage key of 'AutoSaveJS_MOCK/PATH/1_some'. See the documentation for solutions.");
+		}).toThrowError("There is already an AutoSave instance with the storage key of 'AutoSaveJS_MOCK/URL/1_some'. See the documentation for solutions.");
 		
 		expect(function(){
 			var inst4 = createAutoSave(".some_other", null, false);
-		}).toThrowError("There is already an AutoSave instance with the storage key of 'AutoSaveJS_MOCK/PATH/1'. See the documentation for solutions.");
+		}).toThrowError("There is already an AutoSave instance with the storage key of 'AutoSaveJS_MOCK/URL/1'. See the documentation for solutions.");
 
 		//Dispose first, should be able to create new
 		inst1.dispose();
@@ -1646,7 +1646,7 @@ describe("AutoSaveJS", function() {
 		var testFragment = "<div class='other'><div id='d1'>"+groupFragment+"</div></div>"+
 						   "<div class='some_other'><div id='d2'>"+groupFragment+"</div></div>";
 		
-		var errMsg = "There is already an AutoSave instance with the storage key of 'AutoSaveJS_MOCK/PATH/1'. See the documentation for solutions.";
+		var errMsg = "There is already an AutoSave instance with the storage key of 'AutoSaveJS_MOCK/URL/1'. See the documentation for solutions.";
 		
 		//Supply selector string
 		expect(function(){
@@ -1745,13 +1745,13 @@ describe("AutoSaveJS", function() {
 		//Wait for auto-save to kick in and save
 		jasmine.clock().tick(60*1000);
 
-		expect(getLocalStorageElseCookie("AutoSaveJS_MOCK/PATH/1")).toEqual("Reason=So+Good");
-		expect(getLocalStorageElseCookie("AutoSaveJS_MOCK/PATH/1_myCustomKey")).toEqual("Cause=Just+Cause");
+		expect(getLocalStorageElseCookie("AutoSaveJS_MOCK/URL/1")).toEqual("Reason=So+Good");
+		expect(getLocalStorageElseCookie("AutoSaveJS_MOCK/URL/1_myCustomKey")).toEqual("Cause=Just+Cause");
 		
 		AutoSave.resetAll();
 
-		expect(getLocalStorageElseCookie("AutoSaveJS_MOCK/PATH/1")).toBeFalsy();
-		expect(getLocalStorageElseCookie("AutoSaveJS_MOCK/PATH/1_myCustomKey")).toBeFalsy();
+		expect(getLocalStorageElseCookie("AutoSaveJS_MOCK/URL/1")).toBeFalsy();
+		expect(getLocalStorageElseCookie("AutoSaveJS_MOCK/URL/1_myCustomKey")).toBeFalsy();
 
 		aSave1.dispose( true );
 		aSave2.dispose( true );
@@ -1922,8 +1922,61 @@ describe("AutoSaveJS", function() {
 		autoSave_1.dispose( true );
 		autoSave_2.dispose( true );
 	});
-  
-	//NB: Error level is hard to test as normally an exception is thrown at the time
+	
+	//TODO: add test if console not available?
+	
+	//We pipe errors in code that's triggered through events. For user-initiated calls, we just throw to the caller.
+  	it('onLog error callback is invoked for errors caused by event-triggered code', function(){
+		
+		//Arrange - Create and set a value on the input text box
+		var testFragment = "<h3>Please enter your preferred musician:</h3>\
+							<input type='text' name='musician'>";
+		
+		addToSandbox(testFragment);
+	
+		var ERR_MSG = "Parameters to cookies(expires, path, domain etc.) must not be specified as part of the key";
+	
+		//Watch the console for messages
+		var spy = spyOn( console, "error" );
+				
+		var errorLogInvoked = false;
+		var defaultOpt = {
+			onLog:function( level, msg ){
+				
+				if ( msg.indexOf(ERR_MSG) != -1) {
+					
+					errorLogInvoked = true;
+					return false; //Prevent default logging to console
+				}
+			},
+			dataStore:{ //Simulate parameters for an error
+				preferCookies:true,
+				key: "MyCustomKey;domain=sub.myDomain.com"
+			}
+		};
+		
+		var autoSave = createAutoSave(null, defaultOpt);
+		
+		//Setting a value should trigger an auto-save which is *event-based*
+		//which should log the error rather than just throwing on console
+		setValue("[name='musician']", "Beethoven");
+		jasmine.clock().tick(60*1000);
+		
+		expect(errorLogInvoked).toEqual(true); //Sanity
+		expect(console.error).not.toHaveBeenCalled();
+		
+		//Calling save manually which is *user-initiated* should just throw back to user
+		errorLogInvoked = false; //Reset
+		expect(function(){
+			autoSave.save()
+		}).toThrowError( ERR_MSG );
+		expect(console.error).not.toHaveBeenCalled();
+		expect(errorLogInvoked).toEqual(false);
+	});
+	
+	//TODO: Document that calls they make or callbacks they implement, they need to catch
+	//Show examples of their error code, our sync error code, our async error code
+	
 	it('onLog callback option behaviour is correct - warn level', function(){
 	
 		//Watch the console for messages
@@ -3243,27 +3296,27 @@ describe("AutoSaveJS", function() {
 		});
 		
 		//Sanity - Ensure first time round the cookie is populated correctly
-		localStorage.setItem("AutoSaveJS_MOCK/PATH/1", "RESET");
+		localStorage.setItem("AutoSaveJS_MOCK/URL/1", "RESET");
 		aSave.save();
-		var dataValue = localStorage.getItem("AutoSaveJS_MOCK/PATH/1");
+		var dataValue = localStorage.getItem("AutoSaveJS_MOCK/URL/1");
 		expect( dataValue ).toEqual("frmNameEntry=Jonathan+%2F+Nash&frmGenderEntry=&frmAddressEntry=&frmAgeEntry=10");
 		
 		//On second invocation, should get nothing serialised
-		localStorage.setItem("AutoSaveJS_MOCK/PATH/1", "RESET");
+		localStorage.setItem("AutoSaveJS_MOCK/URL/1", "RESET");
 		aSave.save();
-		var dataValue = localStorage.getItem("AutoSaveJS_MOCK/PATH/1");
+		var dataValue = localStorage.getItem("AutoSaveJS_MOCK/URL/1");
 		expect( dataValue ).toBeFalsy();
 	
 		//On third invocation, should get cancelled out and preserve existing one
-		localStorage.setItem("AutoSaveJS_MOCK/PATH/1", "RESET");
+		localStorage.setItem("AutoSaveJS_MOCK/URL/1", "RESET");
 		aSave.save();
-		var dataValue = localStorage.getItem("AutoSaveJS_MOCK/PATH/1");
+		var dataValue = localStorage.getItem("AutoSaveJS_MOCK/URL/1");
 		expect( dataValue ).toEqual("RESET"); //i.e. unchanged
 		
 		//On fourth invocation, should get changed altogether
-		localStorage.setItem("AutoSaveJS_MOCK/PATH/1", "RESET");
+		localStorage.setItem("AutoSaveJS_MOCK/URL/1", "RESET");
 		aSave.save();
-		var dataValue = localStorage.getItem("AutoSaveJS_MOCK/PATH/1");
+		var dataValue = localStorage.getItem("AutoSaveJS_MOCK/URL/1");
 		expect( dataValue ).toEqual("frmNameEntry=Jonathan+%2F+Oscar&frmGenderEntry=&frmAddressEntry=&frmAgeEntry=10");
 
 	});
@@ -4107,6 +4160,10 @@ describe("AutoSaveJS", function() {
 //TODO: Localisation
 //TODO: test dispose() causes no more save invocations
 //TODO: If any errors, pipe them somewhere...? Catch errors in callback functions?
+
+
+//TODO: Errors in all async methods should be piped through the error
+
 
 
 /** DEMO / DOCS **/
