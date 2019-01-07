@@ -382,7 +382,7 @@
 			
 			//If we know it's async and user isn't in callback, pipe, else throw so user can handle
 			if ( !this.__isUserInvoked )
-				this._sendLog( AutoSave.LOG_ERROR, e.toString(), e);
+				this._sendLog( AutoSave.LOG_ERROR, e);
 			else
 				throw e;
 		}

@@ -1943,7 +1943,7 @@ describe("AutoSaveJS", function() {
 		var defaultOpt = {
 			onLog:function( level, msg ){
 				
-				if ( msg.indexOf(ERR_MSG) != -1) {
+				if ( msg.toString().indexOf(ERR_MSG) != -1) {
 					
 					errorLogInvoked = true;
 					return false; //Prevent default logging to console
@@ -2529,6 +2529,8 @@ describe("AutoSaveJS", function() {
 		
 		addToSandbox(testFragment);
 		
+		var spy = spyOn( console, "error" );
+		
 		var _currCallback = null; //This is what the save function is expecting to be called to complete the save operation
 		
 		var defaultOpt = {
@@ -2577,10 +2579,12 @@ describe("AutoSaveJS", function() {
 
 		//Case #3: Notification display's inner text should get changed
 		ctr = 2;
+		expect(console.error).not.toHaveBeenCalled(); //Sanity		
 		setValue("[name='musician']", "Debussy");
-		expect(function(){
-			jasmine.clock().tick(60*1000);
-		}).toThrowError( "Unexpected return type from callback 'onSaveNotification'" );
+		jasmine.clock().tick(60*1000);
+		
+		 //Will be logged instead of thrown as it's async
+		expect(console.error).toHaveBeenCalledWith(new Error("Unexpected return type from callback 'onSaveNotification'"));
 	});
 	
 	
@@ -2957,7 +2961,7 @@ describe("AutoSaveJS", function() {
 		//Should contain cookie prefix, expiry time etc.
 		expect(szString)
 		.toEqual(
-			"frmNameEntry=Nash&frmGenderEntry=&frmAddressEntry=&frmAgeEntry=10; expires=Fri, 31 Dec 9999 23:59:59 GMT; "
+			"frmNameEntry=Nash&frmGenderEntry=&frmAddressEntry=&frmAgeEntry=10; expires=Fri, 31 Dec 2100 23:59:59 GMT; "
 		);
 	});
 	
