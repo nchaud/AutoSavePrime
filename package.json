@@ -7,9 +7,13 @@
     "test": "tests"
   },
   "devDependencies": {
-	"uglify-js": "^1.0.0",
-	"ckeditor":"4.6.2",
-	"bootstrap":"3.1.1"
+	"bootstrap":	"3.1.1",
+	"ckeditor":		"4.6.2",
+	"jasmine-core":	"2.99.1",
+	"jasmine-jquery":"2.0.5",
+	"jquery":		"3.1.1",
+	"jquery.uniform":"2.1.2",
+	"uglify-js":	"^1.0.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
