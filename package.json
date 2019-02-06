@@ -1,0 +1,33 @@
+{
+  "name": "autosavejs",
+  "version": "1.0.0",
+  "description": "Production-ready library that auto-saves as you work",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "devDependencies": {
+	"uglify-js": "^1.0.0",
+	"ckeditor":"4.6.2",
+	"bootstrap":"3.1.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nchaud/AutoSaveJS.git"
+  },
+  "keywords": [
+    "autosave",
+    "serialise",
+    "form",
+    "saving"
+  ],
+  "author": "Numaan Chaudhry",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nchaud/AutoSaveJS/issues"
+  },
+  "homepage": "https://github.com/nchaud/AutoSaveJS#readme"
+}

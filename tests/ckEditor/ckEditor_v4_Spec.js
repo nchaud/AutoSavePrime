@@ -86,7 +86,7 @@ describe("AutoSaveJS+CKEditor", function() {
 		jasmine.getFixtures().fixturesPath = "./tests/ckEditor";
 		
 		//Load CKEditor scripts
-		$.getScript("lib/ckeditor/ckeditor.js", function(){
+		$.getScript("./node_modules/ckeditor/ckeditor.js", function(){
 			
 			//resume tests
 			done();
