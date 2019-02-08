@@ -5,8 +5,8 @@
 * Licensed under the MIT license
 */
 
-// X-module-loader compatability prelude
 (function (root, factory) {
+	/* X-module-loader compatability prelude */
     if (typeof define === 'function' && define.amd) {
         define(["autosave"], factory);
     } else if (typeof module === 'object' && module.exports) {

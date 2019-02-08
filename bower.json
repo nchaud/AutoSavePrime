@@ -1,0 +1,23 @@
+{
+  "name": "autosavejs",
+  "description": "Production-ready library that auto-saves as you work",
+  "main": "index.js",
+  "authors": [
+    "Numaan Chaudhry"
+  ],
+  "license": "ISC",
+  "keywords": [
+    "autosave",
+    "serialise",
+    "form",
+    "saving"
+  ],
+  "homepage": "https://github.com/nchaud/AutoSaveJS",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

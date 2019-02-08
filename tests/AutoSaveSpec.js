@@ -4193,7 +4193,7 @@ describe("AutoSaveJS", function() {
 	//TODO: Do a demo for skipping log levels, wiring into winston/simple logging 
 		//TODO: For all errors like this one, have a FAQ page with examples. IF you get "...", do...
 	//TODO: Bower
-	//TODO: Package.json
+	//TODO: Test npm works on linux
 	//TODO: Demo of calling store.resetStore() when page saved to server so doesn't auto-populate next time - if using cookies/local storage instead of ajax! **
 			
 	 //Have version, along with minified file has version at top. see ckEditor top.
