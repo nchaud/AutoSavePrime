@@ -1,6 +1,3 @@
-
-//TODO: MULTI INSTANCE of IDENTICAL ELEMENTS that are provided different containers/selectors
-
 describe("AutoSaveJS+uniform", function() {
 	
 	function setSelected(elem, isChecked){
@@ -114,8 +111,6 @@ describe("AutoSaveJS+uniform", function() {
 	}
 
 	//Guaranteed to get an instance of a string, even if empty
-	
-	//TODO: Multiple instances !
   
   describe('jQuery uniform integration', function(){
 	

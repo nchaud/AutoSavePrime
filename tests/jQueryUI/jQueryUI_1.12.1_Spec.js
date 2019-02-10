@@ -1,6 +1,3 @@
-
-//TODO: MULTI INSTANCE of IDENTICAL ELEMENTS that are provided different containers/selectors
-
 describe("AutoSaveJS+jQueryUI", function() {
 	
 	function setSelected(elem, isChecked){
@@ -193,9 +190,6 @@ describe("AutoSaveJS+jQueryUI", function() {
 		//We could also strip out the jQuery-UI specific elements here and return a modified string
 		//but not really necessary
 	}
-	
-	
-	//TODO: Multiple instances !
   
   describe('jQueryUI 1.12.1 hook', function(){
 	
@@ -218,8 +212,6 @@ describe("AutoSaveJS+jQueryUI", function() {
 		$( "#TransactionDate" ).datepicker( "setDate", "12/31/2012" );
 		
 		$("#location-london").prop("checked", true);
-		
-		//todo: hook into change event and let autosavejs know? or make input fire change when writing and not just on blur !
 		
 		$( "#language-autocomplete" ).val("c++ & java!");
 

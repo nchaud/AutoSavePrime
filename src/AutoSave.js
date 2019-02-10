@@ -2,7 +2,7 @@
 * AutoSaveJS - https://github.com/nchaud/AutoSaveJS
 * Version: 1.0.0
 * Copyright (c) 2019 Numaan Chaudhry
-* Licensed under the MIT license
+* Licensed under the ISC license
 */
 
 (function (root, factory) {
@@ -16,8 +16,8 @@
     }
 }(this, function () {
 
-	"use strict";			//TODO: CONFORM TO THIS !!!
-
+	"use strict";
+	
 	function AutoSave( scope, opts ){
 
 		this.__callbacks 			= undefined;
@@ -199,7 +199,7 @@
 		
 			this.__isUserInvoked = false;
 		}			
-	}
+	};
 	
 	//Clears up this instance.
 	//Parameter 'deleteDataStore' : To remove all data stored with this AutoSave instance too
@@ -234,7 +234,7 @@
 		
 			this.__isUserInvoked = false;
 		}
-	}
+	};
 
 	/** End Public Api **/
 	
@@ -350,7 +350,7 @@
 		var szData = this._invokeExt( AutoSave.serialize, controlsArr );
 
 		return szData;	
-	}
+	};
 	
 	AutoSave.prototype._updateLoadStrategy = function( autoLoadTrigger ) {
 						
@@ -386,7 +386,7 @@
 			else
 				throw e;
 		}
-	}
+	};
 	
 	AutoSave.prototype._loadCallbackHandler = function( szData ) {
 
@@ -1220,6 +1220,8 @@
 	/* Additional 'classes' */
 	function _CookieStore( keyFunc, logSink ){
 		
+		/* jshint validthis: true */ /* We know this function is only invoked as a constructor */
+		
 		this._logSink = logSink;
 		this._logSink( AutoSave.LOG_INFO, "Using cookie storage as local store" );
 		
@@ -1293,12 +1295,14 @@
 
 	function _LocalStore( keyFunc, logSink ){
 		
+		/* jshint validthis: true */ /* We know this function is only invoked as a constructor */
+		
 		this._logSink = logSink;
 		this._logSink( AutoSave.LOG_INFO, "Using Browser Local Storage as local store" );
 		
 		this.__currStoreKeyFunc = keyFunc;
 	}
-		
+
 	_LocalStore.prototype.load = function( loadCompleted ){
 
 		var key = this.__currStoreKeyFunc();
@@ -1307,7 +1311,7 @@
 		
 		loadCompleted( data );
 	};
-		
+
 	_LocalStore.prototype.save = function( data, saveCompleted ) {
 
 		//AutoSaveJS-specific prefix
@@ -1330,12 +1334,12 @@
 		
 		saveCompleted( );
 	};
-	
+
 	_LocalStore.prototype.mouldForOutput = function( data ){
 		
 		return data;
 	};
-	
+
 	_LocalStore.prototype.resetStore = function( clearCompleted ){
 		
 		return this.save( null, clearCompleted );
@@ -1343,15 +1347,17 @@
 
 	function _NoStore( logSink ){
 		
+		/* jshint validthis: true */ /* We know this function is only invoked as a constructor */
+		
 		this._logSink = logSink;
 		this._logSink( AutoSave.LOG_INFO, "Using a no-op data store" );
 	}
-	
+
 	_NoStore.prototype.load = function( loadCompleted ){
 		
 		loadCompleted( null );
 	};
-	
+
 	_NoStore.prototype.save = function( data, saveCompleted ){
 		
 		saveCompleted();
@@ -1361,17 +1367,18 @@
 		
 		return data;
 	};
-	
+
 	_NoStore.prototype.resetStore = function(){
 		
 		//No-op
 	};
-	
+
 	//Assumes save and load parameters are valid functions
 	function _CustomStore( keyFunc, userSaveFunc, userLoadFunc, logSink ){
 		
-		this._logSink = logSink;
+		/* jshint validthis: true */ /* We know this function is only invoked as a constructor */
 		
+		this._logSink = logSink;
 		this._logSink( AutoSave.LOG_INFO, "Using a custom store as the local store" );
 		
 		if ( userLoadFunc.length != 2 ) {
@@ -1582,6 +1589,9 @@
 		var nameKey = child.name;
 		var value = child.value;
 		
+		var sChildren;
+		var sIdx;
+		
 		if ( child.nodeName == "INPUT" ) {
 		
 			//We only serialise controls with names (else we'll get, e.g., '=Oscar&=Mozart')
@@ -1621,8 +1631,8 @@
 			}
 			else { //Must be of type == 'select-multiple'
 			
-				var sChildren = child.options;
-				for( var sIdx = 0 ; sIdx < sChildren.length ; ++sIdx ){
+				sChildren = child.options;
+				for( sIdx = 0 ; sIdx < sChildren.length ; ++sIdx ){
 				
 					if ( sChildren[sIdx].selected ) {
 					
@@ -1647,8 +1657,8 @@
 		else {
 		
 			//May be, e.g., a form or div so go through all children
-			var sChildren = child.children;
-			for( var sIdx = 0 ; sIdx < sChildren.length ; sIdx++ ){
+			sChildren = child.children;
+			for( sIdx = 0 ; sIdx < sChildren.length ; sIdx++ ){
 				
 				AutoSave._serializeSingleControl( sChildren[ sIdx ], fieldData );
 			}
@@ -1761,8 +1771,10 @@
 
 	AutoSave._deserializeSingleControl = function( child, fieldData, clearEmpty ){
 
-		var fieldValue = null;
+		var fieldIdx;
+		var fieldValue;
 		var runStd = false;
+		var sChildren;
 		
 		if ( child.nodeName == "INPUT" ){
 		
@@ -1776,7 +1788,7 @@
 				
 				var foundField = null;
 				
-				for ( var fieldIdx in fieldData[ 0 ] ) {
+				for ( fieldIdx in fieldData[ 0 ] ) {
 				
 					if ( fieldData[ 0 ][ fieldIdx ] == child.name ) {
 						
@@ -1807,18 +1819,18 @@
 		}
 		else if ( child.nodeName == "SELECT" ) {
 		
-			var sChildren = child.options;
+			sChildren = child.options;
 			
 			outer:
 			for ( var childIdx = 0 ; childIdx < sChildren.length ; childIdx++ ) {
 				
 				var opt = sChildren[ childIdx ];
 				
-				for ( var fieldIdx in fieldData[ 0 ] ) {
+				for ( fieldIdx in fieldData[ 0 ] ) {
 				
 					if ( fieldData[ 0 ][ fieldIdx ] == child.name ) { //Data field with this select's name
 						
-						var fieldValue = fieldData[ 1 ][ fieldIdx ];
+						fieldValue = fieldData[ 1 ][ fieldIdx ];
 						
 						if ( fieldValue == opt.value ) { //Data field with this option's value
 						
@@ -1841,7 +1853,7 @@
 		else {
 									
 			//May be, e.g., a form or div so go through all children
-			var sChildren = child.children;
+			sChildren = child.children;
 			for( var sIdx = 0; sIdx < sChildren.length; sIdx++ ){
 				
 				AutoSave._deserializeSingleControl( sChildren[ sIdx ], fieldData, clearEmpty );
@@ -1850,13 +1862,13 @@
 		
 		if ( runStd ) {
 			
-			for ( var fieldIdx in fieldData[ 0 ] ) {
+			for ( fieldIdx in fieldData[ 0 ] ) {
 			
 				var fieldName = fieldData[ 0 ][ fieldIdx ];
 				
 				if ( fieldName === child.name ){
 				
-					var fieldValue = fieldData[ 1 ][ fieldIdx ];
+					fieldValue = fieldData[ 1 ][ fieldIdx ];
 						
 					if ( fieldValue !== "" || clearEmpty )
 						child.value = fieldValue;
@@ -1988,12 +2000,14 @@
 		//Remove reserved keys
 		AutoSave.__keysInUse = [];
 			
+		var key;
+		
 		//Iterate and remove all AutoSaveJS local storage
 		if ( AutoSave.isLocalStorageAvailable() ) {
 			
 			for (var i = localStorage.length - 1; i >= 0; i--) {
 				
-				var key = localStorage.key( i );
+				key = localStorage.key( i );
 				
 				if (key && key.indexOf( AutoSave.DEFAULT_KEY_PREFIX ) === 0){
 					
@@ -2007,7 +2021,7 @@
 		
 		for (var nIdx = 0; nIdx < aKeys.length; nIdx++) { 
 		
-			var key = decodeURIComponent( aKeys[ nIdx ] );
+			key = decodeURIComponent( aKeys[ nIdx ] );
 			
 			if ( key.indexOf(AutoSave.DEFAULT_KEY_PREFIX) === 0 ) {
 				
@@ -2021,6 +2035,7 @@
 	AutoSave.getExternalFormControls = function( elems ){
 
 		var formNames = [];
+		var id;
 		
 		for( var idx = 0; idx < elems.length; idx++ ){
 			
@@ -2028,7 +2043,7 @@
 			
 			if ( elem.nodeName == "FORM" ){
 				
-				var id = elem.id;
+				id = elem.id;
 				if ( id ){
 					
 					formNames.push( id );
@@ -2044,7 +2059,7 @@
 					
 					if ( nElem.nodeName == "FORM" ){
 						
-						var id = nElem.id;
+						id = nElem.id;
 						if ( id ){
 							
 							formNames.push( id );
@@ -2194,7 +2209,7 @@
 	AutoSave.getUrlPath = function(){
 		
 		return window.location.pathname;
-	}
+	};
 
 	AutoSave.LOG_DEBUG	= "debug";
 	AutoSave.LOG_INFO	= "info";

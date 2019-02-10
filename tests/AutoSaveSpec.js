@@ -4129,89 +4129,55 @@ describe("AutoSaveJS", function() {
 	});
 	
 	//TODO: If logging not available initially and only available after a while?
-	
-	//Many of these in browser for browser-based integration tests OR send native key-press/mouse-moves
-	//ensure name is available on NPM - e.g. AutoSavePrime
+	// Many of these in browser for browser-based integration tests OR send native key-press/mouse-moves
+	// ensure name is available on NPM - e.g. AutoSavePrime
 	// Unselected select remains unselected 
-	//check jQuery implementation of :input selector
-
+	// check jQuery implementation of :input selector
 	// Without IDs, server-side or client-side auto-saving, jQuery-UI + CKEditor etc. tests,
-	 // Github-integrated tests
-
-	 //TODO: test on all browsers and state compatability - browserstack ?
-	 // TODO: Google "Reading/writing to cookies with full unicode support" and ensure we cover too
-	 // Have a diagram of the hooks and where functionality belongs (e.g. AutoSave.Load)
-	 // addEventListener / removeEventListener not supported by pre-IE8 - make it compatible there too!! (?)
-		// Adding support for older browsers via hooks - 
-		// https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
-	 // perf test across browsers
-	 // d.ts file
-	 // Retain focus when serialising/deserialising
-	 // Following settings are mutable and can be changed, following are not and will throw on mutation
-	 // jQuery won't do this : $("body").serialize() - see GitHub discussion for why needs a form
-	 //	jQuery also wont respect HTML5 new form attribute
-	 // Dynamically added controls/panels, dynamically expanded etc. - add hooks?
-	 // NodeJS? Using document property :/ ...
+	// Github-integrated tests
+	// Test on all browsers and state compatability - browserstack ?
+	// Have a diagram of the hooks and where functionality belongs (e.g. AutoSave.Load)
+	// addEventListener / removeEventListener not supported by pre-IE8 - make it compatible there too!! (?)
+	// Adding support for older browsers via hooks - 
+	// https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
+	// perf test across browsers
+	// d.ts file
+	// Following settings are mutable and can be changed, following are not and will throw on mutation
+	// jQuery won't do this : $("body").serialize() - see GitHub discussion for why needs a form
+	// jQuery also wont respect HTML5 new form attribute
+	// Dynamically added controls/panels, dynamically expanded etc. - add hooks?
+	// NodeJS? Using document property :/ ...
 	// incorporate JSON2.js !!
-	//TODO: Document if custom path, domains etc are set, will not get cleared out
-	//TODO: What to do if cookie storage is running out?	 
-	 // As we're using event handlers, test if us throwing doesn't invoke the remaining handles. If so, try-catch and pipe to errorHandler 
-	 //(by default throws an Error with code)
-	 // Unhook events on elements removed from DOM (?)
-
-//FIRST PRIORITY FOR LIBRARY IS WORKING IN ALL SCENARIOS, OUT OF BOX - THEN ALLOW THEM TO TWEAK PARAMTERS FOR PERFORMANCE
-	 
-//TODO: Localisation
-//TODO: test dispose() causes no more save invocations
-//TODO: If any errors, pipe them somewhere...? Catch errors in callback functions?
-
-
-//TODO: Errors in all async methods should be piped through the error
-
-
-
-/** DEMO / DOCS **/
-//TODO: Demo for custom hook where load can be delayed
-	 // Demo for doing control diff to send only changes or using angular is-pristine flag
-//TODO: Demo for initial load value
-	 // Documentation - if you want to cache the controls used, store the onPreSerialize value, change parentElement?
-	 // Demo - send on regular interval by autoSaveTrigger: null and call save() myself every X seconds
-//TODO: Docs - "Not overly-strict on checking etc., trust your overrides. E.g. uniqueness of key in keyFunc"
-//TODO: Docs - Wrt multiple instances, 1-1 relation between AutoSave and data-store key. Identical items? Need multiple ASJ's.
-	 //demo where some controls loaded on demand
-		
-	 // incognito session? no cookies? (safari?)
-	 // If panels are lazy-loaded? Basically, bunch of tests for dynamically loaded controls to append/splice on save/load
-	 // TODO: JSLint it.
-	 // When value cleared, should be sent to server - difference from a normal sz() and save() ajax call
-	 // First class events? multiple can hook? but then becomes highly order dependant ?
-	 // Example/demo - only complete text entries to be sent back
-	 // Undocumented documentation. You can actually change most option parameters at run-time but take no liability for behaviour ! 
-								 // Behaviour *NOT* supported
-	 // IE7+, It's fast - performance tests... 
-	 
-	//TODO: Do a demo for skipping log levels, wiring into winston/simple logging 
-		//TODO: For all errors like this one, have a FAQ page with examples. IF you get "...", do...
-	//TODO: Bower
-	//TODO: Test npm works on linux
-	//TODO: Demo of calling store.resetStore() when page saved to server so doesn't auto-populate next time - if using cookies/local storage instead of ajax! **
-			
-	 //Have version, along with minified file has version at top. see ckEditor top.
-	 //Document: IF you suply a custom function for root control set - wont be re-hooked wrt listeners, no external form elems will work etc
-		// JSFiddle with various examples
-		//Link to perf test vs jquery Serialize/Deserialize
-		//Demo using hooks to show a 'loading...' and 'saving...' indicator
-		//Add to NPM/Bower etc.
-
-		//TOOD: Test renaming AutoSave to another lib when importing?
-		//TODO: Test with local storage and cookies disabled
-		//TODO: Example with loading and unloading of HTML content / dynamic content - e.g. flicking through tabs. jQuery UI tabs?
-
-	//TODO: Demo with diffing logic
-	 // As a cheap hosted-service plugin? Over SSL?
-	 // WP plugin wrapper? Give "Free" to top theme authors
-	 // Create fiddle - starter code for server-side
-			 
+	// Document if custom path, domains etc are set, will not get cleared out
+	// What to do if cookie storage is running out?	 
+	// As we're using event handlers, test if us throwing doesn't invoke the remaining handles. If so, try-catch and pipe to errorHandler 
+	// (by default throws an Error with code)
+	// Unhook events on elements removed from DOM (?)
+	// Localisation
+	// Demo for custom hook where load can be delayed
+	// Demo for doing control diff to send only changes or using angular is-pristine flag
+	// Demo for initial load value
+	// Documentation - if you want to cache the controls used, store the onPreSerialize value, change parentElement?
+	// Demo - send on regular interval by autoSaveTrigger: null and call save() myself every X seconds
+	// Docs - Wrt multiple instances, 1-1 relation between AutoSave and data-store key. Identical items? Need multiple ASJ's.
+	// demo where some controls loaded on demand
+	// incognito session? no cookies? (safari?)
+	// If panels are lazy-loaded? Basically, bunch of tests for dynamically loaded controls to append/splice on save/load
+	// When value cleared, should be sent to server - difference from a normal sz() and save() ajax call
+	// First class events? multiple can hook? but then becomes highly order dependant ?
+	// Example/demo - only complete text entries to be sent back
+	// Undocumented documentation. You can actually change most option parameters at run-time but take no liability for behaviour ! 
+	// IE7+, It's fast - performance tests... 
+	// Do a demo for skipping log levels, wiring into winston/simple logging 
+	// For all errors like this one, have a FAQ page with examples. IF you get "...", do...
+	// Demo of calling store.resetStore() when page saved to server so doesn't auto-populate next time - if using cookies/local storage instead of ajax! **
+	// Better to have ^ on devDependencies?
+	// Link to perf test vs jquery Serialize/Deserialize
+	// Example with loading and unloading of HTML content / dynamic content - e.g. flicking through tabs. jQuery UI tabs?
+	// Demo with diffing logic
+	// As a cheap hosted-service plugin? Over SSL?
+	// WP plugin wrapper? Give "Free" to top theme authors
+	// Create fiddle - starter code for server-side
   });
 });
 

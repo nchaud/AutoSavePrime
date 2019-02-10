@@ -1,6 +1,3 @@
-
-//TODO: MULTI INSTANCE of IDENTICAL ELEMENTS that are provided different containers/selectors
-
 describe("AutoSaveJS+CKEditor", function() {
 	
 	function setSelected(elem, isChecked){
@@ -168,11 +165,8 @@ describe("AutoSaveJS+CKEditor", function() {
 		}
 	}
 	
-	
-	//TODO: Multiple instances !
   
   describe('ckEditor v4 hook', function(){
-	
 
 	it('initialises CKEditor instances during load', function(){
 	

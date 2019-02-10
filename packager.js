@@ -1,3 +1,11 @@
+/*
+* AutoSaveJS packaging script - https://github.com/nchaud/AutoSaveJS
+* Takens input file from src/, minifies & generates sourcemaps and outputs to dist/
+* Version: 1.0.0
+* Copyright (c) 2019 Numaan Chaudhry
+* Licensed under the ISC license
+*/
+
 var fs = require('fs');
 var UglifyJS = require("uglify-js");
 
@@ -18,7 +26,7 @@ if (result.error)
 	throw result.error;
 
 fs.writeFileSync("dist/AutoSave.min.js", result.code);
-fs.writeFileSync("dist/AutoSave.js.map", result.map);
+fs.writeFileSync("dist/AutoSave.min.js.map", result.map);
 
 //Also copy the original un-minified file over
 var rawFile = fs.readFileSync("src/AutoSave.js", "utf8");

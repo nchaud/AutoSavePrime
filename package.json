@@ -2,21 +2,25 @@
   "name": "autosavejs",
   "version": "1.0.0",
   "description": "Production-ready library that auto-saves as you work",
-  "main": "index.js",
+  "main": "dist/AutoSave.js",
   "directories": {
     "test": "tests"
   },
+  "dependencies": {
+  },
   "devDependencies": {
-	"bootstrap":	"3.1.1",
-	"ckeditor":		"4.6.2",
-	"jasmine-core":	"2.99.1",
-	"jasmine-jquery":"2.0.5",
-	"jquery":		"3.1.1",
-	"jquery.uniform":"2.1.2",
-	"uglify-js":	"3.4.9"
+    "bootstrap": "3.1.1",
+    "ckeditor": "4.6.2",
+    "jasmine-core": "2.99.1",
+    "jasmine-jquery": "2.0.5",
+    "jquery": "3.1.1",
+    "jquery.uniform": "2.1.2",
+    "jshint": "2.10.1",
+    "uglify-js": "3.4.9"
   },
   "scripts": {
-	"package":"node packager.js"
+    "package": "node packager.js",
+	"lint": "node_modules/.bin/jshint src/AutoSave.js"
   },
   "repository": {
     "type": "git",
