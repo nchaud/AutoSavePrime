@@ -80,10 +80,10 @@ describe("AutoSaveJS+jQueryUI", function() {
 		jasmine.clock().install();		
 		
 		//Initialise path to templates directory
-		jasmine.getFixtures().fixturesPath = "./tests/jQueryUI";
+		jasmine.getFixtures().fixturesPath = "./jQueryUI";
 		
 		//Load jQuery-UI scripts
-		$.getScript("lib/jquery-ui-1.12.1/jquery-ui.js", function(){
+		$.getScript("../lib/jquery-ui-1.12.1/jquery-ui.js", function(){
 			
 			//resume tests
 			done();

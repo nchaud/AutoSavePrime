@@ -80,10 +80,10 @@ describe("AutoSaveJS+CKEditor", function() {
 		jasmine.clock().install();		
 		
 		//Initialise path to templates directory
-		jasmine.getFixtures().fixturesPath = "./tests/ckEditor";
+		jasmine.getFixtures().fixturesPath = "./ckEditor";
 		
 		//Load CKEditor scripts
-		$.getScript("./node_modules/ckeditor/ckeditor.js", function(){
+		$.getScript("../node_modules/ckeditor/ckeditor.js", function(){
 			
 			//resume tests
 			done();

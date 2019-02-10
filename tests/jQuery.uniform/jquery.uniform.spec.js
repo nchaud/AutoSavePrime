@@ -80,10 +80,10 @@ describe("AutoSaveJS+uniform", function() {
 		jasmine.clock().install();		
 		
 		//Initialise path to templates directory
-		jasmine.getFixtures().fixturesPath = "./tests/jQuery.uniform";
+		jasmine.getFixtures().fixturesPath = "./jQuery.uniform";
 		
 		//Load jQuery-UI scripts
-		$.getScript("node_modules/jquery.uniform/jquery.uniform.js", function(){
+		$.getScript("../node_modules/jquery.uniform/jquery.uniform.js", function(){
 			
 			//resume tests
 			done();
