@@ -275,7 +275,7 @@ describe("AutoSaveJS+jQueryUI", function() {
 		
 		//Test values on all widgets
 		expect( $( "#Period" ).slider( "option", "value" )).toEqual("11");
-		expect( $( "#TransactionDate" ).datepicker( "getDate")).toEqual(new Date("2012-12-31"));
+		expect( $( "#TransactionDate" ).datepicker( "getDate").toDateString()).toEqual(new Date("2012-12-31" + 'T00:00:00Z').toDateString());
 		expect( $( "#location-london" ).prop("checked")).toEqual(true);
 		expect( $( "#language-autocomplete" ).val()).toEqual("c++ & java!");
 	});	
