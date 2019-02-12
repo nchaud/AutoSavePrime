@@ -1,5 +1,5 @@
 /*
-* AutoSaveJS packaging script - https://github.com/nchaud/AutoSaveJS
+* AutoSavePrime packaging script - https://github.com/nchaud/AutoSavePrime
 * Takens input file from src/, minifies & generates sourcemaps and outputs to dist/
 * Version: 1.0.0
 * Copyright (c) 2019 Numaan Chaudhry

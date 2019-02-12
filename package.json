@@ -1,5 +1,5 @@
 {
-  "name": "autosavejs",
+  "name": "autosave-prime",
   "version": "1.0.0",
   "description": "Zero-dependency, Production-ready library that auto-saves as you work",
   "main": "dist/AutoSave.js",
@@ -27,7 +27,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nchaud/AutoSaveJS.git"
+    "url": "git+https://github.com/nchaud/AutoSavePrime.git"
   },
   "keywords": [
     "autosave",
@@ -38,7 +38,7 @@
   "author": "Numaan Chaudhry",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/nchaud/AutoSaveJS/issues"
+    "url": "https://github.com/nchaud/AutoSavePrime/issues"
   },
-  "homepage": "https://github.com/nchaud/AutoSaveJS#readme"
+  "homepage": "https://github.com/nchaud/AutoSavePrime#readme"
 }

@@ -1,5 +1,5 @@
 /*
-* AutoSaveJS - https://github.com/nchaud/AutoSaveJS
+* AutoSavePrime - https://github.com/nchaud/AutoSavePrime
 * Version: 1.0.0
 * Copyright (c) 2019 Numaan Chaudhry
 * Licensed under the ISC license
