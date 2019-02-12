@@ -64,9 +64,7 @@
 								
                                 <h2 class="section-title"><i class="icon fa fa-paper-plane"></i> QuickStart</h2>
                                 <div class="section-block">
-									<p><b>npm install autosave-prime</b></p>
-									
-									<p>It's defined as a UMD so works with all module loaders and independently too. See <a href='#demos-requirejs'>this demo.</a></p>								
+									<p>Like most modules, this is defined as a UMD so works with all module loaders and independently too. See <a href='#demos-requirejs'>this demo.</a></p>								
 									
 									<div class="code-block">
                                         <h6>Running independently</h6>
@@ -74,15 +72,16 @@
 	&lt;head&gt;
 		&lt;script src=&quot;https://cdn.jsdelivr.net/npm/autosave-prime@1.0.0/dist/AutoSave.min.js&quot;&gt;&lt;/script&gt;
 		&lt;script type=&quot;javascript&quot;&gt; 
-			new AutoSave()
+			var autoSave = new AutoSave()
 		&lt;/script&gt;
 	&lt;/head&gt;
 ...
 </code></pre>
                                     </div>
-									
+
 									<div class="code-block">
                                         <h6>Using RequireJS</h6>
+										<p>First install with <b>npm install autosave-prime</b></p>
                                         <pre><code class="language-markup">...
 		&lt;script type=&quot;javascript&quot;&gt; 
 			require([ 'autosave-prime '],
@@ -257,7 +256,7 @@ var autoSave = new AutoSave( null, {
 													<pre class="mini"><code class="language-javascript">//Example usage #1 - simple message customise
 var autoSave = new AutoSave( null, {
 	saveNotification: {
-		message: "AutoSave est éteindre - ...?!?!?!?!", //The same message in French
+		message: "Conservé...", //The same message in French
 		minShowDuration: 2000 //Override to show for at least 2 seconds
 	}
 })													</code></pre>
@@ -301,7 +300,7 @@ var autoSave = new AutoSave( null, {
 													<pre class="mini"><code class="language-javascript">//Example usage #1 - simple message customise
 var autoSave = new AutoSave( null, {
 	saveNotification: {
-		message: "AutoSave est éteindre - ...?!?!?!?!", //The same message in French
+		message: "AutoSave est éteint", //The same message in French
 		showDuration: 3500 //Show for exactly 3.5 seconds
 	}
 })													</code></pre>
