@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>AutoSavePrime | Documentation</title>
+    <!-- Meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">    
+    <link rel="shortcut icon" href="favicon.ico">  
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+    <!-- FontAwesome JS -->
+    <link rel="stylesheet" href="assets/plugins/font-awesome/css/font-awesome.min.css">
+    <!-- Global CSS -->
+    <link rel="stylesheet" href="assets/plugins/bootstrap/css/bootstrap.min.css">   
+    <!-- Plugins CSS -->    
+    <link rel="stylesheet" href="assets/plugins/prism/prism.css">
+<!--     <link rel="stylesheet" href="assets/plugins/prism/line-highlight/prism-line-highlight.css"> -->
+    <link rel="stylesheet" href="assets/plugins/elegant_font/css/style.css">  
+      
+    <!-- Theme CSS -->
+    <link id="theme-style" rel="stylesheet" href="assets/css/styles.css">
+    
+</head> 
+
+<body class="body-blue">
+    <div class="page-wrapper">
+        <!-- ******Header****** -->
+        <header id="header" class="header">
+            <div class="container">
+                <div class="branding">
+                    <h1 class="logo">
+                        <a href="index.html">
+                            <span aria-hidden="true" class="icon_documents_alt icon"></span>
+                            <span class="text-highlight">AutoSavePrime</span><span class="text-bold">Docs</span>
+                        </a>
+                    </h1>
+					<div class='sub_title'>Auto-Saves as you work</div>
+                </div>
+            </div><!--//container-->
+        </header><!--//header-->
+        <div class="doc-wrapper">
+            <div class="container">
+                <div id="doc-header" class="doc-header text-center">
+                    <h1 class="doc-title">AutoSavePrime</h1>
+					<hr style="border-width:2px;" />
+                </div><!--//doc-header-->
+                <div class="doc-body row">
+                    <div class="doc-content col-md-9 col-12 order-1">
+                        <div class="content-inner">
+
+                            <section class="doc-section">
+								<p>
+								This is a slim, zero-dependency, production-ready module that AutoSaves users' work as they go. It conforms to new HTML5 form semantics and works on most modern browsers and is compatible with other libraries like jQueryUI and CKEditor (see examples). It's meant as a serious library where auto-saving may be a crucial element of the user experience.</p>
+								
+								<p>The library auto-saves all input controls as they're entered. If the user navigates away and comes back, the data will be restored and they can carry on working. There are several options for <a href='#initOpts-dataStore'>where the data is stored</a>. There's also a <a href='#demos-section'>number of demos</a>.
+								</p>
+								
+								<p>Backwards compatability is a core feature of this library (we, too, are tired of JS libraries developing backwards-incompatible versions). Future versions of this library will always be built upon the existing API. Let's get started !</p>
+							</section>
+
+                            <section id="quickstart-section" class="doc-section">
+								
+                                <h2 class="section-title"><i class="icon fa fa-paper-plane"></i> QuickStart</h2>
+                                <div class="section-block">
+									<p><b>npm install autosave-prime</b></p>
+									
+									<p>It's defined as a UMD so works with all module loaders and independently too. See <a href='#demos-requirejs'>this demo.</a></p>								
+									
+									<div class="code-block">
+                                        <h6>Running independently</h6>
+                                        <pre><code class="language-markup">...
+	&lt;head&gt;
+		&lt;script src=&quot;http://... &quot;&gt; &lt;/script&gt; TODODOTODTODOTODTODTO
+		&lt;script type=&quot;javascript&quot;&gt; 
+			new AutoSave()
+		&lt;/script&gt;
+	&lt;/head&gt;
+...
+</code></pre>
+                                    </div>
+									
+									<div class="code-block">
+                                        <h6>Using RequireJS</h6>
+                                        <pre><code class="language-markup">...
+		&lt;script type=&quot;javascript&quot;&gt; 
+			require([ 'autosave-prime '],
+				function( AutoSave ){
+					var autoSave = new AutoSave();
+				}
+			);
+		&lt;/script&gt;
+...
+</code></pre>
+                                    </div>
+									
+									That's it ! Use it on your own page or take a look at the <a href='#demos-basic'>basic demo</a>.
+                                </div>
+                            </section>
+							
+                            <section id="options-section" class="doc-section">
+                                <h2 class="section-title"><i class="icon fa fa-cog"></i> Initialisation Options</h2>
+                                <div class="section-block">
+									<p>AutoSavePrime can of course be customised. Most of this is through the <em>initOptions</em> parameter when the AutoSavePrime instance is initialised, which includes several callbacks that can act as either passive listeners or interceptors to stop or modify an operation.
+									</p>
+									
+									<div class="code-block ">
+										<pre class="mini">
+<code class="language-javascript">new AutoSave( [ scope, initOptions ] );</code></pre>
+										
+                                    </div><!--//code-block-->
+									
+                                    <h3 id="options_scope" class="block-title"><i class="icon fa fa-chevron-circle-right"></i> Parameter: scope</h3>
+                                    <p>AutoSavePrime by default will assume the whole document needs to be auto-saved if this parameter is falsy. The scope parameter can be used to limit what's being saved.
+                                    </p>
+
+									<p>The scope parameter can be a single native element or an array of them, a string selector, a jQuery instance, or a function that returns any of these. It does <b>not</b> need to be a form or even contain a form.</p>
+									
+									<p>All input elements underneath scope elements will be eligible for auto-saving.</p>
+									
+                                    <div class="code-block language-javascript">
+                                        <pre class=" "><code class=" "> //These are all supported
+new AutoSave();
+new AutoSave( elem );
+new AutoSave( [ elem1, elem2, elem3 ] );
+new AutoSave( &quot;#container1, #container2&quot; );
+new AutoSave( $(&quot;#container&quot;) ); //We recognise jQuery
+										</code></pre>
+                                    </div>
+									
+									
+									
+									<div class="callout-block callout-warning mini">
+										<div class="icon-holder">
+											<i class="fa fa-warning"></i>
+										</div>
+										<div class="content">
+											<p>The scope elements <b>must</b> be present in the DOM at the time the AutoSave instance is created and will not be dynamically recalculated after initialisation - i.e. they should be the container(s) for any dynamically created controls. Alternatively, see <a style='color:white' href='#initOpts-onPreSerialize'><em>onPreSerialize</em></a> and this demo...</p>
+										</div>
+									</div>
+									
+									
+                                </div><!--//section-block-->
+                                <div id="options_initOptions"  class="section-block">
+                                    <h3 class="block-title"><i class="icon fa fa-chevron-circle-right"></i> Parameter: initOptions</h3>
+									
+									<div class="code-block">
+                                        <h6>Full listing</h6>
+                                        <pre class=" language-javascript"><code class=" language-javascript">var opts: {
+
+  autoSaveTrigger: [ null |
+                     {
+						debounceInterval: number	//Default: 3000
+					 }
+				   ],
+  autoLoadTrigger: null,
+  seekExternalFormElements: boolean,
+  saveNotification: [ null | 
+                      {
+                        template: string,
+                        message: string,
+                        minShowDuration: number		//Default: 500
+                      }
+                    ],
+  noStorageNotification: [ null | 
+                           {
+                             template: string,
+                             message: string,
+                             showDuration: number	//Default: 5000
+                           }
+                         ],
+  dataStore: [ null |
+			   {
+			     preferCookies: boolean,			//Default: false
+				 clearEmptyValuesOnLoad: boolean,	//Default: true
+				 key: [ string | func ],			//func: ()=>string
+			 	 save: function, 					// :(key, data, saveCompleteCallback)=>void
+			 	 load: function 					// :(key, loadCompleteCallback)=>void
+			   }
+		     ],
+			 
+			 
+  //@FUNC-compliant callbacks
+  onInitialised: function, 		 	// :()=>void
+  onPreLoad: function,				// :()=>void|boolean|string
+  onPostLoad: function,				// :(string)=>void|boolean|string
+  onPostDeserialize: function,		// :()=>void
+  onPreSerialize: function,			// :(HTMLElement[])=>void|boolean|string|HTMLElement|HTMLElement[]|jQuery|function
+  onPreStore: function,				// :(string)=>void|boolean|string
+  onPostStore: function,			// :()=>void
+  onSaveNotification: function,		// :(boolean)=>void|boolean
+  onNoStorageNotification: function,// :(boolean)=>void|boolean
+  onLog: function|object			// :((logLevel, ...any[])=>any)|object //i.e. a variadic function
+}
+										</code></pre>
+                                    </div>
+
+									
+									<p>
+										<div class="callout-block callout-info mini">
+											<div class="icon-holder">
+												<i class="fa fa-info"></i>
+											</div>
+											<div class="content">
+												<p>Note: All parameters are optional.</p>
+											</div>
+										</div>
+									</p>
+									
+                                    <div class="row">
+                                        <div class="col-md-12 col-12">
+                                            <h6>Details</h6>
+                                            <ul class="details_list">
+											
+											  <li id="initOpts-autoSaveTrigger"><code>autoSaveTrigger</code>
+												    <p>AutoSavePrime listens to input changes on elements under the scope and debounces them before making a save request. The default debounce interval is <b>3000ms</b>. You can customise this interval by passing an object with the debounce interval set (in milliseconds).
+													Setting this property to null disables auto-saving altogether but you can save manually at any time by invoking <a href="#instance-save"><em>autoSave.Save().</em></a></p>
+													<pre class="mini"><code class="language-javascript">//Example usage
+var autoSave = new AutoSave( null, {
+	autoSaveTrigger: {
+		debounceInterval: 10*1000 //Changes will be debounced over 10 seconds now before save
+	}
+})													</code></pre>
+											  </li>
+
+        										<li id="initOpts-autoLoadTrigger"><code>autoLoadTrigger</code>
+												    <p>AutoSavePrime will populate a form with details from the datastore on page load (after the document is ready). Setting this property to null will disable this behaviour altogether but you can load manually at any time by invoking <a href="#instance-save"><em>autoSave.Load()</em></a></p>
+												</li>
+												
+        										<li id="initOpts-seekExternalFormElements"><code>seekExternalFormElements</code>
+												    <p>For all Form elements specified at or under your scope elements, AutoSavePrime will seek input elements elsewhere in the document that are linked to this form. Setting this property to false will disable this behaviour.</p>
+												</li>
+												
+        										<li id="initOpts-saveNotification"><code>saveNotification</code>
+												    <p>When a save is kicked off, a notification briefly shows at the top indicating a save is in progress. By default, it&apos;s got a simple non-distracting look but see this demos for styling it :-</p>
+													
+													<div class="centered" style="width:100px">
+														<img src="assets/images/Indicator_Saving.png"></img>
+													</div>
+	
+													<p>By specifying null, the notification is disabled</p>
+													<p><i class='fa bullet_nested'></i><b> message:</b>Setting this property overrides the message to display in the notification bar.
+													<p><i class='fa bullet_nested'></i><b> template:</b>This must be a valid HTML fragment that replaces the entire notification container. The existing container can be styled with css but incase more drastic changes are required this allows you to do that.
+													
+													<div class="callout-block callout-warning mini centered" style="width:500px">
+														<div class="icon-holder">
+															<i class="fa fa-warning"></i>
+														</div>
+														<div class="content">
+															<p>Either message or template can be specified but not both.</p>
+														</div>
+													</div>
+
+													<p><i class='fa bullet_nested'></i><b> minShowDuration:</b>The save process normally happens instantly, especially when using local storage. To allow the user to see the notification that their work is being auto-saved, the notification has a minimal time for which it shows. By default this is <b>500ms</b> (but it can show for longer if the save is taking longer - over a network, say). The minimum duration can be changed by setting this parameter (in milliseconds).</p>
+													
+													<pre class="mini"><code class="language-javascript">//Example usage #1 - simple message customise
+var autoSave = new AutoSave( null, {
+	saveNotification: {
+		message: "AutoSave est éteindre - ...?!?!?!?!", //The same message in French
+		minShowDuration: 2000 //Override to show for at least 2 seconds
+	}
+})													</code></pre>
+
+													<pre class="mini"><code class="language-css">/* Use this CSS to customise the notification */
+.autosave-saving .autosave-msg{
+	text-decoration: underline;
+}													</code></pre>
+
+													<pre class="mini"><code class="language-javascript">//Example usage #2 - custom HTML template
+var autoSave = new AutoSave( null, {
+	saveNotification: {
+		template: "&lt;div id='my_custom_notification'&gt;&lt;span&gt;My own message that autosave is saving&lt;/span&gt;&lt;/div&gt;",
+		minShowDuration: 2000 //Override to show for at least 2 seconds
+	}
+})													</code></pre>
+													
+												</li>
+												
+        										<li id="initOpts-noStorageNotification"><code>noStorageNotification</code>
+												    <p>When AutoSavePrime detects that neither cookies nor local storage is available a notification briefly shows at the top stating auto-save is disabled. If the datastore however has been customised with <em>load</em> and <em>save</em> callbacks, the notification never shows. By default, it looks like the below but see this demos for styling it :-</p>
+													
+													<div class="centered" style="width:500px">
+														<img src="assets/images/Indicator_NoStorage.png"></img>
+													</div>
+													
+													<p><i class='fa bullet_nested'></i><b> message:</b>Setting this property overrides the message to display in the notification bar.
+													<p><i class='fa bullet_nested'></i><b> template:</b>This must be a valid HTML fragment that replaces the entire notification container. The existing container can be styled with css but incase more drastic changes are required this allows you to do that.
+													
+													<div class="callout-block callout-warning mini centered" style="width:500px">
+														<div class="icon-holder">
+															<i class="fa fa-warning"></i>
+														</div>
+														<div class="content">
+															<p>Either message or template can be specified but not both.</p>
+														</div>
+													</div>
+
+													<p><i class='fa bullet_nested'></i><b> showDuration:</b>The notification by default shows for 5 seconds but can be overriden by this setting. Set in milliseconds.</p>
+													
+													<pre class="mini"><code class="language-javascript">//Example usage #1 - simple message customise
+var autoSave = new AutoSave( null, {
+	saveNotification: {
+		message: "AutoSave est éteindre - ...?!?!?!?!", //The same message in French
+		showDuration: 3500 //Show for exactly 3.5 seconds
+	}
+})													</code></pre>
+
+													<pre class="mini"><code class="language-css">/* Use this CSS to customise the notification */
+.autosave-noStore .autosave-msg{
+	text-decoration: underline;
+}													</code></pre>
+
+													<pre class="mini"><code class="language-javascript">//Example usage #2 - custom HTML template
+var autoSave = new AutoSave( null, {
+	saveNotification: {
+		template: "&lt;div id='my_custom_notification'&gt;&lt;span&gt;My own message about autosave unavailability&lt;/span&gt;&lt;/div&gt;",
+		showDuration: 3500 //Show for exactly 3.5 seconds		
+	}
+})													</code></pre>													
+												</li>
+												
+        										<li id="initOpts-dataStore"><code>dataStore</code>
+												     <p>AutoSavePrime by default will try and use the HTML5 local storage API for data storage. If this isn't detected, it'll fallback to using cookies. You can also customise the datastore with custom functions to, for example, save and load to/from a server instead.</p>
+													
+													<p>By specifying null, storing and loading is disabled.</p>
+													<p><i class='fa bullet_nested'></i><b> preferCookies: </b>Even if local storage is available, you can switch to using cookies by setting this option to true.</p>
+
+													<p><i class='fa bullet_nested'></i><b> clearEmptyValuesOnLoad: </b>By default, on load AutoSavePrime will clear existing form entries if an entry value is specified in the payload. This is useful if you do a server-side reset of the user's controls and want to blank them out. e.g. If the loading payload has name=&amp;age=, the inputs would be blanked out on a load regardless of their existing values. However, setting this property to false will cause the blank values to be ignored and the inputs to retain their existing values.</p>
+													
+													<p><i class='fa bullet_nested'></i><b> key: </b>As you can have multiple AutoSavePrime instances on one page, this property is used to distinguish between them. The key is a string used to index into the datastore and is automatically generated by the formula</p>
+
+									<div class="code-block centered" style="width:400px">
+										<pre class="mini">
+<code class="language-javascript">key = "AutoSaveJS_" + URL.path + Form.Name</code></pre>
+										
+                                    </div>
+													<p>If there isn't a Form with a Name property in the scope set, then of course the last term above isn't applied.</p>
+													
+													<p>Sometimes you will need to set this key explicitly - namely when</p>
+													
+													<p>1. You have multiple AutoSavePrime instances on one page and they don't have a Form element with a name property in the scope set (Example #1 below)
+													<br />or<br />
+													2. You have multiple pages using AutoSavePrime and the URL path is the same for all (Example #2 below).</p>
+													
+													<div class="code-block">
+														<pre class=" language-markup"><code>&lt;!-- Example Context --&gt;
+&lt;div id="container_1"&gt;
+	...
+&lt;/div&gt;
+&lt;form id="container_2"&gt;
+	...
+&lt;/form&gt;
+&lt;form id="container_3" name="contact_details"&gt;
+	...
+&lt;/form&gt;</code></pre>
+													</div>
+													
+													<div class="code-block">
+														<pre class=" language-javascript"><code><h5>1. Multiple instances on one page</h5>//1a) (URL: http://www.example.com/<span class='key_hint'>customer_entry</span>)
+new AutoSave( document.querySelector( "#container_1" ) );
+//<span class='key_success'>Key generated:</span> AutoSaveJS_<span class='key_hint'>customer_entry</span>
+new AutoSave( document.querySelector( "#container_2" ) );
+<span class='key_error'>//Error: Key already in use</span>
+
+//1b) (URL: http://www.example.com/<span class='key_hint'>customer_entry</span>)
+new AutoSave( document.querySelector( "#container_1" ) );
+//<span class='key_success'>Key generated:</span> AutoSaveJS_<span class='key_hint'>customer_entry</span>
+new AutoSave( document.querySelector( "#container_2" ), 
+		{ 
+			dataStore: {
+				key: "extra_details"
+			}
+		});
+//<span class='key_success'>Key generated:</span> AutoSaveJS_<span class='key_hint'>customer_entry</span>_<span class='token string'>extra_details</span>
+
+//1c) (URL: http://www.example.com/<span class='key_hint'>customer_entry</span>)
+new AutoSave( document.querySelector( "#container_1" ) );
+//<span class='key_success'>Key generated:</span> AutoSaveJS_<span class='key_hint'>customer_entry</span>
+new AutoSave( document.querySelector( "#container_3" ) ); //Uses the form name
+//<span class='key_success'>Key generated:</span> AutoSaveJS_<span class='key_hint'>customer_entry</span>_<span class='key_hint'>contact_details</span>
+
+<hr class='key_hr'><h5>2. Multiple Instances across pages</h5>//2a. (URL: http://www.example.com/<span class='key_hint'>customer_entry</span>?customer_id=10) //Query parameters are ignored
+new AutoSave( document.querySelector( "#container_1" ) );
+//<span class='key_success'>Key generated:</span> AutoSaveJS_<span class='key_hint'>customer_entry</span>
+
+//    (URL: http://www.example.com/<span class='key_hint'>customer_entry</span>?customer_id=11)
+new AutoSave( document.querySelector( "#container_1" ) );
+<span class='key_error'>//Error: Key already in use</span>
+
+//2b. (URL: http://www.example.com/<span class='key_hint'>customer_entry</span>?customer_id=10)
+new AutoSave( document.querySelector( "#container_1" ) );
+//<span class='key_success'>Key generated:</span> AutoSaveJS_<span class='key_hint'>customer_entry</span>
+new AutoSave( document.querySelector( "#container_1" ), 
+		{ 
+			dataStore: {
+				key: "cust_10"
+			}
+		});
+//<span class='key_success'>Key generated:</span> AutoSaveJS_<span class='key_hint'>customer_entry</span>_<span class='token string'>cust_10</span></code></pre></div>
+													Finally, you can also customise the key handling entirely by the <a href="#initOpts-onPreLoad"><em>onPreLoad</em></a> and <a href="#initOpts-onPreStore"><em>onPreStore</em></a> interceptors. These allow you to, for example, share a datastore across multiple AutoSavePrime instances on different pages.
+															
+													</p>
+													<p><i class='fa bullet_nested'></i><b> load, </b>
+													<i class='fa bullet_nested'></i><b> save: </b>You can change the datastore to a completely custom one by specifying functions for the load and save. The <em>key</em> parameter supplied in both helps identify which instance is being saved. For example</p>
+
+													<pre class="mini"><code class="language-javascript">var autoSave = new AutoSave( null, {
+	dataStore: {
+		save: function( key, data, saveCompleteCallback ){
+			mySvc.save( key, data ).then( function(){ //Assume mySvc.save() returns a Promise
+				saveCompleteCallback();
+			});
+		},
+		
+		load:function( key, loadCompleteCallback ){
+			mySvc.load( key ).then( function( result ){ //Assume mySvc.load() returns a Promise
+				loadCompleteCallback( result );
+			});
+		}
+	}
+})													</code></pre>													
+													<div class="callout-block callout-warning mini centered" style="width:700px">
+														<div class="icon-holder">
+															<i class="fa fa-warning"></i>
+														</div>
+														<div class="content">
+															<p>The <em>saveCompleteCallback</em> and <em>loadCompleteCallback</em> must be invoked at completion, regardless of being an sync or async operation, else you may get unexpected behavior.</p>
+														</div>
+													</div>
+													
+													<p />
+													<div class="callout-block callout-warning mini centered" style="width:700px">
+														<div class="icon-holder">
+															<i class="fa fa-warning"></i>
+														</div>
+														<div class="content">
+															<p>You must set <b>both</b> the save and load callbacks or neither of them - you cannot set just one.</p>
+														</div>
+													</div>
+												</li>
+
+									<hr />
+
+									<p>The remaining options are interceptor-cum-inspector callbacks that conform to ...</p>
+									
+                                    <div class="callout-block callout-info">
+                                        <div class="icon-holder">
+                                            <i class="fa fa-info-circle"></i>
+                                        </div><!--//icon-holder-->
+                                        <div class="content">
+                                            <h4 class="callout-title">@FUNC Semantics</h4>
+												<p>@FUNC semantics in AutoSavePrime give a consistent experience among callbacks. Concretely, it means that when you register a function callback, what you return dictates what happens next. Your callback could </p>
+												
+												<p><i class='fa fa-caret-right'></i> Return <f>F</f>alse. That particular operation will stop dead there (and clean up anything if necessary).</p>
+												<p><i class='fa fa-caret-right'></i> Simply not return (i.e. <f>U</f>ndefined), in which case it'll act as just a passive inspector and the flow will continue as normal.</p>
+												<p><i class='fa fa-caret-right'></i> Return <f>N</f>ull or a <f>C</f>ustom data structure so the operation continues with your overriden/enhanced data.</p>
+												
+												<p>The supported return values are indicated next to each callback below.</p>
+                                        </div><!--//content-->
+                                    </div>
+									
+        										<li id="initOpts-onInitialised"><code>onInitialised (<f>U</f>)</code>
+												    <p>Callback to listen to when AutoSave is fully initialised including the initial load of any existing data from the datastore.</p>
+												
+													<pre class="mini"><code class="language-javascript">//Example usage
+var autoSave = new AutoSave( null, {
+	onInitialised: function(){
+		//Do post-initialisation work here
+	}
+})													</code></pre>
+												</li>
+												
+        										<li id="initOpts-onPreLoad"><code>onPreLoad (<f>FUNC</f>)</code>
+												    <p>Callback to listen to when AutoSave is about to load data from the datastore. By returning false, you can cancel the load. By returning a string, you can specify the payload to load. This must be encoded as <a href='https://en.wikipedia.org/wiki/Percent-encoding#The_application.2Fx-www-form-urlencoded_type'>x-www-form-urlencoded</a>.</p>
+													<pre class="mini"><code class="language-javascript">//Example usage
+var autoSave = new AutoSave( null, {
+	onPreLoad: function(){
+		if ( some_condition )
+			return false; //prevent load from happening (you can call autoSave.load() afterwards too)
+		else
+			return AutoSave.serialize( "name=Mozart&amp;type=Classical+Music" ); //x-www-form-urlencoded
+	}
+})													</code></pre>
+													<div class="callout-block callout-info mini">
+														<div class="icon-holder">
+															<i class="fa fa-info"></i>
+														</div>
+														<div class="content">
+															<p>Tip: You can use <a href='https://en.wikipedia.org/wiki/Percent-encoding#The_application.2Fx-www-form-urlencoded_type'>AutoSave.serialize</a> to generate the encoded string.</p>
+														</div>
+													</div>
+													<p />													
+												</li>
+												
+        										<li id="initOpts-onPostLoad"><code>onPostLoad (<f>FUNC</f>)</code>
+												    <p>Callback to listen to after AutoSave has loaded the string from the data source but before deserialising it into the input elements. By returning false, you can cancel the subsequent deserialisation. By returning a string, you can override the payload to be deserialised.</p>
+													<pre class="mini"><code class="language-javascript">//Example usage
+var autoSave = new AutoSave( null, {
+	onPostLoad: function( serialisedData ){
+		if ( some_condition )
+			return false; //Cancel the load
+		else if ( other_condition )
+			return serialisedData + "&amp;firstName=James" //Append an extra field to be loaded
+		
+		//Otherwise, continue loading as normal
+	}
+})													</code></pre>
+												</li>
+												
+        										<li id="initOpts-onPostDeserialize"><code>onPostDeserialize (<f>U</f>)</code>
+												    <p>Callback to listen to after AutoSave has deserialised the string into the input elements.</p>
+													
+													<pre class="mini"><code class="language-javascript">//Example usage
+var autoSave = new AutoSave( null, {
+	onPostDeserialize: function(){
+		//All inputs loaded - you could now, for example, initialise UI libraries like CKEditor
+	}
+})													</code></pre>
+													
+												</li>
+												
+        										<li id="initOpts-onPreSerialize"><code>onPreSerialize (<f>FUNC</f>)</code>
+												    <p>Callback to listen to before all the input elements are serialised into one long <a href='https://en.wikipedia.org/wiki/Percent-encoding#The_application.2Fx-www-form-urlencoded_type'>x-www-form-urlencoded</a> string. By returning false, you can cancel the subsequent serialisation (and hence the save). The set of elements can be customised by returning any of the types shown above.</p>
+
+													<pre class="mini"><code class="language-javascript">//Example usage
+var autoSave = new AutoSave( null, {
+	onPreSerialize: function( controlsArray ){
+		if ( some_condition )
+			return false; //Cancel the serialisation - e.g. check if any inputs are invalid
+		else
+			return controlsArray.slice( 0, Math.min(3,controlsArray.length) ); //Only serialize the first 3 controls
+	}
+})													</code></pre>
+													
+												</li>
+												
+        										<li id="initOpts-onPreStore"><code>onPreStore (<f>FUNC</f>)</code>
+												    <p>Callback to listen to before the serialised string is stored to the datastore. By returning false, you can cancel the save. The serialised string can be modified and returned.
+
+													<pre class="mini"><code class="language-javascript">//Example usage
+var autoSave = new AutoSave( null, {
+	onPreStore: function( serialisedString ){
+		if ( some_condition )
+			return false; //Cancel storing it
+		else
+			return serialisedString + "&amp;timestamp="+mySvc.getTimestamp() //Append an extra field to be saved down
+	}
+})													</code></pre>
+													<div class="callout-block callout-info mini">
+														<div class="icon-holder">
+															<i class="fa fa-info"></i>
+														</div>
+														<div class="content">
+															<p>For cookie-based storage, the string also contains the cookie parameters - like the expiry date - so this would be a good place to customise the final cookie string.</p>
+														</div>
+													</div>
+													<p />
+												</li>
+												
+        										<li id="initOpts-onPostStore"><code>onPostStore (<f>U</f>)</code>
+												    <p>Callback to listen to after the serialised string is stored to the datastore.</p>
+													<pre class="mini"><code class="language-javascript">//Example usage
+var autoSave = new AutoSave( null, {
+	onPostStore: function(){
+		//Save completed - you could now, for example, re-enable controls to continue working
+	}
+})													</code></pre>
+													
+												</li>
+												
+        										<li id="initOpts-onSaveNotification"><code>onSaveNotification (<f>FU</f>)</code>
+												    <p>Callback to listen to just before the saving notification visibility is toggled. The parameter is true if the notification is about to be shown and false just before its hidden.
+													Return false to cancel showing the notification.</p>
+													<pre class="mini"><code class="language-javascript">//Example usage
+var autoSave = new AutoSave( null, {
+	onSaveNotification: function( isToggleOn ){
+		if ( some_condition ) {
+			return false; //Don't show the notification
+		}
+		else {
+			//Disable save button whilst auto-saving
+			document.querySelector( "button[type='submit']" ).enabled = !isToggleOn;
+		}
+	}
+})													</code></pre>
+													
+												</li>
+												
+        										<li id="initOpts-onNoStorageNotification"><code>onNoStorageNotification (<f>FU</f>)</code>
+												    <p>Callback to listen to just before the notification that there is no storage available is toggled. The parameter is true if the notification is about to be shown and false just before its hidden.
+													Return false to cancel showing the notification.</p>
+													<pre class="mini"><code class="language-javascript">//Example usage
+var autoSave = new AutoSave( null, {
+	onNoStorageNotification: function( isToggleOn ){
+		if ( isToggleOn ) {
+			//If local storage isnt available, switch to using a server-side implementation
+			mySvc.initialiseAjaxService();
+		}
+	}
+})													</code></pre>													
+												</li>
+												
+        										<li id="initOpts-onLog"><code>onLog (<f>FUNC</f>)</code>
+												    <p>Callback for handling logging. If a function is supplied, it must be variadic with the signature
+													
+													<pre class="mini"><code class="language-javascript">// (level, ...any[]) => any</code></pre>
+													
+													<p>where level will be one of the following strings</p>
+													<ul class="nested_list">
+														<li><em>debug</em> (AutoSave.LOG_DEBUG)</li>
+														<li><em>info</em>  (AutoSave.LOG_INFO)</li>
+														<li><em>warn</em>  (AutoSave.LOG_WARN)</li>
+														<li><em>error</em> (AutoSave.LOG_ERROR)</li>
+													</ul>
+													
+													<p>The argument returned from your callback is what gets sent to the log sink instead of the original arguments. If false is returned, this is a special case where the logging is aborted.</p>
+													
+													<p>For convenience and easy integration with other libraries, you can also pipe messages at specific levels by specifying an object for this parameter. Both methods are shown in the following example</p>
+																	
+													<pre class="mini"><code class="language-javascript">//Example usage - with 1 function
+var autoSave = new AutoSave( null, {
+	onLog: function( level, _variadic_args_ ){
+	
+		//Log errors to svc in production
+		if ( mySvc.isProduction() ) {
+			if ( level == AutoSave.LOG_ERROR )
+				mySvc.logError( arguments.slice( 1 ) ); //Skip the level parameter
+		}
+
+		return false; //Don't write any errors to the default output (console)
+	}
+})
+
+//Example usage - with level piping functions
+var autoSave = new AutoSave( null, {
+	onLog: {
+		debug: function( _variadic_args_ ){
+			//Never pipe debug logging to downstream logger
+			return false;
+		}
+		info:  mySvc.logger.info,
+		warn:  mySvc.logger.warn,
+		error: mySvc.logger.error
+	}
+})													</code></pre>
+
+													<p>
+														All functions are optional and for any levels without a function, default logging will take place.
+													</p>
+													<p>
+														Returning false from any of these will prevent default logging (to console).
+														Anything else returned overwrites the existing log message. If an array is returned, it will become a variadic parameter list to the log sink.
+													</p>
+													<p>See <a href='#demos-section'>the demos</a> for how to seamlessly wire these into any existing logging you have.</p>
+												</li>
+        									</ul>
+                                        </div>
+                                    </div><!--//row-->
+                                </div><!--//section-block-->
+								
+								
+                            </section><!--//doc-section-->
+                            
+							<!--level-down-alt-->
+							<section id="instance-functions-section" class="doc-section">
+                                <h2 class="section-title"><i class="icon fa fa-bolt"></i> Instance Functions</h2>
+								
+                              <div class="section-block">
+									
+									<div class="code-block">
+                                        <h6>Full listing</h6>
+                                        <pre class=" language-javascript"><code class=" language-javascript">//Functions
+autoSave.getCurrentValue()	//: ()=>string
+autoSave.save()				//: ()=>void
+autoSave.load()				//: ()=>void
+autoSave.resetStore()		//: ()=>void
+autoSave.dispose(resetStore=true) //: (boolean)=>void
+										</code></pre>
+                                    </div>
+							  </div>
+								
+
+                                <div class="section-block">
+
+								<h6>Details</h6>
+									<ul class="details_list">
+										<li><pre class="mini bullet" id="instance-getCurrentValue"><code class="language-javascript">autoSave.getCurrentValue()</code></pre>
+											<p>Returns a string resulting from the serialisation of all the inputs in the scope of this instance in <a href='https://en.wikipedia.org/wiki/Percent-encoding#The_application.2Fx-www-form-urlencoded_type'>x-www-form-urlencoded</a> format.</p>
+										</li>
+										<li><pre class="mini bullet" id="instance-save"><code class="language-javascript">autoSave.save()</code></pre>
+											<p>Triggers a save of the input elements to the datastore. If there's already a save in progress, this will get queued to run after that's finished. See <a href='#initOpts-dataStore'>datastore</a> for more details.</p>
+										</li>
+										<li><pre class="mini bullet" id="instance-load"><code class="language-javascript">autoSave.load()</code></pre>
+											<p>Manually triggers a load of the input elements from the datastore. Existing data may be wiped (see also <em>clearEmptyValuesOnLoad</em>).</p>
+										</li>
+										<li><pre class="mini bullet" id="instance-resetStore"><code class="language-javascript">autoSave.resetStore()</code></pre>
+											<p>Empties the datastore for this instance. Specifically, for the key-value pair stored, it'll set value to null but will <b>keep the key marked as in-use</b>.</p>
+										</li>
+										<li><pre class="mini bullet" id="instance-dispose"><code class="language-javascript">autoSave.dispose(resetStore=true)</code></pre>
+											<p>Unhooks all listeners, removes notification elements, terminates all debounce-pending saves, releases the datastore key and generally cleans up after itself. By default, will remove all data in local storage associated with this instance but set <em>resetStore</em> to <b>false</b> to override this behaviour and preserve data in the datastore.</p>
+										</li>
+									</ul>
+									
+                               </div><!--//section-block-->
+							</section>
+							   
+                            <section id="static-functions-section" class="doc-section">
+                                <h2 class="section-title"><i class="icon fa fa-bars"></i> Static Functions</h2>
+                                <div class="section-block">
+                                    <p>
+                                        Most of the logic in AutoSavePrime is in stateless functions to minimise the places shared state is read/updated. A number of these stateless helpers are available for you should you need them in any custom logic in callbacks etc.
+                                    </p>
+ 									
+									<div class="code-block">
+                                        <h6>Full listing</h6>
+                                        <pre class=" language-javascript"><code class=" language-javascript">//Functions
+AutoSave.isCookieStorageAvailable()	//: ()=>boolean
+AutoSave.isLocalStorageAvailable()	//: ()=>boolean
+AutoSave.serialize(controlsArr)		//: (HTMLElement[])=>string
+AutoSave.deserialize(controlsArr, data, clearEmpty=true) //: (HTMLElement[], string[, boolean])=>void
+AutoSave.resetAll()					//: ()=>void
+AutoSave.toArray(data, numSkip=0)	//: (array-like[, number])=>any[]
+AutoSave.whenDocReady(myCallback)	//: (()=>void)=>void
+
+//Constants
+AutoSave.LOG_DEBUG 	//: string ("debug")
+AutoSave.LOG_INFO 	//: string ("info")
+AutoSave.LOG_WARN 	//: string ("warn")
+AutoSave.LOG_ERROR 	//: string ("error")
+AutoSave.version 	//: string
+										</code></pre>
+                                    </div>
+									
+                                    <div class="row">
+                                        <div class="col-md-12 col-12">
+                                            <h6>Details</h6>
+                                            <ul class="details_list">
+        										<li><pre class="mini bullet" id="static-isCookieStorageAvailable"><code class="language-javascript">AutoSave.isCookieStorageAvailable()</code></pre>
+												    <p>Returns true if the browser has cookies enabled.</p>
+												</li>
+        										<li><pre class="mini bullet" id="static-isLocalStorageAvailable"><code class="language-javascript">AutoSave.isLocalStorageAvailable()</code></pre>
+												    <p>Returns true if the browser has the HTML5 Local Storage API and it's enabled.</p>
+												</li>
+        										<li><pre class="mini bullet" id="static-serialize"><code class="language-javascript">AutoSave.serialize(controlsArr)</code></pre>
+												    <p>Given an array of elements, serializes the values of all the input elements at or underneath this set and returns it as a <a href='https://en.wikipedia.org/wiki/Percent-encoding#The_application.2Fx-www-form-urlencoded_type'>x-www-form-urlencoded</a> string representation.</p>
+												</li>
+        										<li><pre class="mini bullet" id="static-deserialize"><code class="language-javascript">AutoSave.deserialize(controlsArr, data, clearEmpty=true)</code></pre>
+												    <p>Loads all the input elements that are in the controlsArr array with values from the data string. The data string must be in <a href='https://en.wikipedia.org/wiki/Percent-encoding#The_application.2Fx-www-form-urlencoded_type'>x-www-form-urlencoded</a> encoding. If there are any empty parameters, like 'name=&amp;...', then the name input field will be cleared out. Setting the clearEmpty parameter to false will prevent this behaviour.</p>
+												</li>
+        										<li><pre class="mini bullet" id="static-resetAll"><code class="language-javascript">AutoSave.resetAll()</code></pre>
+												    <p>Removes all local storage and cookies generated by any AutoSave instances.<b>Will remove everything on this domain*</b>. Will not dispose currently active AutoSave instances.  *Except cookies that have been customised by custom domain or path parameters through the <a href="#initOpts-onPreStore"><em>onPreStore</em></a> callback.</p>
+												</li>
+        										<li><pre class="mini bullet" id="static-toArray"><code class="language-javascript">AutoSave.toArray(arrayLike, numSkip=0)</code></pre>
+												    <p>Given an array-like object (i.e. any object with a <em>length</em> property and indexed properties), creates a first class javascript array from it. You can optionally specify a numSkip number to skip a given number of entries at the start.</p>
+												</li>
+        										<li><pre class="mini bullet" id="static-whenDocReady"><code class="language-javascript">AutoSave.whenDocReady(myCallback)</code></pre>
+												    <p>Will invoke myCallback when the document's readyState transitions to 'complete' - the equivalent of jQuery's $(). myCallback should have type of ()=>void.</p>
+												</li>
+											</ul>
+										</div>
+									</div>
+								</div>	
+								
+								<section id="demos-section" class="doc-section">
+									<h2 class="section-title"><i class="icon fa fa-fighter-jet"></i> Demos</h2>								
+									<div class="section-block">
+										<ul>
+											<li id='demos-basic'><a href='_TODO_'>Basic Example</a></li>
+											<li id='demos-requirejs'>Loading with RequireJS</li>
+											<li>Server-side saves with only delta</li>
+											<li>Customising the scope set</li>
+											<li>Incorporating form elements outside container (HTML5)</li>
+											<li>Creating and destroying multiple AutoSave instances</li>
+											<li>Customising data being stored and loaded</li>
+											<li>Logging in Production vs Debug</li>
+											<li>Cancelling Save until all inputs validated</li>
+											<li>Dynamically Created Controls</li>
+											<li>Localisation</li>										
+											<li>Using With jQuery UI</li>
+											<li>Using With UniformJS</li>
+											<li>Using With simplelog and winstonlog</li>
+											<li>Using With CKEditor</li>
+											<li>Extended example - multi user scenario with server-side saving</li>
+											
+										</ul>
+									</div>
+
+								</section><!--//doc-section-->
+							
+                        </div><!--//content-inner-->
+                    </div><!--//doc-content-->
+                    <div class="doc-sidebar col-md-3 col-12 order-0 d-none d-md-flex">
+                        <div id="doc-nav" class="doc-nav">
+	                        
+	                            <nav id="doc-menu" class="nav doc-menu flex-column sticky">
+	                                <a class="nav-link scrollto" href="#quickstart-section">QuickStart</a>
+	                                <a class="nav-link scrollto" href="#options-section">Initialisation Options</a>
+                                    <nav class="doc-sub-menu nav flex-column">
+                                        <a class="nav-link scrollto" href="#options_scope">scope</a>
+                                        <a class="nav-link scrollto" href="#options_initOptions">initOptions</a>
+										<nav class="doc-sub-menu nav flex-column">
+											<a class="nav-link scrollto" href="#initOpts-autoSaveTrigger">autoSaveTrigger</a>
+											<a class="nav-link scrollto" href="#initOpts-autoLoadTrigger">autoLoadTrigger</a>
+											<a class="nav-link scrollto" href="#initOpts-seekExternalFormElements">seekExternalFormElements</a>
+											<a class="nav-link scrollto" href="#initOpts-saveNotification">saveNotification</a>
+											<a class="nav-link scrollto" href="#initOpts-noStorageNotification">noStorageNotification</a>
+											<a class="nav-link scrollto" href="#initOpts-dataStore">dataStore</a>
+											<a class="nav-link scrollto" href="#initOpts-onInitialised">onInitialised</a>
+											<a class="nav-link scrollto" href="#initOpts-onPreLoad">onPreLoad</a>
+											<a class="nav-link scrollto" href="#initOpts-onPostLoad">onPostLoad</a>
+											<a class="nav-link scrollto" href="#initOpts-onPostDeserialize">onPostDeserialize</a>
+											<a class="nav-link scrollto" href="#initOpts-onPreSerialize">onPreSerialize</a>
+											<a class="nav-link scrollto" href="#initOpts-onPreStore">onPreStore</a>
+											<a class="nav-link scrollto" href="#initOpts-onPostStore">onPostStore</a>
+											<a class="nav-link scrollto" href="#initOpts-onSaveNotification">onSaveNotification</a>
+											<a class="nav-link scrollto" href="#initOpts-onNoStorageNotification">onNoStorageNotification</a>
+											<a class="nav-link scrollto" href="#initOpts-onLog">onLog</a>
+										</nav>										
+                                    </nav>
+	                                <a class="nav-link scrollto" href="#instance-functions-section">Instance Functions</a>
+                                    <nav class="doc-sub-menu nav flex-column">
+                                        <a class="nav-link scrollto" href="#instance-getCurrentValue">getCurrentValue()</a>
+                                        <a class="nav-link scrollto" href="#instance-save">save()</a>
+                                        <a class="nav-link scrollto" href="#instance-load">load()</a>
+                                        <a class="nav-link scrollto" href="#instance-resetStore">resetStore()</a>
+                                        <a class="nav-link scrollto" href="#instance-dispose">dispose(resetStore)</a>
+                                    </nav>
+	                                <a class="nav-link scrollto" href="#static-functions-section">Static Functions</a>
+                                    <nav class="doc-sub-menu nav flex-column">
+                                        <a class="nav-link scrollto" href="#static-isCookieStorageAvailable">isCookieStorageAvailable()</a>
+                                        <a class="nav-link scrollto" href="#static-isLocalStorageAvailable">isLocalStorageAvailable()</a>
+                                        <a class="nav-link scrollto" href="#static-serialize">serialize()</a>
+                                        <a class="nav-link scrollto" href="#static-deserialize">deserialize()</a>
+                                        <a class="nav-link scrollto" href="#static-resetAll">resetAll()</a>
+                                        <a class="nav-link scrollto" href="#static-toArray">toArray(arrayLike, numSkip)</a>
+                                        <a class="nav-link scrollto" href="#static-whenDocReady">whenDocReady(callback)</a>
+                                    </nav>
+	                                <a class="nav-link scrollto" href="#demos-section">Demos</a>
+	                            </nav>
+	                        
+                        </div>
+                    </div><!--//doc-sidebar-->
+                </div><!--//doc-body-->              
+            </div><!--//container-->
+        </div><!--//doc-wrapper-->
+        
+    </div><!--//page-wrapper-->
+    
+    <footer id="footer" class="footer text-center">
+        <div class="container">
+            <!--/* This template is released under the Creative Commons Attribution 3.0 License. Please keep the attribution link below when using for your own project. Thank you for your support. :) If you'd like to use the template without the attribution, you can buy the commercial license via our website: themes.3rdwavemedia.com */-->
+            <small class="copyright">Designed with <i class="fas fa-heart"></i> by <a href="https://themes.3rdwavemedia.com/" target="_blank">Xiaoying Riley</a> for developers</small>
+            
+        </div><!--//container-->
+    </footer><!--//footer-->
+    
+     
+    <!-- Main Javascript -->          
+    <script type="text/javascript" src="assets/plugins/jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" src="assets/plugins/bootstrap/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="assets/plugins/prism/prism.js"></script>    
+    <script type="text/javascript" src="assets/plugins/prism/keep-markup/prism-keep-markup.min.js"></script>
+    <script type="text/javascript" src="assets/plugins/jquery-scrollTo/jquery.scrollTo.min.js"></script>      
+    <script type="text/javascript" src="assets/plugins/stickyfill/dist/stickyfill.min.js"></script>                                                             
+    <script type="text/javascript" src="assets/js/main.js"></script>
+    
+</body>
+</html> 
+
