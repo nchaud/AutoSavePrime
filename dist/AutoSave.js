@@ -7,12 +7,12 @@
 
 (function (root, factory) {
 	/* X-module-loader compatability prelude */
-    if (typeof define === 'function' && define.amd) {
-        define(["autosave"], factory);
-    } else if (typeof module === 'object' && module.exports) {
-        module.exports = factory(require("autosave"));
+    if (typeof define === "function" && define.amd) {
+        define([], factory);
+    } else if (typeof module === "object" && module.exports) {
+        module.exports = factory();
     } else {
-        root.AutoSave = factory(root.autosave);
+        root.AutoSave = factory();
     }
 }(this, function () {
 
