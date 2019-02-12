@@ -1,3 +1,4 @@
 # AutoSavePrime
 Zero-Dependency, Production-Ready Javascript AutoSave Library
-See https://github.com/nchaud/AutoSavePrime
+Source: https://github.com/nchaud/AutoSavePrime
+Docs: http://nchaud.github.io/AutoSavePrime
