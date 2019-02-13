@@ -84,7 +84,7 @@
 										<p>First install with <b>npm install autosave-prime</b></p>
                                         <pre><code class="language-markup">...
 		&lt;script type=&quot;javascript&quot;&gt; 
-			require([ 'autosave-prime '],
+			require([ 'autosave-prime' ],
 				function( AutoSave ){
 					var autoSave = new AutoSave();
 				}
@@ -135,7 +135,7 @@ new AutoSave( $(&quot;#container&quot;) ); //We recognise jQuery
 											<i class="fa fa-warning"></i>
 										</div>
 										<div class="content">
-											<p>The scope elements <b>must</b> be present in the DOM at the time the AutoSave instance is created and will not be dynamically recalculated after initialisation - i.e. they should be the container(s) for any dynamically created controls. Alternatively, see <a style='color:white' href='#initOpts-onPreSerialize'><em>onPreSerialize</em></a> and this demo...</p>
+											<p>The scope elements <b>must</b> be present in the DOM at the time the AutoSave instance is created and will not be dynamically recalculated after initialisation - i.e. they should be the container(s) for any dynamically created controls. Also see <a style='color:white' href='#initOpts-onPreSerialize'><em>onPreSerialize</em></a> and <a href='#demos-dynamicControls'>this demo</a></p>
 										</div>
 									</div>
 									
@@ -232,7 +232,7 @@ var autoSave = new AutoSave( null, {
 												</li>
 												
         										<li id="initOpts-saveNotification"><code>saveNotification</code>
-												    <p>When a save is kicked off, a notification briefly shows at the top indicating a save is in progress. By default, it&apos;s got a simple non-distracting look but see this demos for styling it :-</p>
+												    <p>When a save is kicked off, a notification briefly shows at the top indicating a save is in progress. By default, it&apos;s got a simple non-distracting look but see <a href='#demos-section'>the demos</a> for styling it :-</p>
 													
 													<div class="centered" style="width:100px">
 														<img src="assets/images/Indicator_Saving.png"></img>
@@ -277,7 +277,7 @@ var autoSave = new AutoSave( null, {
 												</li>
 												
         										<li id="initOpts-noStorageNotification"><code>noStorageNotification</code>
-												    <p>When AutoSavePrime detects that neither cookies nor local storage is available a notification briefly shows at the top stating auto-save is disabled. If the datastore however has been customised with <em>load</em> and <em>save</em> callbacks, the notification never shows. By default, it looks like the below but see this demos for styling it :-</p>
+												    <p>When AutoSavePrime detects that neither cookies nor local storage is available a notification briefly shows at the top stating auto-save is disabled. If the datastore however has been customised with <em>load</em> and <em>save</em> callbacks, the notification never shows. By default, it looks like the below but see <a href='#demos-section'>the demos</a> for styling it :-</p>
 													
 													<div class="centered" style="width:500px">
 														<img src="assets/images/Indicator_NoStorage.png"></img>
@@ -764,10 +764,10 @@ AutoSave.version 	//: string
 									<h2 class="section-title"><i class="icon fa fa-fighter-jet"></i> Demos</h2>								
 									<div class="section-block">
 										<ul>
-											<li id='demos-basic'><a href='_TODO_'>Basic Example</a></li>
-											<li id='demos-requirejs'>Loading with RequireJS</li>
+											<li id='demos-basic'><a href='https://jsfiddle.net/nchaud/gcq2af70/8/'>Basic Example</a></li>
+											<li id='demos-requirejs'><a href='https://jsfiddle.net/nchaud/0rbevqk3/16/'>Loading with RequireJS</a></li>
 											<li>Server-side saves with only delta</li>
-											<li>Customising the scope set</li>
+											<li id='demos-dynamicControls'>Customising the scope set</li>
 											<li>Incorporating form elements outside container (HTML5)</li>
 											<li>Creating and destroying multiple AutoSave instances</li>
 											<li>Customising data being stored and loaded</li>
@@ -844,15 +844,6 @@ AutoSave.version 	//: string
         </div><!--//doc-wrapper-->
         
     </div><!--//page-wrapper-->
-    
-    <footer id="footer" class="footer text-center">
-        <div class="container">
-            <!--/* This template is released under the Creative Commons Attribution 3.0 License. Please keep the attribution link below when using for your own project. Thank you for your support. :) If you'd like to use the template without the attribution, you can buy the commercial license via our website: themes.3rdwavemedia.com */-->
-            <small class="copyright">Designed with <i class="fas fa-heart"></i> by <a href="https://themes.3rdwavemedia.com/" target="_blank">Xiaoying Riley</a> for developers</small>
-            
-        </div><!--//container-->
-    </footer><!--//footer-->
-    
      
     <!-- Main Javascript -->          
     <script type="text/javascript" src="assets/plugins/jquery-3.3.1.min.js"></script>
