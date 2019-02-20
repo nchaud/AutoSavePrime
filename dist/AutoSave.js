@@ -1,6 +1,6 @@
 /*
 * AutoSavePrime - https://github.com/nchaud/AutoSavePrime
-* Version: 1.0.0
+* Version: 1.0.2
 * Copyright (c) 2019 Numaan Chaudhry
 * Licensed under the ISC license
 */
@@ -2239,7 +2239,7 @@
 	AutoSave.__defaultListenOpts = { passive:true, capture:true };	//Let browser know we only listen passively so it can optimise
 	AutoSave.__cachedLocalStorageAvailable	= undefined;
 	AutoSave.__cachedCookiesAvailable		= undefined;
-	AutoSave.version						= "1.0.0";
+	AutoSave.version						= "1.0.2";
 
 	return AutoSave;
 })); //End of cross-module compatability

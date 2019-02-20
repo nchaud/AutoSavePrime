@@ -1,6 +1,6 @@
 {
   "name": "autosave-prime",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Zero-dependency, Production-ready library that auto-saves as you work",
   "main": "dist/AutoSave.js",
   "directories": {
@@ -18,12 +18,12 @@
     "jshint": "2.10.1",
     "uglify-js": "3.4.9"
   },
-  "files":[
-	"dist"
+  "files": [
+    "dist"
   ],
   "scripts": {
     "package": "node packager.js",
-	"lint": "node_modules/.bin/jshint src/AutoSave.js"
+    "lint": "node_modules/.bin/jshint src/AutoSave.js"
   },
   "repository": {
     "type": "git",

@@ -1,0 +1,15 @@
+{
+  "name": "AutoSavePrimeDemo3Typescript",
+  "version": "1.0.0",
+  "description": "",
+  "main": "run.js",
+  "dependencies": {
+    "autosave-prime": "1.0.2",
+	"requirejs": "2.3.6"
+  },
+  "devDependencies": {},
+  "scripts": {
+  },
+  "author": "Numaan Chaudhry",
+  "license": "ISC"
+}
