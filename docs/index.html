@@ -59,7 +59,7 @@
 								
 								<p>Backwards compatability is a core feature of this library (we, too, are tired of JS libraries developing backwards-incompatible versions). Future versions of this library will always be built upon the existing API. Let's get started !</p>
 							</section>
-
+							
                             <section id="quickstart-section" class="doc-section">
 								
                                 <h2 class="section-title"><i class="icon fa fa-paper-plane"></i> QuickStart</h2>
@@ -67,10 +67,10 @@
 									<p>Like most modules, this is defined as a UMD so works with all module loaders and independently too. See <a href='#demos-requirejs'>this demo.</a></p>								
 									
 									<div class="code-block">
-                                        <h6>Running independently</h6>
+                                        <h6>No Module Loader</h6>
                                         <pre><code class="language-markup">...
 	&lt;head&gt;
-		&lt;script src=&quot;https://cdn.jsdelivr.net/npm/autosave-prime@1.0.0/dist/AutoSave.min.js&quot;&gt;&lt;/script&gt;
+		&lt;script src=&quot;https://cdn.jsdelivr.net/npm/autosave-prime@1.0.2/dist/AutoSave.min.js&quot;&gt;&lt;/script&gt;
 		&lt;script type=&quot;javascript&quot;&gt; 
 			var autoSave = new AutoSave()
 		&lt;/script&gt;
@@ -91,6 +91,22 @@
 			);
 		&lt;/script&gt;
 ...
+</code></pre>
+                                    </div>
+
+									<div class="code-block">
+                                        <h6>Using TypeScript</h6>
+										<p>First install with <b>npm install autosave-prime</b> (also see the complete Typescript Setup in the <a href='#demos-typescript'>demos</a> section)</p>
+                                        <pre><code class="language-javascript">import AutoSave = require("../node_modules/autosave-prime/dist/AutoSave");
+...
+		class MyFormManager {
+			constructor(){
+				var opts: AutoSave.InitOptions = {
+					onLog: (level)=>level == AutoSave.LOG_ERROR, //Disable all non-error logging
+				};
+				new AutoSave(null, opts);
+			}
+		}
 </code></pre>
                                     </div>
 									
@@ -136,6 +152,8 @@ new AutoSave( $(&quot;#container&quot;) ); //We recognise jQuery
 										</div>
 										<div class="content">
 											<p>The scope elements <b>must</b> be present in the DOM at the time the AutoSave instance is created and will not be dynamically recalculated after initialisation - i.e. they should be the container(s) for any dynamically created controls. Also see <a style='color:white' href='#initOpts-onPreSerialize'><em>onPreSerialize</em></a> and <a href='#demos-dynamicControls'>this demo</a></p>
+											
+											<h3>Exceptions will be thrown either at initialisation or anytime after init, piped to handler.</h3>
 										</div>
 									</div>
 									
@@ -154,7 +172,7 @@ new AutoSave( $(&quot;#container&quot;) ); //We recognise jQuery
 					 }
 				   ],
   autoLoadTrigger: null,
-  seekExternalFormElements: boolean,
+  seekExternalFormElements: boolean,				//Default: true
   saveNotification: [ null | 
                       {
                         template: string,
@@ -185,12 +203,12 @@ new AutoSave( $(&quot;#container&quot;) ); //We recognise jQuery
   onPreLoad: function,				// :()=>void|boolean|string
   onPostLoad: function,				// :(string)=>void|boolean|string
   onPostDeserialize: function,		// :()=>void
-  onPreSerialize: function,			// :(HTMLElement[])=>void|boolean|string|HTMLElement|HTMLElement[]|jQuery|function
+  onPreSerialize: function,			// :(HTMLElement[])=>void|boolean|string|HTMLElement|HTMLElement[]|jQuery
   onPreStore: function,				// :(string)=>void|boolean|string
   onPostStore: function,			// :()=>void
   onSaveNotification: function,		// :(boolean)=>void|boolean
   onNoStorageNotification: function,// :(boolean)=>void|boolean
-  onLog: function|object			// :((logLevel, ...any[])=>any)|object //i.e. a variadic function
+  onLog: function|object			// :((string, ...any[])=>any)|object //i.e. a variadic function
 }
 										</code></pre>
                                     </div>
@@ -322,7 +340,7 @@ var autoSave = new AutoSave( null, {
         										<li id="initOpts-dataStore"><code>dataStore</code>
 												     <p>AutoSavePrime by default will try and use the HTML5 local storage API for data storage. If this isn't detected, it'll fallback to using cookies. You can also customise the datastore with custom functions to, for example, save and load to/from a server instead.</p>
 													
-													<p>By specifying null, storing and loading is disabled.</p>
+													<p>By specifying null, saving and loading is disabled. You can instead use the <a href='#initOpts-onInitialised'>hooks</a> to drive saving and loading.</p>
 													<p><i class='fa bullet_nested'></i><b> preferCookies: </b>Even if local storage is available, you can switch to using cookies by setting this option to true.</p>
 
 													<p><i class='fa bullet_nested'></i><b> clearEmptyValuesOnLoad: </b>By default, on load AutoSavePrime will clear existing form entries if an entry value is specified in the payload. This is useful if you do a server-side reset of the user's controls and want to blank them out. e.g. If the loading payload has name=&amp;age=, the inputs would be blanked out on a load regardless of their existing values. However, setting this property to false will cause the blank values to be ignored and the inputs to retain their existing values.</p>
@@ -602,7 +620,7 @@ var autoSave = new AutoSave( null, {
         										<li id="initOpts-onLog"><code>onLog (<f>FUNC</f>)</code>
 												    <p>Callback for handling logging. If a function is supplied, it must be variadic with the signature
 													
-													<pre class="mini"><code class="language-javascript">// (level, ...any[]) => any</code></pre>
+													<pre class="mini"><code class="language-javascript">// (level: string, ...logArgs: any[]) => any</code></pre>
 													
 													<p>where level will be one of the following strings</p>
 													<ul class="nested_list">
@@ -626,7 +644,7 @@ var autoSave = new AutoSave( null, {
 				mySvc.logError( arguments.slice( 1 ) ); //Skip the level parameter
 		}
 
-		return false; //Don't write any errors to the default output (console)
+		return false; //Don't write any logs to the default output (console)
 	}
 })
 
@@ -662,7 +680,7 @@ var autoSave = new AutoSave( null, {
                             
 							<!--level-down-alt-->
 							<section id="instance-functions-section" class="doc-section">
-                                <h2 class="section-title"><i class="icon fa fa-bolt"></i> Instance Functions</h2>
+                                <h2 class="section-title"><i class="icon fa fa-bolt"></i> Instance Members</h2>
 								
                               <div class="section-block">
 									
@@ -704,7 +722,7 @@ autoSave.dispose(resetStore=true) //: (boolean)=>void
 							</section>
 							   
                             <section id="static-functions-section" class="doc-section">
-                                <h2 class="section-title"><i class="icon fa fa-bars"></i> Static Functions</h2>
+                                <h2 class="section-title"><i class="icon fa fa-bars"></i> Static Members</h2>
                                 <div class="section-block">
                                     <p>
                                         Most of the logic in AutoSavePrime is in stateless functions to minimise the places shared state is read/updated. A number of these stateless helpers are available for you should you need them in any custom logic in callbacks etc.
@@ -766,6 +784,7 @@ AutoSave.version 	//: string
 										<ul>
 											<li id='demos-basic'><a href='https://jsfiddle.net/nchaud/gcq2af70/8/'>Basic Example</a></li>
 											<li id='demos-requirejs'><a href='https://jsfiddle.net/nchaud/0rbevqk3/16/'>Loading with RequireJS</a></li>
+											<li id='demos-typescript'><a href='https://github.com/nchaud/AutoSavePrime/tree/master/demos/Demo3_TypeScript'>Typescript Setup</a></li>
 											<li>Server-side saves with only delta</li>
 											<li id='demos-dynamicControls'>Customising the scope set</li>
 											<li>Incorporating form elements outside container (HTML5)</li>
@@ -784,7 +803,51 @@ AutoSave.version 	//: string
 										</ul>
 									</div>
 
-								</section><!--//doc-section-->
+								</section>
+								
+								<section id="dev" class="doc-section">
+									<h2 class="section-title"><i class="icon fa fa-fighter-jet"></i> Development</h2>								
+									<div class="section-block">
+										
+										<p>This section is for developers who want to work deeper with the library or fork/extend/contribute to it.</p>
+
+                                        <h6>Exception handling</h6>
+										
+										This is designed so any error can always be caught, even if it's caused by an event at a much later stage than initialisation. If an error is raised in the library which was initiated by a user call, it'll bubble up to the user. Otherwise, it'll be piped through the onLog error handler.</p>
+										
+										<p>A robust error handling strategy then would look like this :-
+										
+								<div class="code-block ">
+										<pre class="mini">
+<code class="language-javascript">try {
+	new AutoSave(null, {
+		onPreSerialize:function() {
+			try {
+				myService.audit("Serialising...");
+			}
+			catch(ex){/* ... */} //Custom callbacks need to handle their own errors
+		},
+		onLog:(level){ if (level == AutoSave.ERROR){/* ... */}} //For browser-initiated events that cause exceptions. If no handler is supplied, will be piped to the console.
+	});
+} catch(ex){/* ... */} //An exception can be raised during construction
+
+...
+
+try {
+	autoSave.load(...)
+} catch(ex){/* ... */} //User-initiated actions could throw
+</code></pre>
+										
+                                    </div><!--//code-block-->
+	
+                                        <h6>Build Scripts</h6>
+										<p>- You can execute 'npm run lint', which will use jshint to catch any potential issues.</p>
+										<p>- You can execute 'npm run package', to minify and bundle all resources necessary for publishing into dist/.</p>
+										
+										
+									</div>
+
+								</section>
 							
                         </div><!--//content-inner-->
                     </div><!--//doc-content-->
@@ -816,7 +879,7 @@ AutoSave.version 	//: string
 											<a class="nav-link scrollto" href="#initOpts-onLog">onLog</a>
 										</nav>										
                                     </nav>
-	                                <a class="nav-link scrollto" href="#instance-functions-section">Instance Functions</a>
+	                                <a class="nav-link scrollto" href="#instance-functions-section">Instance Members</a>
                                     <nav class="doc-sub-menu nav flex-column">
                                         <a class="nav-link scrollto" href="#instance-getCurrentValue">getCurrentValue()</a>
                                         <a class="nav-link scrollto" href="#instance-save">save()</a>
@@ -824,7 +887,7 @@ AutoSave.version 	//: string
                                         <a class="nav-link scrollto" href="#instance-resetStore">resetStore()</a>
                                         <a class="nav-link scrollto" href="#instance-dispose">dispose(resetStore)</a>
                                     </nav>
-	                                <a class="nav-link scrollto" href="#static-functions-section">Static Functions</a>
+	                                <a class="nav-link scrollto" href="#static-functions-section">Static Members</a>
                                     <nav class="doc-sub-menu nav flex-column">
                                         <a class="nav-link scrollto" href="#static-isCookieStorageAvailable">isCookieStorageAvailable()</a>
                                         <a class="nav-link scrollto" href="#static-isLocalStorageAvailable">isLocalStorageAvailable()</a>
@@ -835,6 +898,7 @@ AutoSave.version 	//: string
                                         <a class="nav-link scrollto" href="#static-whenDocReady">whenDocReady(callback)</a>
                                     </nav>
 	                                <a class="nav-link scrollto" href="#demos-section">Demos</a>
+	                                <a class="nav-link scrollto" href="#dev">Dev</a>
 	                            </nav>
 	                        
                         </div>
