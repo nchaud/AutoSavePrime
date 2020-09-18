@@ -10,7 +10,7 @@
   },
   "devDependencies": {
     "bootstrap": "3.1.1",
-    "ckeditor": "4.6.2",
+    "ckeditor": "4.12.1",
     "jasmine-core": "2.99.1",
     "jasmine-jquery": "2.0.5",
     "jquery": "3.1.1",
